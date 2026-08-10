@@ -17,7 +17,7 @@ Open an issue describing what you do today and what VibePSA made you do instead.
 You need Node 18+ and a PostgreSQL database.
 
 ```bash
-git clone https://github.com/vibepsa/vibepsa.git
+git clone https://github.com/xantaradev/vibepsa.git
 cd vibepsa
 npm install
 cp .env.example .env      # set DATABASE_URL at minimum

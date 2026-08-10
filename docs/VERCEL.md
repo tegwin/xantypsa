@@ -185,7 +185,7 @@ Vercel shows the exact values — use those over the ones above if they differ.
 `src/lib/site.ts` holds three placeholders:
 
 ```ts
-github:     'https://github.com/vibepsa/vibepsa',  // real repo URL
+github:     'https://github.com/xantaradev/vibepsa',  // real repo URL
 demoReady:  false,   // flip to true once the demo exists
 demoUrl:    'https://demo.vibepsa.com',
 ```

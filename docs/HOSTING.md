@@ -35,7 +35,7 @@ the freedom to run work in-process.
 ## Self-hosting with Docker
 
 ```bash
-git clone https://github.com/vibepsa/vibepsa.git
+git clone https://github.com/xantaradev/vibepsa.git
 cd vibepsa
 cp .env.docker.example .env
 ```
