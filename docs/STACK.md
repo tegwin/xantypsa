@@ -7,7 +7,7 @@ Two separate applications:
 | | What | Where |
 |---|---|---|
 | **The app** | VibePSA itself | `vibepsa/` |
-| **The site** | The marketing page for vibepsa.com | `vibepsa-site/` |
+| **The site** | The marketing page for vibepsa.net | `vibepsa-site/` |
 
 ---
 

@@ -424,7 +424,7 @@ export default function ApiDocsPage() {
           <div className="bg-black/30 rounded-lg p-3 font-mono text-xs text-slate-300 border border-white/5">
             <div className="text-slate-500"># Example request</div>
             <div>curl -H &quot;X-API-Key: vp_abc123...&quot; \</div>
-            <div className="pl-4">{typeof window !== 'undefined' ? window.location.origin : 'https://your-instance.vibepsa.com'}/api/companies</div>
+            <div className="pl-4">{typeof window !== 'undefined' ? window.location.origin : 'https://your-instance.vibepsa.net'}/api/companies</div>
           </div>
         </div>
       </div>

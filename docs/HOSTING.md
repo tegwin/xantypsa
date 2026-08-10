@@ -89,7 +89,7 @@ docker compose exec db pg_dump -U vibepsa vibepsa > backup.sql
 DATABASE_URL=${{Postgres.DATABASE_URL}}
 DIRECT_DATABASE_URL=${{Postgres.DATABASE_URL}}
 AI_ENCRYPTION_KEY=<openssl rand -hex 32>
-NEXT_PUBLIC_APP_URL=https://app.vibepsa.com
+NEXT_PUBLIC_APP_URL=https://app.vibepsa.net
 DEPLOYMENT_MODE=hosted
 NEXT_PUBLIC_SUPABASE_URL=…
 NEXT_PUBLIC_SUPABASE_ANON_KEY=…
@@ -110,9 +110,9 @@ unreachable, so a broken deploy is caught rather than served.
 
 Authentication → URL Configuration:
 
-- **Site URL:** `https://app.vibepsa.com`
-- **Redirect URLs:** `https://app.vibepsa.com/auth/callback`,
-  `https://app.vibepsa.com/auth/confirm`, and the localhost equivalents
+- **Site URL:** `https://app.vibepsa.net`
+- **Redirect URLs:** `https://app.vibepsa.net/auth/callback`,
+  `https://app.vibepsa.net/auth/confirm`, and the localhost equivalents
 
 Sign-in fails silently until those are set.
 

@@ -6,7 +6,7 @@ and time — that you self-host and own outright.
 
 [![Licence: AGPL v3](https://img.shields.io/badge/licence-AGPL--3.0-blue.svg)](LICENSE)
 
-- **Website:** https://vibepsa.com
+- **Website:** https://vibepsa.net
 - **Licence:** [AGPL-3.0](LICENSE) — free for commercial use, including running
   your own MSP on it
 - **Status:** early. The modules below work, but this has not been hardened

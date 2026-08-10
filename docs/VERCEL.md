@@ -7,8 +7,8 @@ There are two separate deployments and they are independent:
 
 | | What it is | Domain |
 |---|---|---|
-| **The app** | VibePSA itself — the thing you log into | `app.vibepsa.com` |
-| **The site** | The marketing page in `vibepsa-site/` | `vibepsa.com` |
+| **The app** | VibePSA itself — the thing you log into | `app.vibepsa.net` |
+| **The site** | The marketing page in `vibepsa-site/` | `vibepsa.net` |
 
 Do the app first; that's the one you asked about.
 
@@ -29,7 +29,7 @@ repos are already set to a project identity rather than a personal one:
 
 ```bash
 git config user.name    # → VibePSA
-git config user.email   # → noreply@vibepsa.com
+git config user.email   # → noreply@vibepsa.net
 ```
 
 This is set **per repository**, so your global identity is untouched for other
@@ -125,11 +125,11 @@ reset fail until you add them.
 
 **Supabase → Authentication → URL Configuration:**
 
-- **Site URL:** `https://app.vibepsa.com` (or the `.vercel.app` URL for now)
+- **Site URL:** `https://app.vibepsa.net` (or the `.vercel.app` URL for now)
 - **Redirect URLs** — add every one of these:
   ```
-  https://app.vibepsa.com/auth/callback
-  https://app.vibepsa.com/auth/confirm
+  https://app.vibepsa.net/auth/callback
+  https://app.vibepsa.net/auth/confirm
   http://localhost:3000/auth/callback
   http://localhost:3000/auth/confirm
   ```
@@ -140,7 +140,7 @@ Now log in.
 
 ### 7. Your own domain
 
-In Vercel: **Settings → Domains → Add** `app.vibepsa.com`. It shows you a DNS
+In Vercel: **Settings → Domains → Add** `app.vibepsa.net`. It shows you a DNS
 record:
 
 ```
@@ -170,7 +170,7 @@ Already initialised on `main` with the same project commit identity.
 Import at [vercel.com/new](https://vercel.com/new). **No environment variables**
 — it's a static marketing page with no database and no secrets.
 
-Add the domain `vibepsa.com`, plus `www.vibepsa.com` redirecting to it. For an
+Add the domain `vibepsa.net`, plus `www.vibepsa.net` redirecting to it. For an
 apex domain the DNS record is an A record rather than a CNAME:
 
 ```
@@ -187,7 +187,7 @@ Vercel shows the exact values — use those over the ones above if they differ.
 ```ts
 github:     'https://github.com/xantaradev/vibepsa',  // real repo URL
 demoReady:  false,   // flip to true once the demo exists
-demoUrl:    'https://demo.vibepsa.com',
+demoUrl:    'https://demo.vibepsa.net',
 ```
 
 While `demoReady` is `false` the demo button renders as "coming soon" rather
