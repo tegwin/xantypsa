@@ -1,0 +1,406 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { PageHeader } from '@/components/ui';
+
+// ---------------------------------------------------------------------------
+// Integration catalogue
+// ---------------------------------------------------------------------------
+
+interface IntegrationDef {
+  key: string;
+  name: string;
+  description: string;
+  apiDocs?: string;
+  hasMcp: boolean;
+  mcpInfo?: string;
+  isRmm?: boolean;
+  comingSoon?: boolean;
+}
+
+interface CategoryDef {
+  name: string;
+  description: string;
+  integrations: IntegrationDef[];
+}
+
+const INTEGRATION_CATEGORIES: CategoryDef[] = [
+  {
+    name: 'RMM Tools',
+    description: 'Remote Monitoring & Management',
+    integrations: [
+      { key: 'ninja', name: 'NinjaOne (NinjaRMM)', description: 'Sync assets, monitor devices', apiDocs: 'https://app.ninjarmm.com/apidocs/', hasMcp: true, mcpInfo: 'ninja-mcp server available', isRmm: true },
+      { key: 'datto', name: 'Datto RMM', description: 'Device monitoring and asset sync', apiDocs: 'https://rmm-api-docs.datto.com/', hasMcp: false, isRmm: true },
+    ],
+  },
+  {
+    name: 'Documentation',
+    description: 'IT Documentation & Knowledge Base',
+    integrations: [
+      { key: 'hudu', name: 'Hudu', description: 'Sync customers, import KB articles for tickets', apiDocs: 'https://hudu.com/support/rest-api', hasMcp: false },
+    ],
+  },
+  {
+    name: 'Accounting & Billing',
+    description: 'Invoicing and financial management',
+    integrations: [
+      { key: 'xero', name: 'Xero', description: 'Create invoices, sync customers', hasMcp: false },
+      { key: 'quickbooks', name: 'QuickBooks Online', description: 'Invoice and payment sync', hasMcp: false },
+      { key: 'stripe', name: 'Stripe', description: 'Payment processing', hasMcp: false },
+    ],
+  },
+  {
+    name: 'PSA Tools',
+    description: 'Professional Services Automation',
+    integrations: [
+      { key: 'halopsa', name: 'HaloPSA', description: 'Ticket and customer sync', hasMcp: false },
+      { key: 'autotask', name: 'Datto Autotask', description: 'PSA data migration', hasMcp: false },
+      { key: 'connectwise', name: 'ConnectWise Manage', description: 'Ticket and billing sync', hasMcp: false },
+    ],
+  },
+  {
+    name: 'Communication',
+    description: 'Team collaboration and notifications',
+    integrations: [
+      { key: 'microsoft365', name: 'Microsoft 365', description: 'Email sending and calendar', hasMcp: false },
+      { key: 'google', name: 'Google Workspace', description: 'Gmail and calendar', hasMcp: false },
+      { key: 'slack', name: 'Slack', description: 'Notifications and alerts', hasMcp: false },
+      { key: 'teams', name: 'Microsoft Teams', description: 'Notifications and alerts', hasMcp: false },
+    ],
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface IntegrationRecord {
+  id: string;
+  type: string;
+  name: string;
+  config: Record<string, string>;
+  isActive: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Configure Modal
+// ---------------------------------------------------------------------------
+
+function ConfigureModal({
+  integration,
+  record,
+  onClose,
+  onSaved,
+}: {
+  integration: IntegrationDef;
+  record: IntegrationRecord | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [apiKey, setApiKey] = useState(record?.config?.apiKey || '');
+  const [apiUrl, setApiUrl] = useState(record?.config?.apiUrl || '');
+  const [clientId, setClientId] = useState(record?.config?.clientId || '');
+  const [clientSecret, setClientSecret] = useState(record?.config?.clientSecret || '');
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await fetch(`/api/integrations/${integration.key}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: integration.name,
+          config: { apiKey, apiUrl, clientId, clientSecret },
+          isActive: true,
+        }),
+      });
+      onSaved();
+    } catch {
+      // ignore
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const testConnection = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await fetch(`/api/integrations/${integration.key}/devices`);
+      if (res.ok) {
+        setTestResult({ ok: true, message: 'Connection successful!' });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setTestResult({ ok: false, message: data.error || 'Connection failed' });
+      }
+    } catch {
+      setTestResult({ ok: false, message: 'Network error' });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="glass rounded-xl w-full max-w-lg p-6 animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-lg font-semibold text-white">{integration.name}</h2>
+            <p className="text-sm text-slate-400">{integration.description}</p>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors text-xl leading-none">&times;</button>
+        </div>
+
+        {integration.hasMcp && (
+          <div className="mb-4 flex items-center gap-2 text-sm bg-purple-500/10 border border-purple-500/20 text-purple-300 px-3 py-2 rounded-lg">
+            <span className="inline-block w-2 h-2 rounded-full bg-purple-400" />
+            MCP: {integration.mcpInfo}
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm text-slate-300 mb-1">API Key</label>
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500/50"
+              placeholder="Enter API key..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-slate-300 mb-1">API URL / Instance URL</label>
+            <input
+              type="text"
+              value={apiUrl}
+              onChange={(e) => setApiUrl(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500/50"
+              placeholder="https://..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-slate-300 mb-1">Client ID (if required)</label>
+            <input
+              type="text"
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500/50"
+              placeholder="Optional"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-slate-300 mb-1">Client Secret (if required)</label>
+            <input
+              type="password"
+              value={clientSecret}
+              onChange={(e) => setClientSecret(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500/50"
+              placeholder="Optional"
+            />
+          </div>
+        </div>
+
+        {testResult && (
+          <div className={`mt-4 text-sm px-3 py-2 rounded-lg ${testResult.ok ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-300' : 'bg-red-500/10 border border-red-500/20 text-red-300'}`}>
+            {testResult.message}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between mt-6">
+          <div className="flex items-center gap-2">
+            {integration.apiDocs && (
+              <a
+                href={integration.apiDocs}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-400 hover:text-blue-300 transition-colors underline"
+              >
+                API Docs
+              </a>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={testConnection}
+              disabled={testing}
+              className="text-sm px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-colors disabled:opacity-50"
+            >
+              {testing ? 'Testing...' : 'Test Connection'}
+            </button>
+            <button
+              onClick={save}
+              disabled={saving}
+              className="btn-primary text-sm px-4 py-2 rounded-lg disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : 'Save Configuration'}
+            </button>
+          </div>
+        </div>
+
+        {/* RMM-specific links */}
+        {integration.isRmm && record?.isActive && (
+          <div className="mt-4 pt-4 border-t border-white/10 flex items-center gap-4">
+            <a
+              href={`/settings/integrations/${integration.key}/mapping`}
+              className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              Customer Mapping
+            </a>
+            <a
+              href={`/settings/integrations/${integration.key}/import`}
+              className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              Import Assets
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main Page
+// ---------------------------------------------------------------------------
+
+export default function SettingsIntegrationsPage() {
+  const [records, setRecords] = useState<IntegrationRecord[]>([]);
+  const [configuring, setConfiguring] = useState<IntegrationDef | null>(null);
+
+  const fetchRecords = useCallback(async () => {
+    try {
+      // Fetch all known integration types
+      const types = INTEGRATION_CATEGORIES.flatMap((c) => c.integrations.map((i) => i.key));
+      const results: IntegrationRecord[] = [];
+      await Promise.all(
+        types.map(async (type) => {
+          const res = await fetch(`/api/integrations/${type}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.id) results.push(data);
+          }
+        })
+      );
+      setRecords(results);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchRecords();
+  }, [fetchRecords]);
+
+  const getRecord = (key: string) => records.find((r) => r.type === key) || null;
+
+  const getStatus = (int: IntegrationDef): 'connected' | 'available' | 'coming_soon' => {
+    if (int.comingSoon) return 'coming_soon';
+    const rec = getRecord(int.key);
+    if (rec?.isActive) return 'connected';
+    return 'available';
+  };
+
+  const statusBadge = (status: 'connected' | 'available' | 'coming_soon') => {
+    switch (status) {
+      case 'connected':
+        return <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-medium">Connected</span>;
+      case 'available':
+        return <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-medium">Available</span>;
+      case 'coming_soon':
+        return <span className="text-xs bg-white/10 text-slate-400 px-2 py-0.5 rounded-full font-medium">Coming Soon</span>;
+    }
+  };
+
+  return (
+    <div className="animate-fadeIn">
+      <PageHeader title="Integrations" subtitle="Connect third-party services and tools" />
+
+      {configuring && (
+        <ConfigureModal
+          integration={configuring}
+          record={getRecord(configuring.key)}
+          onClose={() => setConfiguring(null)}
+          onSaved={() => {
+            setConfiguring(null);
+            fetchRecords();
+          }}
+        />
+      )}
+
+      <div className="space-y-8">
+        {INTEGRATION_CATEGORIES.map((category) => (
+          <div key={category.name}>
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-white">{category.name}</h2>
+              <p className="text-sm text-slate-400">{category.description}</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {category.integrations.map((int) => {
+                const status = getStatus(int);
+                return (
+                  <div key={int.key} className="glass rounded-xl p-6 hover:bg-white/5 transition-colors">
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="text-white font-semibold">{int.name}</h3>
+                      {statusBadge(status)}
+                    </div>
+                    <p className="text-sm text-slate-400 mb-1">{int.description}</p>
+
+                    {int.hasMcp && (
+                      <div className="flex items-center gap-1.5 mb-3 mt-2">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-purple-400" />
+                        <span className="text-xs text-purple-300">MCP Available</span>
+                      </div>
+                    )}
+
+                    <div className="mt-4 flex items-center gap-2">
+                      <button
+                        onClick={() => !int.comingSoon && setConfiguring(int)}
+                        disabled={!!int.comingSoon}
+                        className={`text-sm flex-1 py-2 rounded-lg transition-colors ${
+                          int.comingSoon
+                            ? 'bg-white/5 text-slate-500 cursor-not-allowed'
+                            : status === 'connected'
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
+                              : 'bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30'
+                        }`}
+                      >
+                        {int.comingSoon ? 'Coming Soon' : 'Configure'}
+                      </button>
+
+                      {int.isRmm && status === 'connected' && (
+                        <>
+                          <a
+                            href={`/settings/integrations/${int.key}/mapping`}
+                            className="text-sm py-2 px-3 rounded-lg bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-colors"
+                            title="Customer Mapping"
+                          >
+                            Map
+                          </a>
+                          <a
+                            href={`/settings/integrations/${int.key}/import`}
+                            className="text-sm py-2 px-3 rounded-lg bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-colors"
+                            title="Import Assets"
+                          >
+                            Import
+                          </a>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

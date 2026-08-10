@@ -1,0 +1,16 @@
+node_modules
+.next
+.next-verify
+.git
+.gitignore
+.env
+.env*.local
+npm-debug.log*
+README.md
+docs
+*.md
+!package.json
+.vscode
+.claude
+coverage
+.DS_Store

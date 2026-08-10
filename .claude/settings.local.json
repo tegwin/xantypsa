@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npx prisma:*)",
+      "Bash(curl -s http://localhost:3000/api/companies)",
+      "Bash(xargs grep:*)"
+    ]
+  }
+}

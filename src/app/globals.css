@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #334155 transparent;
+  }
+  
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  *::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 3px;
+  }
+  
+  *::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+  }
+
+  ::selection {
+    background: rgba(59, 139, 255, 0.3);
+  }
+
+  /* Global dark input styles */
+  input, select, textarea {
+    @apply bg-surface-800 border border-surface-600 text-surface-100 rounded-lg px-3 py-2 text-sm;
+    @apply placeholder:text-surface-500;
+    @apply focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500;
+  }
+
+  input[type="date"], input[type="datetime-local"] {
+    @apply text-surface-100;
+    color-scheme: dark;
+  }
+
+  select {
+    @apply appearance-none cursor-pointer;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+  }
+
+  select option {
+    @apply bg-surface-800 text-surface-100;
+  }
+
+  textarea {
+    @apply resize-y min-h-[80px];
+  }
+
+  input[type="checkbox"] {
+    @apply w-4 h-4 rounded border-surface-600 bg-surface-800 text-brand-600;
+    @apply focus:ring-brand-500/40 focus:ring-offset-0;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-surface-800/50 backdrop-blur-sm border border-surface-700/50 rounded-xl;
+  }
+  
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-400 to-brand-600;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in,
+.animate-fadeIn,
+.page-enter {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.2s ease-out;
+}
+
+/* Button utilities */
+.btn-primary {
+  @apply px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors;
+}
+
+.btn-secondary {
+  @apply px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 text-sm font-medium transition-colors;
+}
+
+.btn-danger {
+  @apply px-4 py-2 rounded-lg bg-red-600/80 hover:bg-red-600 text-white text-sm font-medium transition-colors;
+}

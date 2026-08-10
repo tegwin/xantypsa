@@ -1,0 +1,1579 @@
+// VibePSA - Complete Database Schema
+// Multi-tenant Professional Services Automation Platform
+// Database: PostgreSQL (via Neon/Supabase on Vercel)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+// ============================================================
+// MULTI-TENANCY & AUTH
+// ============================================================
+
+model Tenant {
+  id          String   @id @default(cuid())
+  /// Hosted service only; null for self-hosted installs.
+  subscription Subscription?
+  name        String
+  slug        String   @unique
+  domain      String?  @unique
+  logo        String?
+  timezone    String   @default("UTC")
+  currency    String   @default("GBP")
+  taxRate     Float    @default(20.0)
+  address     String?
+  phone       String?
+  email       String?
+  website     String?
+  settings    Json     @default("{}")
+  plan        String   @default("starter") // starter, professional, enterprise
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users           TenantUser[]
+  roles           Role[]
+  contacts        Contact[]
+  companies       Company[]
+  sites           Site[]
+  opportunities   Opportunity[]
+  tickets         Ticket[]
+  ticketQueues    TicketQueue[]
+  ticketStatuses  TicketStatus[]
+  contracts       Contract[]
+  quotes          Quote[]
+  invoices        Invoice[]
+  payments        Payment[]
+  projects        Project[]
+  tasks           Task[]
+  timeEntries     TimeEntry[]
+  billingRates    BillingRate[]
+  products        Product[]
+  reports         Report[]
+  dashboards      Dashboard[]
+  webhooks        Webhook[]
+  webhookLogs     WebhookLog[]
+  auditLogs       AuditLog[]
+  emailTemplates  EmailTemplate[]
+  tags            Tag[]
+  customFields    CustomField[]
+  slaProfiles     SLAProfile[]
+  integrations    Integration[]
+  fieldLabels         FieldLabel[]
+  apiKeys             ApiKey[]
+  crmNotes            CrmNote[]
+  documents           Document[]
+  quoteTemplates      QuoteTemplate[]
+  emailLogs           EmailLog[]
+  accountingInvoices  AccountingInvoice[]
+  assets              Asset[]
+  aiProviders         AiProvider[]
+  aiConversations     AiConversation[]
+
+  @@map("tenants")
+}
+
+// ============================================================
+// AI
+// ============================================================
+
+// A tenant's connection to an LLM provider. The API key is encrypted at rest
+// and never returned to the client.
+model AiProvider {
+  id           String   @id @default(cuid())
+  tenantId     String
+  provider     String // anthropic, openai
+  label        String
+  model        String
+  apiKeyEnc    String // AES-256-GCM, see lib/ai/crypto.ts
+  baseUrl      String? // for self-hosted / proxied endpoints
+  isDefault    Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("ai_providers")
+}
+
+// A chat thread against a module's AI panel.
+model AiConversation {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  module    String // tickets, invoices, crm...  the screen it was opened from
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  messages AiMessage[]
+
+  @@index([tenantId])
+  @@index([userId])
+  @@map("ai_conversations")
+}
+
+model AiMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String // user, assistant, tool
+  content        Json // content blocks, provider-neutral
+  toolCalls      Json? // what it invoked, for auditing
+  createdAt      DateTime @default(now())
+
+  conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("ai_messages")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  // Supabase owns credentials; retained only for users not yet migrated.
+  passwordHash  String?
+  // Links this record to the Supabase auth user.
+  supabaseId    String?   @unique
+  avatar        String?
+  phone         String?
+  // When true, the user must enrol in TOTP two-factor before using the app.
+  mfaRequired   Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  isSuperAdmin  Boolean   @default(false) // Platform-level admin
+  lastLogin     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  tenants             TenantUser[]
+  assignedTickets     Ticket[]       @relation("AssignedAgent")
+  createdTickets      Ticket[]       @relation("TicketCreator")
+  assignedTasks       Task[]         @relation("TaskAssignee")
+  createdTasks        Task[]         @relation("TaskCreator")
+  timeEntries         TimeEntry[]
+  ticketNotes         TicketNote[]
+  opportunities      Opportunity[] @relation("OpportunityOwner")
+  quoteCreator        Quote[]
+  invoiceCreator      Invoice[]
+  projectManager      Project[]      @relation("ProjectManager")
+  projectMembers      ProjectMember[]
+  auditLogs           AuditLog[]
+  notifications       Notification[]
+  sessions            Session[]
+  accounts            Account[]
+  crmNotes            CrmNote[]
+  documents           Document[]
+
+  @@map("users")
+}
+
+model TenantUser {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  roleId    String
+  isOwner   Boolean  @default(false)
+  // Internal hourly cost of this engineer *within this tenant*. Lives on the
+  // membership, not the user, because the same person can work for more than
+  // one MSP at a different cost to each.
+  costRate  Float?
+  joinedAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  @@unique([tenantId, userId])
+  @@map("tenant_users")
+}
+
+// NextAuth models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ============================================================
+// RBAC - ROLES & PERMISSIONS
+// ============================================================
+
+model Role {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  slug        String
+  description String?
+  permissions Json     // Array of permission strings
+  isSystem    Boolean  @default(false) // Cannot be deleted
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users  TenantUser[]
+
+  @@unique([tenantId, slug])
+  @@map("roles")
+}
+
+// ============================================================
+// CRM - CONTACTS, COMPANIES, OPPORTUNITIES
+// ============================================================
+
+model Contact {
+  id          String   @id @default(cuid())
+  tenantId    String
+  companyId   String?
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String?
+  mobile      String?
+  jobTitle    String?
+  department  String?
+  address     String?
+  city        String?
+  state       String?
+  postcode    String?
+  country     String?
+  notes       String?
+  source      String?  // web, referral, cold-call, etc.
+  isActive    Boolean  @default(true)
+  // Portal access is per contact and off by default — being a contact does not
+  // imply being allowed to see the company's tickets and invoices.
+  portalEnabled Boolean  @default(false)
+  portalLastLogin DateTime?
+  customData  Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company  Company? @relation(fields: [companyId], references: [id])
+  companies ContactCompany[]
+  portalTokens PortalLoginToken[]
+  tickets  Ticket[]
+  opportunities Opportunity[] @relation("OpportunityContact")
+  quotes   Quote[]
+  invoices Invoice[]
+
+  @@index([tenantId])
+  @@map("contacts")
+}
+
+// Many-to-many: Contact can belong to multiple companies
+model ContactCompany {
+  id        String  @id @default(cuid())
+  contactId String
+  companyId String
+  isPrimary Boolean @default(false)
+  role      String? // e.g. "Technical Contact", "Billing Contact"
+
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([contactId, companyId])
+  @@map("contact_companies")
+}
+
+model Company {
+  id           String   @id @default(cuid())
+  tenantId     String
+  name         String
+  website      String?
+  phone        String?
+  email        String?
+  address1     String?
+  address2     String?
+  address3     String?
+  city         String?
+  state        String?
+  postcode     String?
+  country      String?
+  industry     String?
+  size         String?  // 1-10, 11-50, etc.
+  type         String   @default("customer") // prospect, customer, vendor, partner
+  // Email domains that belong to this client, e.g. ["acme.com","acme.co.uk"].
+  // Incoming mail is routed to a company by matching the sender's domain.
+  emailDomains String[] @default([])
+  // System records cannot be deleted: the catch-all that unmatched email lands
+  // on, and the MSP's own company. Removing either would break ticket routing.
+  isSystem     Boolean  @default(false)
+  // Exactly one company per tenant is the catch-all.
+  isCatchAll   Boolean  @default(false)
+  // The client's own portal address: /portal/<portalSlug>. Globally unique
+  // because the URL carries no tenant, so the slug alone has to identify one
+  // company. Clients pick their own.
+  portalSlug    String?  @unique
+  portalEnabled Boolean  @default(false)
+  taxId        String?  // VAT number etc.
+  notes        String?
+  slaProfileId String?
+  customData   Json     @default("{}")
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  slaProfile SLAProfile? @relation(fields: [slaProfileId], references: [id])
+  contacts   Contact[]
+  contactCompanies ContactCompany[]
+  sites      Site[]
+  tickets    Ticket[]
+  contracts  Contract[]
+  opportunities Opportunity[]
+  quotes     Quote[]
+  invoices   Invoice[]
+  projects   Project[]
+  assets     Asset[]
+
+  @@index([tenantId])
+  @@map("companies")
+}
+
+model Site {
+  id          String   @id @default(cuid())
+  tenantId    String
+  companyId   String
+  name        String   @default("Main")
+  isDefault   Boolean  @default(false)
+  address1    String?
+  address2    String?
+  address3    String?
+  city        String?
+  state       String?
+  postcode    String?
+  country     String?
+  phone       String?
+  email       String?
+  notes       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([companyId])
+  @@map("sites")
+}
+
+model Opportunity {
+  id          String    @id @default(cuid())
+  tenantId    String
+  companyId   String?
+  contactId   String?
+  ownerId     String
+  title       String
+  value       Float     @default(0)
+  currency    String    @default("GBP")
+  stage       String    @default("lead") // lead, qualified, proposal, negotiation, won, lost
+  probability Int       @default(0) // 0-100
+  source      String?
+  notes       String?
+  expectedClose DateTime?
+  closedAt    DateTime?
+  lostReason  String?
+  customData  Json      @default("{}")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company Company? @relation(fields: [companyId], references: [id])
+  contact Contact? @relation("OpportunityContact", fields: [contactId], references: [id])
+  owner   User     @relation("OpportunityOwner", fields: [ownerId], references: [id])
+  quotes  Quote[]
+
+  @@index([tenantId])
+  @@map("opportunities")
+}
+
+// ============================================================
+// SERVICE DESK - TICKETS
+// ============================================================
+
+model TicketQueue {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tickets Ticket[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("ticket_queues")
+}
+
+model TicketStatus {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String   // e.g. "New", "Open", "Pending", "Resolved", "Closed"
+  slug        String   // e.g. "new", "open", "pending", "resolved", "closed"
+  color       String   @default("#94a3b8") // hex color for badges
+  isClosed    Boolean  @default(false) // treat as closed (hidden from default views)
+  isDefault   Boolean  @default(false) // default status for new tickets
+  isSystem    Boolean  @default(false) // cannot be deleted (new, closed)
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("ticket_statuses")
+}
+
+model Ticket {
+  id            String    @id @default(cuid())
+  tenantId      String
+  ticketNumber  Int // Auto-incrementing per tenant
+  companyId     String?
+  contactId     String?
+  assignedToId  String?
+  createdById   String
+  queueId       String?
+  contractId    String?
+  title         String
+  description   String
+  status        String    @default("new") // new, open, pending, waiting, resolved, closed
+  priority      String    @default("medium") // critical, high, medium, low
+  type          String    @default("incident") // incident, service_request, problem, change
+  category      String?
+  subcategory   String?
+  source        String    @default("portal") // portal, email, phone, chat, api
+  impact        String?   // high, medium, low
+  urgency       String?   // high, medium, low
+  dueDate       DateTime?
+  resolvedAt    DateTime?
+  closedAt      DateTime?
+  firstResponse DateTime?
+  slaBreached   Boolean   @default(false)
+  timeSpent     Int       @default(0) // minutes
+  customData    Json      @default("{}")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant     Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company    Company?     @relation(fields: [companyId], references: [id])
+  contact    Contact?     @relation(fields: [contactId], references: [id])
+  assignedTo User?        @relation("AssignedAgent", fields: [assignedToId], references: [id])
+  createdBy  User         @relation("TicketCreator", fields: [createdById], references: [id])
+  queue      TicketQueue? @relation(fields: [queueId], references: [id])
+  contract   Contract?    @relation(fields: [contractId], references: [id])
+  notes      TicketNote[]
+  timeEntries TimeEntry[]
+
+  @@unique([tenantId, ticketNumber])
+  @@index([tenantId])
+  @@index([status])
+  @@map("tickets")
+}
+
+model TicketNote {
+  id         String   @id @default(cuid())
+  ticketId   String
+  userId     String
+  content    String
+  isInternal Boolean  @default(false) // Internal notes vs customer-visible
+  isSystem   Boolean  @default(false) // System-generated notes (status changes, time entries)
+  isEmail    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("ticket_notes")
+}
+
+model SLAProfile {
+  id                  String   @id @default(cuid())
+  tenantId            String
+  name                String
+  description         String?
+  responseTimeCritical Int     @default(60)   // minutes
+  responseTimeHigh    Int      @default(240)
+  responseTimeMedium  Int      @default(480)
+  responseTimeLow     Int      @default(1440)
+  resolveTimeCritical Int      @default(240)
+  resolveTimeHigh     Int      @default(480)
+  resolveTimeMedium   Int      @default(1440)
+  resolveTimeLow      Int      @default(2880)
+  businessHoursOnly   Boolean  @default(true)
+  isDefault           Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  companies Company[]
+
+  @@index([tenantId])
+  @@map("sla_profiles")
+}
+
+// ============================================================
+// CONTRACTS
+// ============================================================
+
+model Contract {
+  id              String    @id @default(cuid())
+  tenantId        String
+  companyId       String
+  contractNumber  String
+  name            String
+  // Types: time_and_materials, fixed_price, prepay_hours, managed_service
+  type            String    @default("time_and_materials")
+  status          String    @default("draft") // draft, active, suspended, expired, cancelled
+  startDate       DateTime
+  endDate         DateTime?
+  autoRenew       Boolean   @default(false)
+  renewalPeriod   Int?      // months
+  billingCycle    String    @default("monthly") // monthly, quarterly, annually
+  currency        String    @default("GBP")
+  description     String?
+  terms           String?
+  notes           String?
+
+  // === Fixed Price fields ===
+  fixedPrice        Float?    // Total contract value
+  billingMode       String?   // one_off, instalment
+  instalmentCount   Int?      // Number of instalments
+  instalmentAmount  Float?    // Per-instalment amount
+
+  // === Pre-Pay Hours fields ===
+  totalHours      Float?    // Block of purchased hours
+  hoursUsed       Float     @default(0)
+  overhourRate    Float?    // Rate per hour when block is exceeded (null = cannot exceed)
+  alertThreshold  Float?    // Percentage (e.g. 80) to alert when block is running low
+
+  // === Managed Service fields ===
+  monthlyFee      Float?    // Recurring monthly fee
+  
+  // === Common / legacy ===
+  value           Float     @default(0) // General value field
+  customData      Json      @default("{}")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company     Company             @relation(fields: [companyId], references: [id])
+  items       ContractItem[]
+  tickets     Ticket[]
+  invoices    Invoice[]
+  exclusions  ContractExclusion[]
+  instalments ContractInstalment[]
+  timeEntries TimeEntry[]
+
+  @@index([tenantId])
+  @@map("contracts")
+}
+
+// Billing rates EXCLUDED from a contract (charged T&M instead)
+model ContractExclusion {
+  id            String  @id @default(cuid())
+  contractId    String
+  billingRateId String
+
+  contract    Contract    @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  billingRate BillingRate @relation(fields: [billingRateId], references: [id], onDelete: Cascade)
+
+  @@unique([contractId, billingRateId])
+  @@map("contract_exclusions")
+}
+
+// Instalment schedule for fixed-price contracts
+model ContractInstalment {
+  id                  String    @id @default(cuid())
+  contractId          String
+  number              Int       // Instalment 1, 2, 3...
+  description         String?   // Milestone name/description
+  amount              Float
+  dueDate             DateTime
+  status              String    @default("pending") // pending, invoiced, paid
+  invoiceId           String?   // Link to invoice when billed
+  paidAt              DateTime?
+  projectMilestoneId  String?   // Link to project milestone/phase
+  createdAt           DateTime  @default(now())
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@map("contract_instalments")
+}
+
+model ContractItem {
+  id          String  @id @default(cuid())
+  contractId  String
+  productId   String?
+  description String
+  quantity    Float   @default(1)
+  unitPrice   Float   @default(0)
+  // What this line costs us per unit (e.g. wholesale M365 seat price).
+  // Defaults from Product.cost when a product is chosen.
+  cost        Float   @default(0)
+  taxRate     Float   @default(20)
+  total       Float   @default(0)
+  recurring   Boolean @default(true)
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  product  Product? @relation(fields: [productId], references: [id])
+
+  @@map("contract_items")
+}
+
+// ============================================================
+// QUOTING
+// ============================================================
+
+model Quote {
+  id            String    @id @default(cuid())
+  tenantId      String
+  companyId     String?
+  contactId     String?
+  opportunityId String?
+  createdById   String
+  quoteNumber   String
+  title         String
+  status        String    @default("draft") // draft, sent, viewed, accepted, declined, expired
+  subtotal      Float     @default(0)
+  taxTotal      Float     @default(0)
+  discount      Float     @default(0)
+  discountType  String    @default("percentage") // percentage, fixed
+  total         Float     @default(0)
+  currency      String    @default("GBP")
+  validUntil    DateTime?
+  sentAt        DateTime?
+  viewedAt      DateTime?
+  acceptedAt    DateTime?
+  declinedAt    DateTime?
+  notes         String?
+  terms         String?
+  internalNotes String?
+  customData    Json      @default("{}")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company   Company?    @relation(fields: [companyId], references: [id])
+  contact   Contact?    @relation(fields: [contactId], references: [id])
+  opportunity Opportunity? @relation(fields: [opportunityId], references: [id])
+  accessToken   String?   @unique // UUID for portal access
+  securityMode  String    @default("none") // none, email, pin
+  pinHash       String?
+  rejectedAt    DateTime?
+  rejectedReason String?
+
+  createdBy User        @relation(fields: [createdById], references: [id])
+  items     QuoteItem[]
+  invoice   Invoice?    @relation("QuoteInvoice")
+  signature QuoteSignature?
+  comments  QuoteComment[]
+
+  @@index([tenantId])
+  @@map("quotes")
+}
+
+model QuoteItem {
+  id          String  @id @default(cuid())
+  quoteId     String
+  productId   String?
+  description String
+  quantity    Float   @default(1)
+  unitPrice   Float   @default(0)
+  taxRate     Float   @default(20)
+  discount    Float   @default(0)
+  total       Float   @default(0)
+  sortOrder   Int     @default(0)
+  isOptional  Boolean @default(false)
+  section     String? // Group items under sections
+  billingType String  @default("one_off") // one_off, recurring
+  billingPeriod String? // monthly, quarterly, annual
+  costPrice   Float?  // For profitability tracking
+
+  quote   Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id])
+
+  @@map("quote_items")
+}
+
+// ============================================================
+// INVOICING & PAYMENTS
+// ============================================================
+
+model Invoice {
+  id            String    @id @default(cuid())
+  tenantId      String
+  companyId     String?
+  contactId     String?
+  contractId    String?
+  quoteId       String?   @unique
+  createdById   String
+  invoiceNumber String
+  title         String?
+  status        String    @default("draft") // draft, sent, viewed, partial, paid, overdue, void, refunded
+  subtotal      Float     @default(0)
+  taxTotal      Float     @default(0)
+  discount      Float     @default(0)
+  total         Float     @default(0)
+  amountPaid    Float     @default(0)
+  amountDue     Float     @default(0)
+  currency      String    @default("GBP")
+  issueDate     DateTime  @default(now())
+  dueDate       DateTime
+  sentAt        DateTime?
+  paidAt        DateTime?
+  notes         String?
+  terms         String?
+  paymentTerms  String    @default("net_30") // due_on_receipt, net_15, net_30, net_60
+  isRecurring   Boolean   @default(false)
+  recurringFreq String?   // monthly, quarterly, annually
+  nextRecurring DateTime?
+  customData    Json      @default("{}")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company   Company?      @relation(fields: [companyId], references: [id])
+  contact   Contact?      @relation(fields: [contactId], references: [id])
+  contract  Contract?     @relation(fields: [contractId], references: [id])
+  quote     Quote?        @relation("QuoteInvoice", fields: [quoteId], references: [id])
+  createdBy User          @relation(fields: [createdById], references: [id])
+  items     InvoiceItem[]
+  payments  Payment[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  productId   String?
+  description String
+  quantity    Float   @default(1)
+  unitPrice   Float   @default(0)
+  taxRate     Float   @default(20)
+  discount    Float   @default(0)
+  total       Float   @default(0)
+  sortOrder   Int     @default(0)
+
+  invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id])
+
+  @@map("invoice_items")
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  tenantId    String
+  invoiceId   String
+  amount      Float
+  currency    String   @default("GBP")
+  method      String   @default("bank_transfer") // bank_transfer, card, cash, cheque, paypal, stripe, direct_debit
+  reference   String?
+  notes       String?
+  paidAt      DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@index([tenantId])
+  @@map("payments")
+}
+
+// ============================================================
+// PROJECT MANAGEMENT
+// ============================================================
+
+model Project {
+  id            String    @id @default(cuid())
+  tenantId      String
+  companyId     String?
+  managerId     String
+  name          String
+  description   String?
+  status        String    @default("planning") // planning, active, on_hold, completed, cancelled
+  priority      String    @default("medium")
+  startDate     DateTime?
+  endDate       DateTime?
+  deadline      DateTime?
+  budgetHours   Float?
+  budgetAmount  Float?
+  currency      String    @default("GBP")
+  progress      Int       @default(0) // 0-100
+  billingMethod String    @default("fixed") // fixed, time_materials, retainer
+  notes         String?
+  customData    Json      @default("{}")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company     Company?        @relation(fields: [companyId], references: [id])
+  manager     User            @relation("ProjectManager", fields: [managerId], references: [id])
+  tasks       Task[]
+  members     ProjectMember[]
+  milestones  Milestone[]
+  timeEntries TimeEntry[]
+
+  @@index([tenantId])
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  role      String   @default("member") // lead, member, viewer
+  joinedAt  DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([projectId, userId])
+  @@map("project_members")
+}
+
+model Milestone {
+  id          String    @id @default(cuid())
+  projectId   String
+  name        String
+  description String?
+  dueDate     DateTime?
+  completedAt DateTime?
+  sortOrder   Int       @default(0)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   Task[]
+
+  @@map("milestones")
+}
+
+model Task {
+  id           String    @id @default(cuid())
+  tenantId     String
+  projectId    String?
+  milestoneId  String?
+  assigneeId   String?
+  createdById  String
+  parentTaskId String?
+  title        String
+  description  String?
+  status       String    @default("todo") // todo, in_progress, review, done, cancelled
+  priority     String    @default("medium")
+  estimatedHrs Float?
+  actualHrs    Float     @default(0)
+  dueDate      DateTime?
+  completedAt  DateTime?
+  sortOrder    Int       @default(0)
+  customData   Json      @default("{}")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  project    Project?   @relation(fields: [projectId], references: [id])
+  milestone  Milestone? @relation(fields: [milestoneId], references: [id])
+  assignee   User?      @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdBy  User       @relation("TaskCreator", fields: [createdById], references: [id])
+  parentTask Task?      @relation("Subtasks", fields: [parentTaskId], references: [id])
+  subtasks   Task[]     @relation("Subtasks")
+  timeEntries TimeEntry[]
+
+  @@index([tenantId])
+  @@map("tasks")
+}
+
+// ============================================================
+// BILLING RATES
+// ============================================================
+
+model BillingRate {
+  id              String   @id @default(cuid())
+  tenantId        String
+  name            String   // e.g. "Standard", "Premium", "Emergency", "Out of Hours"
+  code            String?  // e.g. "STD", "PREM", "OOH"
+  rate            Float    // £ per hour
+  costRate        Float    @default(0) // internal cost rate
+  minimumMinutes  Int      @default(15) // minimum billable time
+  roundingMinutes Int      @default(15) // round up to nearest X minutes
+  oohMultiplier   Float    @default(1.0) // e.g. 1.5 for time-and-a-half
+  isDefault       Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  timeEntries TimeEntry[]
+  contractExclusions ContractExclusion[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("billing_rates")
+}
+
+model TimeEntry {
+  id            String    @id @default(cuid())
+  tenantId      String
+  userId        String
+  ticketId      String?
+  taskId        String?
+  projectId     String?
+  billingRateId String?
+  contractId    String?   // Which contract this was charged against
+  // How this entry is charged: contract (included in contract), tam (time & materials), excluded (rate excluded from contract, billed T&M)
+  chargeType    String    @default("tam") // tam, contract, excluded
+  description   String?
+  date          DateTime  @default(now())
+  hours         Float
+  minutes       Int       @default(0)
+  billable      Boolean   @default(true)
+  billed        Boolean   @default(false)
+  isOOH         Boolean   @default(false) // out of hours
+  rate          Float?    // actual rate charged (after multiplier)
+  billedAmount  Float?    // calculated: roundedMinutes / 60 * rate
+  internalCost  Float?
+  startTime     DateTime?
+  endTime       DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id])
+  ticket      Ticket?      @relation(fields: [ticketId], references: [id])
+  task        Task?        @relation(fields: [taskId], references: [id])
+  project     Project?     @relation(fields: [projectId], references: [id])
+  billingRate BillingRate? @relation(fields: [billingRateId], references: [id])
+  contract    Contract?    @relation(fields: [contractId], references: [id])
+
+  @@index([tenantId])
+  @@index([userId])
+  @@map("time_entries")
+}
+
+// ============================================================
+// PRODUCTS / SERVICES CATALOG
+// ============================================================
+
+model Product {
+  id            String   @id @default(cuid())
+  tenantId      String
+  name          String
+  sku           String?
+  description   String?
+  category      String?
+  type          String   @default("service") // service, product, license, subscription
+  unitPrice     Float    @default(0)
+  cost          Float    @default(0) // internal cost
+  taxRate       Float    @default(20)
+  unit          String   @default("each") // each, hour, month, year, user, device
+  isRecurring   Boolean  @default(false)
+  recurringFreq String?  // monthly, quarterly, annually
+  billingType   String   @default("one_off") // one_off, recurring
+  billingPeriod String?  // monthly, quarterly, semi_annual, annual
+  isService     Boolean  @default(false)
+  isBundle      Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  customData    Json     @default("{}")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contractItems ContractItem[]
+  quoteItems    QuoteItem[]
+  invoiceItems  InvoiceItem[]
+
+  @@index([tenantId])
+  @@map("products")
+}
+
+// ============================================================
+// REPORTING & DASHBOARDS
+// ============================================================
+
+model Dashboard {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  layout      Json     @default("[]") // Widget positions and sizes
+  isDefault   Boolean  @default(false)
+  visibility  String   @default("internal") // internal, customer, public
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant  Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  widgets DashboardWidget[]
+
+  @@index([tenantId])
+  @@map("dashboards")
+}
+
+model DashboardWidget {
+  id          String @id @default(cuid())
+  dashboardId String
+  type        String // bar_chart, line_chart, pie_chart, donut, gauge, grid, kpi, counter
+  title       String
+  config      Json   @default("{}") // Data source, filters, colors etc.
+  position    Json   @default("{}") // x, y, width, height
+  sortOrder   Int    @default(0)
+
+  dashboard Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+
+  @@map("dashboard_widgets")
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  type        String   // tickets, revenue, time, projects, sla, custom
+  config      Json     @default("{}") // Filters, grouping, date range etc.
+  schedule    String?  // cron expression for scheduled reports
+  recipients  Json     @default("[]") // email addresses
+  lastRunAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("reports")
+}
+
+// ============================================================
+// WEBHOOKS & INTEGRATIONS
+// ============================================================
+
+model Webhook {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  url         String
+  secret      String?
+  events      Json     @default("[]") // ticket.created, invoice.paid, etc.
+  isActive    Boolean  @default(true)
+  headers     Json     @default("{}")
+  retryCount  Int      @default(3)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  logs   WebhookLog[]
+
+  @@index([tenantId])
+  @@map("webhooks")
+}
+
+model WebhookLog {
+  id         String   @id @default(cuid())
+  tenantId   String
+  webhookId  String
+  event      String
+  payload    Json
+  response   String?
+  statusCode Int?
+  success    Boolean  @default(false)
+  attempts   Int      @default(1)
+  createdAt  DateTime @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  webhook Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("webhook_logs")
+}
+
+model Integration {
+  id          String   @id @default(cuid())
+  tenantId    String
+  type        String   // halo, autotask, xero, quickbooks, stripe, mailgun
+  name        String
+  config      Json     @default("{}") // API keys, URLs, etc. (encrypted at app level)
+  isActive    Boolean  @default(true)
+  lastSyncAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("integrations")
+}
+
+// ============================================================
+// SYSTEM - TAGS, CUSTOM FIELDS, AUDIT, NOTIFICATIONS
+// ============================================================
+
+model Tag {
+  id       String @id @default(cuid())
+  tenantId String
+  name     String
+  color    String @default("#6366f1")
+
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignments TagAssignment[]
+
+  @@unique([tenantId, name])
+  @@map("tags")
+}
+
+model TagAssignment {
+  id         String @id @default(cuid())
+  tagId      String
+  entityType String // contact, company, ticket, opportunity, project, etc.
+  entityId   String
+
+  tag Tag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([tagId, entityType, entityId])
+  @@index([entityType, entityId])
+  @@map("tag_assignments")
+}
+
+model CustomField {
+  id         String  @id @default(cuid())
+  tenantId   String
+  entityType String  // contact, company, ticket, etc.
+  name       String
+  fieldKey   String
+  fieldType  String  // text, number, date, select, multiselect, checkbox, url, email
+  options    Json    @default("[]") // For select/multiselect
+  required   Boolean @default(false)
+  sortOrder  Int     @default(0)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, entityType, fieldKey])
+  @@map("custom_fields")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  tenantId   String
+  userId     String?
+  action     String   // created, updated, deleted, login, etc.
+  entityType String
+  entityId   String
+  changes    Json     @default("{}")
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info") // info, warning, success, error
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("notifications")
+}
+
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  slug      String
+  subject   String
+  body      String
+  variables Json     @default("[]") // Available merge fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, slug])
+  @@map("email_templates")
+}
+
+// ============================================================
+// EXTENSIONS - Field Labels, API Keys, CRM Notes, Documents
+// ============================================================
+
+model FieldLabel {
+  id         String @id @default(cuid())
+  tenantId   String
+  entityType String   // "company", "contact", "site", etc.
+  fieldName  String   // "address1", "phone", "email", etc.
+  label      String   // Custom label text
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, entityType, fieldName])
+  @@index([tenantId])
+  @@map("field_labels")
+}
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  tenantId    String
+  name        String
+  keyHash     String
+  keyPrefix   String    // first 8 chars for display
+  permissions Json      @default("[]")
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([keyHash])
+  @@map("api_keys")
+}
+
+model CrmNote {
+  id         String   @id @default(cuid())
+  tenantId   String
+  entityType String   // "company", "contact", "opportunity"
+  entityId   String
+  userId     String
+  content    String
+  type       String   @default("note") // note, call, email, meeting, task
+  isPinned   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([entityType, entityId])
+  @@map("crm_notes")
+}
+
+model Document {
+  id         String   @id @default(cuid())
+  tenantId   String
+  entityType String
+  entityId   String
+  userId     String
+  fileName   String
+  fileUrl    String
+  fileSize   Int      @default(0)
+  mimeType   String?
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([entityType, entityId])
+  @@map("documents")
+}
+
+// ============================================================
+// QUOTING EXTENSIONS - Signatures, Comments, Templates, Email Logs
+// ============================================================
+
+model QuoteSignature {
+  id            String   @id @default(cuid())
+  quoteId       String   @unique
+  signatureData String   // Base64 PNG
+  signerName    String
+  signerEmail   String?
+  signerTitle   String?
+  ipAddress     String?
+  userAgent     String?
+  signedAt      DateTime @default(now())
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@map("quote_signatures")
+}
+
+model QuoteComment {
+  id           String   @id @default(cuid())
+  quoteId      String
+  authorName   String
+  authorEmail  String?
+  content      String
+  isFromCustomer Boolean @default(false)
+  isInternal   Boolean  @default(false)
+  parentId     String?
+  createdAt    DateTime @default(now())
+
+  quote  Quote         @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  parent QuoteComment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies QuoteComment[] @relation("CommentReplies")
+
+  @@index([quoteId])
+  @@map("quote_comments")
+}
+
+model QuoteTemplate {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  items       Json     @default("[]") // Template line items
+  notes       String?
+  terms       String?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("quote_templates")
+}
+
+model EmailLog {
+  id           String   @id @default(cuid())
+  tenantId     String
+  quoteId      String?
+  recipient    String
+  subject      String
+  status       String   @default("sent") // sent, delivered, failed, bounced
+  errorMessage String?
+  sentAt       DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([quoteId])
+  @@map("email_logs")
+}
+
+model AccountingInvoice {
+  id                   String    @id @default(cuid())
+  tenantId             String
+  quoteId              String?
+  invoiceId            String?
+  platform             String    // xero, quickbooks
+  externalInvoiceId    String?
+  externalInvoiceNumber String?
+  externalUrl          String?
+  status               String    @default("pending") // pending, synced, error
+  errorMessage         String?
+  totalAmount          Float?
+  currency             String?
+  syncedAt             DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([quoteId])
+  @@map("accounting_invoices")
+}
+
+// ============================================================
+// ASSETS / CONFIGURATION ITEMS
+// ============================================================
+
+model Asset {
+  id            String    @id @default(cuid())
+  tenantId      String
+  companyId     String?
+  siteId        String?
+  contactId     String?
+  name          String
+  assetTag      String?
+  serialNumber  String?
+  type          String    @default("device") // device, server, network, software, peripheral, other
+  manufacturer  String?
+  model         String?
+  status        String    @default("active") // active, inactive, retired, in_repair, lost
+  purchaseDate  DateTime?
+  warrantyExpiry DateTime?
+  notes         String?
+  rmmSource     String?   // ninja, datto, manual
+  rmmExternalId String?   // ID in the RMM system
+  customData    Json      @default("{}")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company Company? @relation(fields: [companyId], references: [id])
+
+  @@index([tenantId])
+  @@index([companyId])
+  @@index([rmmSource, rmmExternalId])
+  @@map("assets")
+}
+
+/// One-time sign-in links for the client portal.
+///
+/// Only a hash is stored: a leaked database row cannot be replayed as a login.
+/// Rows are single-use and short-lived, and old ones are pruned when a contact
+/// requests a new link.
+model PortalLoginToken {
+  id        String    @id @default(cuid())
+  contactId String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  /// Where the request came from, for an audit trail on a public endpoint.
+  requestIp String?
+
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([contactId])
+  @@index([expiresAt])
+  @@map("portal_login_tokens")
+}
+
+// ============================================================
+// BILLING — hosted service only
+// ============================================================
+// Nothing here is used when DEPLOYMENT_MODE=self_hosted. A self-hoster gets
+// every feature with no subscription row and no limits, and should never see
+// billing UI at all.
+
+/// The hosted plan a tenant is on. Flat monthly per MSP, tiered by size —
+/// deliberately not per seat, so growing a team never costs more.
+model Plan {
+  id          String  @id @default(cuid())
+  /// Stable key used in code: starter, growth, scale.
+  key         String  @unique
+  name        String
+  description String?
+  /// Pence per month, to avoid floating point on money.
+  priceMonthly Int
+  priceYearly  Int?
+  currency     String @default("GBP")
+
+  /// Soft limits. Null means unlimited. Enforced only when hosted.
+  maxUsers     Int?
+  maxCompanies Int?
+  maxTickets   Int?
+
+  /// Identifier at the payment provider (Paddle price id).
+  providerPriceId       String?
+  providerPriceIdYearly String?
+
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+/// A tenant's subscription to the hosted service.
+///
+/// The payment provider is the source of truth for status; this is a local
+/// mirror kept current by webhook so that authorisation never depends on an
+/// outbound API call succeeding.
+model Subscription {
+  id       String @id @default(cuid())
+  tenantId String @unique
+  planId   String
+
+  /// trialing, active, past_due, paused, cancelled
+  status String @default("trialing")
+
+  /// Paddle (merchant of record — it handles VAT and sales tax liability).
+  provider           String  @default("paddle")
+  providerCustomerId String?
+  providerSubscriptionId String? @unique
+
+  trialEndsAt        DateTime?
+  currentPeriodEnd   DateTime?
+  cancelAt           DateTime?
+  cancelledAt        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan   Plan   @relation(fields: [planId], references: [id])
+
+  @@index([status])
+  @@map("subscriptions")
+}
+
+/// Every billing webhook received, stored before it is acted on.
+///
+/// Providers retry, so events must be idempotent — providerEventId is unique
+/// and a replay is recognised rather than double-applied. It is also the only
+/// record of what the provider actually said when a charge is disputed.
+model BillingEvent {
+  id              String   @id @default(cuid())
+  provider        String
+  providerEventId String   @unique
+  eventType       String
+  tenantId        String?
+  payload         Json
+  processedAt     DateTime?
+  error           String?
+  createdAt       DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([eventType])
+  @@map("billing_events")
+}

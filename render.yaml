@@ -1,0 +1,34 @@
+# Render alternative to railway.json — same image, same health check.
+services:
+  - type: web
+    name: vibepsa
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: vibepsa-db
+          property: connectionString
+      - key: DIRECT_DATABASE_URL
+        fromDatabase:
+          name: vibepsa-db
+          property: connectionString
+      - key: AI_ENCRYPTION_KEY
+        generateValue: true
+      - key: DEPLOYMENT_MODE
+        value: hosted
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+
+databases:
+  - name: vibepsa-db
+    plan: basic-256mb
+    postgresMajorVersion: '16'
