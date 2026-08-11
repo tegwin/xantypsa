@@ -55,7 +55,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+# A default only. Railway, Render and Fly all inject their own PORT, and the
+# Next standalone server reads it — do not assume 3000 anywhere at runtime.
 ENV PORT=3000
+# Bind all interfaces, or the platform's proxy cannot reach the container.
 ENV HOSTNAME=0.0.0.0
 
 # Never run the server as root.
@@ -86,8 +89,13 @@ USER nextjs
 EXPOSE 3000
 
 # The platform health-checks /api/health; this is the container's own view.
+#
+# The port is read at runtime, never hard-coded: Railway (and Render, and Fly)
+# assign a port and inject PORT, so a probe pinned to 3000 can never succeed
+# there. The container then reports unhealthy for ever and the deploy is failed
+# at the networking step, even though the app is serving perfectly well.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+  CMD node -e "const p=process.env.PORT||3000;fetch('http://127.0.0.1:'+p+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["node", "server.js"]

@@ -97,6 +97,9 @@ docker compose exec db pg_dump -U vibepsa vibepsa > backup.sql
 
 ```bash
 DATABASE_URL=${{Postgres.DATABASE_URL}}
+# Same value. Railway gives you one URL, but prisma/schema.prisma declares a
+# directUrl, and Prisma refuses to start if a referenced variable is absent —
+# so this must be set even though it points at the same database.
 DIRECT_DATABASE_URL=${{Postgres.DATABASE_URL}}
 AI_ENCRYPTION_KEY=<openssl rand -hex 32>
 NEXT_PUBLIC_APP_URL=https://app.vibepsa.net
@@ -116,6 +119,13 @@ point of moving.
 
 **Health checks** hit `/api/health`, which reports 503 when Postgres is
 unreachable, so a broken deploy is caught rather than served.
+
+**Do not hard-code the port anywhere.** Railway assigns one and injects `PORT`;
+the Next standalone server reads it, and so does the container's own health
+probe. A probe pinned to 3000 reports unhealthy for ever while the app serves
+perfectly well, and the deploy fails at the networking step with
+*"Deployment failed during the network process"* — which reads like a platform
+fault rather than a health check looking at the wrong door.
 
 ---
 
@@ -173,6 +183,15 @@ environment that is not production.
 ---
 
 ## Troubleshooting
+
+**"Deployment failed during the network process" (Railway)**
+The build succeeded and the app never became reachable. Either it is not
+listening on the injected `PORT`, or the health check is. Check the deploy logs
+for `starting on port` and compare it with the `PORT` variable.
+
+**`Environment variable not found: DIRECT_DATABASE_URL`**
+Set it to the same value as `DATABASE_URL`. Prisma validates every variable the
+schema mentions, whether or not the connection needs a second one.
 
 **Container restart-loops on start**
 Read `docker compose logs app`. Nearly always `DATABASE_URL` unreachable or the
