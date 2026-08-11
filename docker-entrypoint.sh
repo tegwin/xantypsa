@@ -8,6 +8,35 @@
 
 set -e
 
+# ---- Pre-flight ------------------------------------------------------
+# Fail with a sentence someone can act on, rather than letting Prisma or the
+# Next server produce a stack trace that hides which variable is missing.
+
+if [ -z "$DATABASE_URL" ]; then
+  echo "[vibepsa] DATABASE_URL is not set — cannot start." >&2
+  echo "[vibepsa] On Railway: add a Postgres service and set" >&2
+  echo "[vibepsa]   DATABASE_URL=\${{Postgres.DATABASE_URL}}" >&2
+  exit 1
+fi
+
+# prisma/schema.prisma declares a directUrl, and Prisma refuses to start when a
+# variable it references is absent — even though most platforms hand out only
+# one connection string. Default it rather than making everyone discover this.
+if [ -z "$DIRECT_DATABASE_URL" ]; then
+  echo "[vibepsa] DIRECT_DATABASE_URL not set — using DATABASE_URL."
+  export DIRECT_DATABASE_URL="$DATABASE_URL"
+fi
+
+if [ -z "$AI_ENCRYPTION_KEY" ]; then
+  echo "[vibepsa] AI_ENCRYPTION_KEY is not set — cannot start." >&2
+  echo "[vibepsa] It signs session cookies and encrypts stored secrets." >&2
+  echo "[vibepsa] Generate one with: openssl rand -hex 32" >&2
+  echo "[vibepsa] Refusing to start rather than serving an app nobody can sign in to." >&2
+  exit 1
+fi
+
+echo "[vibepsa] port=${PORT:-3000}  mode=${DEPLOYMENT_MODE:-self_hosted}  seed=${RUN_SEED:-false}"
+
 if [ -n "$DATABASE_URL" ]; then
   echo "[vibepsa] syncing database schema…"
   # Invoked directly rather than through npx: the standalone runtime image has
@@ -30,9 +59,6 @@ if [ -n "$DATABASE_URL" ]; then
       echo "[vibepsa] The app will start, but there may be no account to sign in with." >&2
     fi
   fi
-else
-  echo "[vibepsa] DATABASE_URL is not set — cannot start" >&2
-  exit 1
 fi
 
 echo "[vibepsa] starting on port ${PORT:-3000}"

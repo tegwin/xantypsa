@@ -97,22 +97,24 @@ docker compose exec db pg_dump -U vibepsa vibepsa > backup.sql
 
 ```bash
 DATABASE_URL=${{Postgres.DATABASE_URL}}
-# Same value. Railway gives you one URL, but prisma/schema.prisma declares a
-# directUrl, and Prisma refuses to start if a referenced variable is absent —
-# so this must be set even though it points at the same database.
-DIRECT_DATABASE_URL=${{Postgres.DATABASE_URL}}
 AI_ENCRYPTION_KEY=<openssl rand -hex 32>
 NEXT_PUBLIC_APP_URL=https://app.vibepsa.net
 DEPLOYMENT_MODE=hosted
+
+# First deploy only, so there is an account to sign in with:
 RUN_SEED=true
 SEED_ADMIN_EMAIL=you@yourcompany.com
+SEED_ADMIN_PASSWORD=<something long>
 ```
-
-Seven variables, three of which you already know. Once you have signed in and
-changed the password, set `RUN_SEED=false` and redeploy.
 
 `${{Postgres.DATABASE_URL}}` is Railway's reference syntax — it resolves to the
 database in the same project, over the private network.
+
+`DIRECT_DATABASE_URL` defaults to `DATABASE_URL` when unset, so Railway's single
+connection string is enough. Set it explicitly only when the two genuinely
+differ, such as a pooled connection alongside a direct one.
+
+Once you have signed in, set `RUN_SEED=false` and redeploy.
 
 No pgbouncer parameters. One persistent process holds one pool, which is the
 point of moving.
@@ -188,10 +190,6 @@ environment that is not production.
 The build succeeded and the app never became reachable. Either it is not
 listening on the injected `PORT`, or the health check is. Check the deploy logs
 for `starting on port` and compare it with the `PORT` variable.
-
-**`Environment variable not found: DIRECT_DATABASE_URL`**
-Set it to the same value as `DATABASE_URL`. Prisma validates every variable the
-schema mentions, whether or not the connection needs a second one.
 
 **Container restart-loops on start**
 Read `docker compose logs app`. Nearly always `DATABASE_URL` unreachable or the
