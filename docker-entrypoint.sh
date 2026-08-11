@@ -23,7 +23,12 @@ if [ -n "$DATABASE_URL" ]; then
 
   if [ "$RUN_SEED" = "true" ]; then
     echo "[vibepsa] seeding…"
-    node prisma/seed.js || echo "[vibepsa] seed skipped (already populated)"
+    # Seeding is idempotent, so a failure here is a real fault — not "already
+    # done". Say so loudly rather than starting a VibePSA nobody can sign in to.
+    if ! node prisma/seed.js; then
+      echo "[vibepsa] SEED FAILED — see the error above." >&2
+      echo "[vibepsa] The app will start, but there may be no account to sign in with." >&2
+    fi
   fi
 else
   echo "[vibepsa] DATABASE_URL is not set — cannot start" >&2

@@ -9,7 +9,11 @@
 // Kept at this path so the existing import in src/middleware.ts is unchanged.
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { decodeSession, SESSION_COOKIE } from '@/lib/auth/local';
+// Deliberately NOT lib/auth/local: that pulls in node:crypto, Buffer and
+// Prisma, none of which exist on the Edge runtime this file executes in.
+import { verifySessionCookie } from '@/lib/auth/edge';
+
+const SESSION_COOKIE = 'vibepsa_session';
 
 /**
  * Routes reachable without a session.
@@ -40,9 +44,11 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const response = NextResponse.next({ request });
 
+  const secret = process.env.AI_ENCRYPTION_KEY;
+
   if (isPublic(pathname)) {
     // Signed-in users have no business on the sign-in screens.
-    const session = decodeSession(request.cookies.get(SESSION_COOKIE)?.value);
+    const session = await verifySessionCookie(request.cookies.get(SESSION_COOKIE)?.value, secret);
     if (session?.mfa && (pathname === '/login' || pathname === '/register')) {
       const url = request.nextUrl.clone();
       url.pathname = '/';
@@ -52,7 +58,7 @@ export async function updateSession(request: NextRequest) {
     return response;
   }
 
-  const session = decodeSession(request.cookies.get(SESSION_COOKIE)?.value);
+  const session = await verifySessionCookie(request.cookies.get(SESSION_COOKIE)?.value, secret);
 
   if (!session) {
     // APIs get a 401 they can handle; pages get sent to sign in.
