@@ -95,8 +95,13 @@ docker compose exec db pg_dump -U vibepsa vibepsa > backup.sql
 3. **Set the environment variables** below.
 4. **Generate a domain** under Settings → Networking, or attach your own.
 
+Set these on the **app** service, not the database service. For `DATABASE_URL`
+use **Variables → New Variable → Add Reference** and pick `DATABASE_URL` —
+Railway inserts the correct service name. Typing `${{Postgres.DATABASE_URL}}`
+by hand only works if your database service is literally called `Postgres`.
+
 ```bash
-DATABASE_URL=${{Postgres.DATABASE_URL}}
+DATABASE_URL=${{<your-db-service>.DATABASE_URL}}
 AI_ENCRYPTION_KEY=<openssl rand -hex 32>
 NEXT_PUBLIC_APP_URL=https://app.vibepsa.net
 DEPLOYMENT_MODE=hosted

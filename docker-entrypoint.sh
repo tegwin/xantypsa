@@ -14,8 +14,13 @@ set -e
 
 if [ -z "$DATABASE_URL" ]; then
   echo "[vibepsa] DATABASE_URL is not set — cannot start." >&2
-  echo "[vibepsa] On Railway: add a Postgres service and set" >&2
-  echo "[vibepsa]   DATABASE_URL=\${{Postgres.DATABASE_URL}}" >&2
+  echo "[vibepsa]" >&2
+  echo "[vibepsa] Set it on THIS service, not on the database service." >&2
+  echo "[vibepsa] On Railway the value references your Postgres service by its" >&2
+  echo "[vibepsa] own name, so if that service is called vibepsa-db it reads:" >&2
+  echo "[vibepsa]   DATABASE_URL=\${{vibepsa-db.DATABASE_URL}}" >&2
+  echo "[vibepsa] Easiest: Variables -> New Variable -> Add Reference, and pick" >&2
+  echo "[vibepsa] DATABASE_URL from the list — Railway fills in the right name." >&2
   exit 1
 fi
 
