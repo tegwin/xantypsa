@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { prisma } from './prisma';
 import { decryptStoredSecret } from './crypto';
+import { isDemoMode } from './demo';
 
 export interface SmtpConfig {
   host: string;
@@ -38,6 +39,13 @@ export async function sendEmail(
   html: string,
   attachments?: Array<{ filename: string; content: Buffer; contentType?: string }>
 ) {
+  // A public demo wired to real SMTP is a spam relay, and its "invented"
+  // contacts may not all be invented. Log and drop instead.
+  if (isDemoMode()) {
+    console.log(`[demo] suppressed email to ${to}: ${subject}`);
+    return { messageId: 'demo-suppressed', accepted: [], rejected: [to] } as any;
+  }
+
   const transport = nodemailer.createTransport({
     host: config.host,
     port: config.port,

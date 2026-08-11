@@ -136,6 +136,41 @@ fault rather than a health check looking at the wrong door.
 
 ---
 
+## A public demo
+
+A third service from the same repo, with **its own Postgres**. Never point a
+demo at the live database — visitors would be editing real customer data.
+
+```bash
+DATABASE_URL=${{<demo-db-service>.DATABASE_URL}}
+AI_ENCRYPTION_KEY=<a different key from production>
+NEXT_PUBLIC_APP_URL=https://demo.vibepsa.net
+DEMO_MODE=true
+RUN_SEED=true
+SEED_ADMIN_EMAIL=demo@vibepsa.net
+SEED_ADMIN_PASSWORD=demo1234demo
+```
+
+`DEMO_MODE=true` changes three things:
+
+| | |
+|---|---|
+| Deleting | Refused on every route — the guard sits in the shared API wrapper, so no route can miss it |
+| New accounts | `/register` returns 403 |
+| Outbound email | Logged and dropped, never sent |
+
+Creating and editing stay open, otherwise there is nothing to try.
+
+Email suppression matters more than it looks: a public demo wired to real SMTP
+is a spam relay, and its invented contacts may not all stay invented once
+visitors start editing them.
+
+To reset it nightly, redeploy the service on a schedule with a wiped volume, or
+run the seed against a freshly dropped database. Nothing in the app does this
+for you.
+
+---
+
 ## Render
 
 `render.yaml` is a blueprint: **New → Blueprint**, point at the repo, and it

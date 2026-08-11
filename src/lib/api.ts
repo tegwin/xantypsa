@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAppSession } from './session';
 import { authenticateApiKey } from './apiKeyAuth';
+import { isBlockedInDemo, DEMO_BLOCKED_MESSAGE } from './demo';
 
 // ============================================================
 // Response Helpers
@@ -45,6 +46,13 @@ export function withTenant(
 
       if (!session?.user) {
         return errorResponse('Unauthorized', 401);
+      }
+
+      // Demo instances are shared, so deletions are refused centrally here
+      // rather than route by route — one missed route would let a visitor
+      // empty a list for everybody.
+      if (isBlockedInDemo(req.method)) {
+        return errorResponse(DEMO_BLOCKED_MESSAGE, 403);
       }
       if (!session.user.tenantId) {
         return errorResponse('No tenant context', 403);

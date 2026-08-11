@@ -9,6 +9,7 @@ import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import AiPanel from '@/components/ai/AiPanel';
 import ImpersonationBanner from '@/components/ImpersonationBanner';
+import DemoBanner from '@/components/DemoBanner';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getAppSession();
@@ -30,6 +31,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="flex h-screen overflow-hidden bg-surface-950">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
+        <DemoBanner />
         {session.impersonatedBy && (
           <ImpersonationBanner
             viewingAs={session.user.name}

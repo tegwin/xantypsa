@@ -4,9 +4,15 @@ import prisma from '@/lib/prisma';
 import { ROLE_TEMPLATES } from '@/lib/permissions';
 import { ensureSystemCompanies } from '@/lib/systemCompanies';
 import { emailDomain } from '@/lib/emailRouting';
+import { isDemoMode, DEMO_NO_SIGNUP_MESSAGE } from '@/lib/demo';
 
 export async function POST(request: Request) {
   try {
+    // Demo instances must not accumulate accounts from passers-by.
+    if (isDemoMode()) {
+      return NextResponse.json({ error: DEMO_NO_SIGNUP_MESSAGE }, { status: 403 });
+    }
+
     const { name, email, password, company } = await request.json();
 
     if (!name || !email || !password || !company) {
