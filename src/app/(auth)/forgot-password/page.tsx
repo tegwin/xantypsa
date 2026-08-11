@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button, Input } from '@/components/ui';
-import { createClient } from '@/lib/supabase/client';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -15,10 +14,11 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setLoading(true);
 
-    const supabase = createClient();
-    await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
-    });
+    await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim().toLowerCase() }),
+    }).catch(() => undefined);
 
     // Always report success, whether or not the address exists. Reporting
     // "no such account" would turn this form into an account-enumeration oracle.

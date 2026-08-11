@@ -1,14 +1,12 @@
 'use client';
 
-// Second step of sign-in for anyone with an authenticator enrolled. Supabase
-// treats the session as aal1 until this succeeds; the middleware blocks the app
-// until it reaches aal2.
+// The second factor at sign-in. The password is already proven; this raises the
+// session so the rest of the app becomes reachable.
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button, Input } from '@/components/ui';
-import { createClient } from '@/lib/supabase/client';
 
 export default function VerifyTwoFactorPage() {
   const router = useRouter();
@@ -20,37 +18,18 @@ export default function VerifyTwoFactorPage() {
     e.preventDefault();
     setError('');
     setVerifying(true);
-
     try {
-      const supabase = createClient();
-      const { data: factors } = await supabase.auth.mfa.listFactors();
-      const factor = factors?.totp?.find((f) => f.status === 'verified');
-
-      if (!factor) {
-        setError('No authenticator is set up on this account.');
-        return;
-      }
-
-      const { data: challenge, error: challengeError } =
-        await supabase.auth.mfa.challenge({ factorId: factor.id });
-      if (challengeError) throw challengeError;
-
-      const { error: verifyError } = await supabase.auth.mfa.verify({
-        factorId: factor.id,
-        challengeId: challenge.id,
-        code: code.trim(),
+      const res = await fetch('/api/auth/totp/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code.trim() }),
       });
-      if (verifyError) throw verifyError;
-
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || 'That code was not accepted.');
       router.push('/');
       router.refresh();
     } catch (err: any) {
-      setError(
-        err.message?.includes('Invalid')
-          ? 'That code was not accepted. Codes change every 30 seconds — try the current one.'
-          : err.message || 'Verification failed'
-      );
-    } finally {
+      setError(err.message);
       setVerifying(false);
     }
   };
@@ -61,9 +40,9 @@ export default function VerifyTwoFactorPage() {
         <Image src="/logo.png" alt="VibePSA" width={56} height={56}
           className="mx-auto rounded-2xl shadow-lg shadow-brand-600/20" />
         <div>
-          <h1 className="text-2xl font-bold text-surface-50">Two-factor code</h1>
+          <h1 className="text-2xl font-bold text-surface-50">Two-factor</h1>
           <p className="text-sm text-surface-400 mt-1">
-            Open your authenticator app and enter the current code.
+            Enter the code from your authenticator app.
           </p>
         </div>
       </div>
@@ -74,6 +53,7 @@ export default function VerifyTwoFactorPage() {
             {error}
           </div>
         )}
+
         <Input
           label="6-digit code"
           value={code}
@@ -83,9 +63,15 @@ export default function VerifyTwoFactorPage() {
           autoFocus
           required
         />
-        <Button type="submit" loading={verifying} disabled={code.length !== 6} className="w-full" size="lg">
+
+        <Button type="submit" loading={verifying} disabled={code.length !== 6}
+          className="w-full" size="lg">
           Verify
         </Button>
+
+        <p className="text-center text-xs text-surface-500">
+          Lost your authenticator? An administrator can reset it for you.
+        </p>
       </form>
     </div>
   );

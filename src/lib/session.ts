@@ -1,15 +1,17 @@
 // ============================================================
 // Application session
 // ============================================================
-// Supabase owns authentication (who you are); the app database owns
-// authorisation (which tenant, which role, which permissions).
+// VibePSA authenticates its own users — see lib/auth/local. The signed session
+// cookie says *who you are*; the database says which tenant, role and
+// permissions you have, and is re-read on every request.
 //
-// This returns the *same shape* NextAuth produced, so every existing API route
-// and page keeps working — the swap is confined to this file and lib/api.ts.
+// The returned shape has been stable across NextAuth and Supabase Auth, so
+// every API route and page keeps working — the swap stays confined to this
+// file.
 
 import { cache } from 'react';
-import { createClient } from './supabase/server';
 import { prisma } from './prisma';
+import { readSessionCookie } from './auth/local';
 import { readImpersonation } from './impersonation';
 
 export interface AppSession {
@@ -26,7 +28,6 @@ export interface AppSession {
     roleId: string;
     roleName: string;
     permissions: string[];
-    supabaseId: string;
     /** Admin policy: this user must enrol in two-factor before using the app. */
     mfaRequired: boolean;
   };
@@ -41,27 +42,18 @@ export interface AppSession {
 /**
  * Resolve the signed-in user.
  *
- * `cache()` dedupes this per request, so a page plus the API calls it triggers
- * don't each re-query Supabase and Postgres.
+ * `cache()` dedupes this per request, so a page and the API calls it triggers
+ * don't each re-query Postgres.
  */
 export const getAppSession = cache(async (): Promise<AppSession | null> => {
-  const supabase = await createClient();
+  // The cookie is signed, so its user id is trustworthy — but only as an
+  // identifier. Everything that governs access is read fresh below, so
+  // deactivating someone takes effect on their next request.
+  const payload = readSessionCookie();
+  if (!payload) return null;
 
-  // getUser() revalidates against Supabase; getSession() trusts the cookie and
-  // must not be used for authorisation decisions.
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-
-  if (!authUser?.email) return null;
-
-  // Link by supabaseId where present, falling back to email so users created
-  // before the migration still resolve on their first sign-in.
   const user = await prisma.user.findFirst({
-    where: {
-      OR: [{ supabaseId: authUser.id }, { email: authUser.email.toLowerCase() }],
-      isActive: true,
-    },
+    where: { id: payload.userId, isActive: true },
     include: {
       tenants: {
         include: {
@@ -74,12 +66,9 @@ export const getAppSession = cache(async (): Promise<AppSession | null> => {
 
   if (!user) return null;
 
-  // Backfill the link so subsequent lookups hit the indexed id.
-  if (!user.supabaseId) {
-    await prisma.user
-      .update({ where: { id: user.id }, data: { supabaseId: authUser.id } })
-      .catch(() => undefined); // a race here is harmless
-  }
+  // Enrolled in two-factor but this session has not passed the challenge:
+  // treat it as not signed in rather than let it through half-authenticated.
+  if (user.totpSecret && !payload.mfa) return null;
 
   // An admin may be viewing the app as someone else. Resolve the real user
   // first (above) so the privilege check below is against *their* rights, never
@@ -142,7 +131,6 @@ export const getAppSession = cache(async (): Promise<AppSession | null> => {
       roleId: membership.role?.id ?? '',
       roleName: membership.role?.name ?? '',
       permissions,
-      supabaseId: authUser.id,
       mfaRequired: effectiveUser.mfaRequired,
     },
   };

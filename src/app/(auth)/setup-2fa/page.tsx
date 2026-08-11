@@ -3,93 +3,51 @@
 // ============================================================
 // TOTP enrolment
 // ============================================================
-// Where a user lands when their admin has required two-factor and they have no
-// authenticator set up yet. Supabase issues the secret and the QR code; the
-// browser never handles a shared secret we invented.
+// Where a user lands when their administrator has required two-factor. The
+// secret is generated server-side and only stored once a code proves the
+// authenticator has it.
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button, Input } from '@/components/ui';
-import { createClient } from '@/lib/supabase/client';
 
 export default function SetupTwoFactorPage() {
   const router = useRouter();
-  const [qr, setQr] = useState<string | null>(null);
   const [secret, setSecret] = useState<string | null>(null);
-  const [factorId, setFactorId] = useState<string | null>(null);
+  const [uri, setUri] = useState<string | null>(null);
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
-    const enrol = async () => {
-      const supabase = createClient();
-
-      // A previous half-finished attempt leaves an unverified factor behind,
-      // and Supabase refuses a second enrolment while one exists. Clear it.
-      // `totp` holds only verified factors; abandoned enrolments sit in `all`.
-      const { data: factors } = await supabase.auth.mfa.listFactors();
-      const stale = (factors?.all ?? []).filter(
-        (f) => f.factor_type === 'totp' && f.status !== 'verified'
-      );
-      for (const f of stale) {
-        await supabase.auth.mfa.unenroll({ factorId: f.id });
-      }
-
-      const { data, error: enrolError } = await supabase.auth.mfa.enroll({
-        factorType: 'totp',
-        friendlyName: `VibePSA ${new Date().toISOString().slice(0, 10)}`,
-      });
-
-      if (enrolError) {
-        setError(enrolError.message);
-        return;
-      }
-
-      setFactorId(data.id);
-      setQr(data.totp.qr_code);
-      setSecret(data.totp.secret);
-    };
-
-    enrol().catch((e) => setError(e.message));
+    fetch('/api/auth/totp/enrol')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.error) setError(d.error);
+        else { setSecret(d.secret); setUri(d.uri); }
+      })
+      .catch(() => setError('Could not start enrolment.'));
   }, []);
 
   const verify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!factorId) return;
     setError('');
     setVerifying(true);
-
-    const supabase = createClient();
-    const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId });
-
-    if (challengeError) {
-      setError(challengeError.message);
+    try {
+      const res = await fetch('/api/auth/totp/enrol', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret, code: code.trim() }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || 'That code was not accepted.');
+      router.push('/');
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message);
       setVerifying(false);
-      return;
     }
-
-    const { error: verifyError } = await supabase.auth.mfa.verify({
-      factorId,
-      challengeId: challenge.id,
-      code: code.trim(),
-    });
-
-    setVerifying(false);
-
-    if (verifyError) {
-      setError(
-        verifyError.message.includes('Invalid')
-          ? 'That code was not accepted. Codes change every 30 seconds — try the current one.'
-          : verifyError.message
-      );
-      return;
-    }
-
-    // Verifying raises the session to aal2, so the middleware will let them in.
-    router.push('/');
-    router.refresh();
   };
 
   return (
@@ -112,30 +70,28 @@ export default function SetupTwoFactorPage() {
           </div>
         )}
 
-        {!qr ? (
-          <p className="text-sm text-surface-400">Preparing your authenticator…</p>
+        {!secret ? (
+          <p className="text-sm text-surface-400">Preparing…</p>
         ) : (
           <>
             <div>
-              <p className="text-sm text-surface-300 mb-3">
-                1. Scan this with your authenticator app — Microsoft Authenticator, Google
-                Authenticator, 1Password, or similar.
+              <p className="text-sm text-surface-300 mb-2">
+                1. Add this to your authenticator — Microsoft Authenticator, Google
+                Authenticator, 1Password or similar.
               </p>
-              {/* Supabase returns the QR as an SVG data URL, so no QR library is needed. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={qr} alt="Two-factor QR code" className="bg-white rounded-lg p-2 w-48 h-48 mx-auto" />
+              <code className="block break-all rounded-lg bg-white/5 p-3 text-center
+                               font-mono text-lg tracking-widest text-brand-300">
+                {secret.match(/.{1,4}/g)?.join(' ')}
+              </code>
+              {uri && (
+                <p className="mt-2 text-center text-xs text-surface-500">
+                  On this device?{' '}
+                  <a href={uri} className="text-brand-400 hover:underline">
+                    Open in your authenticator
+                  </a>
+                </p>
+              )}
             </div>
-
-            {secret && (
-              <details className="text-xs text-surface-500">
-                <summary className="cursor-pointer hover:text-surface-300">
-                  Can&apos;t scan? Enter this code manually
-                </summary>
-                <code className="block mt-2 break-all bg-white/5 rounded p-2 text-surface-300">
-                  {secret}
-                </code>
-              </details>
-            )}
 
             <form onSubmit={verify} className="space-y-4">
               <Input

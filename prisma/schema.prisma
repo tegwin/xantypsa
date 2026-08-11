@@ -144,7 +144,13 @@ model User {
   // Supabase owns credentials; retained only for users not yet migrated.
   passwordHash  String?
   // Links this record to the Supabase auth user.
+  /// Legacy. Kept so an install that used Supabase Auth can still match its
+  /// users; new installs never set it.
   supabaseId    String?   @unique
+  /// TOTP shared secret, encrypted with AI_ENCRYPTION_KEY. Null until enrolled.
+  totpSecret    String?
+  totpEnabledAt DateTime?
+  resetTokens   PasswordResetToken[]
   avatar        String?
   phone         String?
   // When true, the user must enrol in TOTP two-factor before using the app.
@@ -1576,4 +1582,23 @@ model BillingEvent {
   @@index([tenantId])
   @@index([eventType])
   @@map("billing_events")
+}
+
+/// One-time password-reset links.
+///
+/// Only a hash is stored, so a leaked row cannot be replayed. Single use and
+/// short-lived; requesting a new one retires any outstanding link.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  requestIp String?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }

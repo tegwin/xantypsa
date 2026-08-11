@@ -4,8 +4,13 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 async function main() {
-  const email = 'admin@admin.com';
-  const password = 'Admin123!';
+  // A fixed default password in a public repository is a standing invitation:
+  // anyone who deploys and forgets to change it is wide open. Take it from the
+  // environment, and otherwise generate one and print it once.
+  const email = (process.env.SEED_ADMIN_EMAIL || 'admin@admin.com').toLowerCase();
+  const generated = !process.env.SEED_ADMIN_PASSWORD;
+  const password =
+    process.env.SEED_ADMIN_PASSWORD || require('crypto').randomBytes(12).toString('base64url');
   const passwordHash = await bcrypt.hash(password, 12);
 
   // Find or create tenant
@@ -215,9 +220,15 @@ async function main() {
     console.log('Created sample company:', sampleCompany.name);
   }
 
-  console.log('\n✅ Ready to login:');
-  console.log('   Email:    admin@admin.com');
-  console.log('   Password: Admin123!\n');
+  console.log('\n✅ Ready to sign in:');
+  console.log(`   Email:    ${email}`);
+  console.log(`   Password: ${password}`);
+  if (generated) {
+    console.log('\n   ⚠  Generated password — shown once. Copy it now, or set');
+    console.log('      SEED_ADMIN_PASSWORD to choose your own.\n');
+  } else {
+    console.log('');
+  }
 }
 
 main()

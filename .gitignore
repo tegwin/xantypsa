@@ -36,3 +36,4 @@ yarn-error.log*
 
 # Verification builds, kept separate so they never clobber a running dev server
 .next-verify/
+.env.selfhosttest

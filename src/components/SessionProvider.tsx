@@ -53,7 +53,8 @@ export function useSession(): SessionState {
 
 /** Sign out and return to the login screen. */
 export async function signOut(options?: { callbackUrl?: string }) {
-  const { createClient } = await import('@/lib/supabase/client');
-  await createClient().auth.signOut();
+  await fetch('/api/auth/signout', { method: 'POST' });
+  // Full reload rather than a router push, so no server-rendered fragment of
+  // the previous session survives in the client cache.
   window.location.href = options?.callbackUrl ?? '/login';
 }

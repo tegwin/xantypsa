@@ -40,13 +40,14 @@ cd vibepsa
 cp .env.docker.example .env
 ```
 
-Edit `.env` — three things are required:
+Edit `.env` — **two** things are required:
 
 | | |
 |---|---|
 | `POSTGRES_PASSWORD` | Anything long |
 | `AI_ENCRYPTION_KEY` | `openssl rand -hex 32` |
-| Supabase keys | A free project; only its auth service is used |
+
+That is the whole list. There is no third-party service to sign up for.
 
 Then:
 
@@ -56,6 +57,14 @@ docker compose up -d
 
 VibePSA is on http://localhost:3000. The schema is applied on start and demo
 data seeded on first run (`RUN_SEED=false` to skip).
+
+The first-run administrator password is generated and printed once:
+
+```bash
+docker compose logs app | grep -A3 "Ready to sign in"
+```
+
+Set `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` in `.env` to choose your own.
 
 ```bash
 docker compose logs -f app     # watch it start
@@ -69,10 +78,11 @@ Your data lives in the `vibepsa-db` volume. Back it up:
 docker compose exec db pg_dump -U vibepsa vibepsa > backup.sql
 ```
 
-> **Note on authentication.** Self-hosting still needs a Supabase project for
-> sign-in, password reset and two-factor. Your business data never leaves your
-> Postgres, but auth is not yet fully self-contained. Fixing that means adding a
-> local auth provider — a known gap rather than a design decision.
+> **Authentication is built in.** Passwords are bcrypt hashes in your own
+> database, sessions are signed cookies, and two-factor is RFC 6238 TOTP
+> implemented on node:crypto. Nothing calls out to anyone. Password reset is the
+> only feature needing configuration — it emails a link, so it wants SMTP under
+> Settings → Email.
 
 ---
 
@@ -91,11 +101,12 @@ DIRECT_DATABASE_URL=${{Postgres.DATABASE_URL}}
 AI_ENCRYPTION_KEY=<openssl rand -hex 32>
 NEXT_PUBLIC_APP_URL=https://app.vibepsa.net
 DEPLOYMENT_MODE=hosted
-NEXT_PUBLIC_SUPABASE_URL=…
-NEXT_PUBLIC_SUPABASE_ANON_KEY=…
-SUPABASE_SERVICE_ROLE_KEY=…
-RUN_SEED=false
+RUN_SEED=true
+SEED_ADMIN_EMAIL=you@yourcompany.com
 ```
+
+Seven variables, three of which you already know. Once you have signed in and
+changed the password, set `RUN_SEED=false` and redeploy.
 
 `${{Postgres.DATABASE_URL}}` is Railway's reference syntax — it resolves to the
 database in the same project, over the private network.
@@ -105,16 +116,6 @@ point of moving.
 
 **Health checks** hit `/api/health`, which reports 503 when Postgres is
 unreachable, so a broken deploy is caught rather than served.
-
-### Then point Supabase at it
-
-Authentication → URL Configuration:
-
-- **Site URL:** `https://app.vibepsa.net`
-- **Redirect URLs:** `https://app.vibepsa.net/auth/callback`,
-  `https://app.vibepsa.net/auth/confirm`, and the localhost equivalents
-
-Sign-in fails silently until those are set.
 
 ---
 
@@ -137,9 +138,8 @@ use Starter or above for anything real.
 | `DIRECT_DATABASE_URL` | yes | Same value unless pooling |
 | `AI_ENCRYPTION_KEY` | yes | 32-byte hex. **Changing it makes stored secrets undecryptable** |
 | `NEXT_PUBLIC_APP_URL` | yes | Public URL. Microsoft webhooks need this reachable |
-| `NEXT_PUBLIC_SUPABASE_URL` | yes | Auth |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | yes | Auth |
-| `SUPABASE_SERVICE_ROLE_KEY` | yes | Auth. Secret — server only |
+| `SEED_ADMIN_EMAIL` | no | First-run administrator. Defaults to admin@admin.com |
+| `SEED_ADMIN_PASSWORD` | no | Generated and logged once if unset |
 | `DEPLOYMENT_MODE` | no | `self_hosted` (default) or `hosted` |
 | `AI_DATABASE_URL` | no | Restricted role for AI SQL. See [SECURITY-AI.md](SECURITY-AI.md) |
 | `RUN_SEED` | no | Seed on start. `false` in production |
@@ -185,6 +185,11 @@ copied explicitly in the final stage and a stale layer can miss it.
 **Health check fails but the app looks fine**
 `/api/health` runs a real `SELECT 1`. If it 503s, the app cannot reach Postgres
 even if pages render from cache.
+
+**Everyone is signed out after a redeploy**
+`AI_ENCRYPTION_KEY` changed. It signs session cookies, so a new value
+invalidates every session — and makes enrolled TOTP secrets unreadable. Set it
+once and keep it.
 
 **Emails stop after moving host**
 `AI_ENCRYPTION_KEY` differs from the one that encrypted the stored SMTP

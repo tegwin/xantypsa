@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { getAppSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { prisma } from '@/lib/prisma';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import AiPanel from '@/components/ai/AiPanel';
@@ -14,15 +14,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const session = await getAppSession();
   if (!session) redirect('/login');
 
-  // Two-factor policy. Read from the database, not from anything the client
-  // controls: middleware can enforce the TOTP *challenge* (Supabase guarantees
-  // that cryptographically via assurance levels) but only the server knows
-  // whether an admin has required enrolment in the first place.
+  // Two-factor policy. Read from the database, never from anything the client
+  // controls. Middleware enforces the *challenge* (the mfa flag lives inside a
+  // signed cookie it cannot forge); this enforces *enrolment*, which only the
+  // server knows an admin has mandated.
   if (session.user.mfaRequired && !session.impersonatedBy) {
-    const supabase = await createClient();
-    const { data: factors } = await supabase.auth.mfa.listFactors();
-    const enrolled = factors?.totp?.some((f) => f.status === 'verified');
-    if (!enrolled) redirect('/setup-2fa');
+    const { totpSecret } = await prisma.user.findUniqueOrThrow({
+      where: { id: session.user.id },
+      select: { totpSecret: true },
+    });
+    if (!totpSecret) redirect('/setup-2fa');
   }
 
   return (

@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Input } from '@/components/ui';
 import Link from 'next/link';
 import Image from 'next/image';
-import { createClient } from '@/lib/supabase/client';
 
 function LoginForm() {
   const router = useRouter();
@@ -23,24 +22,23 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
+      const res = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
       });
+      const body = await res.json();
 
-      if (signInError) {
-        // Supabase returns a deliberately vague message for bad credentials;
-        // don't dress it up into something that reveals whether the account exists.
-        setError(
-          signInError.message === 'Invalid login credentials'
-            ? 'Incorrect email or password.'
-            : signInError.message
-        );
+      if (!res.ok) {
+        // The server keeps "no such account" and "wrong password"
+        // indistinguishable; don't embellish the message here either.
+        setError(body.error ?? 'Incorrect email or password.');
         return;
       }
 
-      router.push(callbackUrl);
+      // Accounts with an authenticator are only half signed in until the code
+      // is entered.
+      router.push(body.mfaRequired ? '/verify-2fa' : callbackUrl);
       router.refresh(); // re-run the server layout so the session is picked up
     } catch {
       setError('An unexpected error occurred');

@@ -14,7 +14,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-vibepsa}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}"
       POSTGRES_DB: ${POSTGRES_DB:-vibepsa}
     volumes:
       - vibepsa-db:/var/lib/postgresql/data
@@ -32,6 +32,10 @@ services:
     #   - '5432:5432'
 
   app:
+    # Named so the image can be built once and reused, and so a published
+    # image can be pulled instead of built:
+    #   docker compose pull && docker compose up -d
+    image: vibepsa:latest
     build: .
     restart: unless-stopped
     depends_on:
@@ -41,10 +45,11 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-vibepsa}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-vibepsa}
       DIRECT_DATABASE_URL: postgresql://${POSTGRES_USER:-vibepsa}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-vibepsa}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
-      AI_ENCRYPTION_KEY: ${AI_ENCRYPTION_KEY:?generate one with: openssl rand -hex 32}
-      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      AI_ENCRYPTION_KEY: "${AI_ENCRYPTION_KEY:?generate one with openssl rand -hex 32}"
+      # First-run administrator. Leave the password unset and one is generated
+      # and printed to the logs once.
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@admin.com}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
       # self_hosted hides everything to do with billing and plan limits.
       DEPLOYMENT_MODE: ${DEPLOYMENT_MODE:-self_hosted}
       RUN_SEED: ${RUN_SEED:-true}

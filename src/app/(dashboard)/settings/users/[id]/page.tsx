@@ -142,8 +142,7 @@ export default function UserEditPage() {
             <label className="label">Email</label>
             <input className="input w-full opacity-60" value={user.email} disabled />
             <p className="text-xs text-surface-500 mt-1">
-              Email is the sign-in identity and is managed in Supabase Auth — it can&apos;t be
-              changed here.
+              Email is the sign-in identity, so it can&apos;t be changed here.
             </p>
           </div>
           <div>
@@ -209,9 +208,9 @@ export default function UserEditPage() {
           <div className="rounded-lg border border-white/10 p-3 text-sm text-surface-400">
             <p className="font-medium text-surface-200 mb-1">Passwords</p>
             <p>
-              Passwords are held by Supabase Auth, not VibePSA — nobody here can read or set
-              one. Send the user to <span className="text-surface-200">Forgot password?</span> on
-              the sign-in screen to reset it themselves.
+              Passwords are stored as bcrypt hashes — nobody, including you, can read one.
+              Send the user to <span className="text-surface-200">Forgot password?</span> on the
+              sign-in screen and they will get an emailed link to set a new one.
             </p>
           </div>
         </div>

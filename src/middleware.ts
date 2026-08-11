@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { updateSession } from '@/lib/supabase/middleware';
+import { updateSession } from '@/lib/auth/middleware';
 
 export async function middleware(request: NextRequest) {
   // Refreshes the Supabase session cookie and enforces the public allow-list.
@@ -12,7 +12,7 @@ export const config = {
    *
    * The previous matcher enumerated protected routes, so any module added later
    * was unprotected until someone remembered to list it. Inverting it means new
-   * routes are guarded by default; lib/supabase/middleware.ts holds the small
+   * routes are guarded by default; lib/auth/middleware.ts holds the small
    * allow-list of genuinely public paths (login, password reset, quote portal).
    */
   matcher: [
