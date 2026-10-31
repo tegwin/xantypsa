@@ -1,4 +1,4 @@
-# VibePSA roadmap
+# XantyPSA roadmap
 
 Build order. Later items depend on earlier ones.
 
@@ -13,7 +13,7 @@ Build order. Later items depend on earlier ones.
 | 7 | **Security section** | 2FA (built), SSO Microsoft/Google, password policy, session management. | todo |
 | 8 | **Reporting + dashboard** | Editable widgets, AI builds them from a prompt. Needs the AI tool surface (built). | todo |
 | 9 | **Stock / Sales orders / Purchase orders** | New module. Products exist; needs stock levels, SO, PO, receipts. | todo |
-| 10 | **Integration module** | Runbook-style flows between VibePSA and external systems. Biggest; do last. | todo |
+| 10 | **Integration module** | Runbook-style flows between XantyPSA and external systems. Biggest; do last. | todo |
 
 ## Open questions
 - Actions: visual builder or JSON/YAML definition?

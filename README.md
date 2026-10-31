@@ -1,4 +1,4 @@
-# VibePSA
+# XantyPSA
 
 **Open source PSA for MSPs.** A complete multi-tenant Professional Services
 Automation platform — service desk, CRM, contracts, quoting, invoicing, projects
@@ -15,7 +15,7 @@ and time — that you self-host and own outright.
 
 Built in the open. Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Copyright © 2026 The VibePSA Authors.
+Copyright © 2026 The XantyPSA Authors.
 
 ## Modules
 

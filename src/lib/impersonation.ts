@@ -20,7 +20,7 @@
 import crypto from 'crypto';
 import { cookies } from 'next/headers';
 
-export const IMPERSONATION_COOKIE = 'vibepsa_impersonate';
+export const IMPERSONATION_COOKIE = 'xantypsa_impersonate';
 
 interface Payload {
   /** The user being impersonated. */

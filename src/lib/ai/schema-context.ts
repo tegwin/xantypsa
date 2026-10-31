@@ -1,7 +1,7 @@
 // ============================================================
 // Teaching the model the data model
 // ============================================================
-// The schema file is the single source of truth for what VibePSA *is*, so we
+// The schema file is the single source of truth for what XantyPSA *is*, so we
 // parse it rather than maintaining a prose description that would drift.
 //
 // Two tiers, because the full schema is far too large to sit in every prompt:

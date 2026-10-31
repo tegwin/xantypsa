@@ -1,4 +1,4 @@
-# Hosting VibePSA
+# Hosting XantyPSA
 
 One container image, three ways to run it.
 
@@ -15,7 +15,7 @@ runs in production.
 
 ## Why not serverless any more
 
-VibePSA started on Vercel. It works, but a PSA wants things serverless makes
+XantyPSA started on Vercel. It works, but a PSA wants things serverless makes
 awkward:
 
 - **Execution limits.** Report generation, bulk imports and long AI turns all
@@ -36,7 +36,7 @@ the freedom to run work in-process.
 
 ```bash
 git clone https://github.com/xantaradev/vibepsa.git
-cd vibepsa
+cd xantypsa
 cp .env.docker.example .env
 ```
 
@@ -55,7 +55,7 @@ Then:
 docker compose up -d
 ```
 
-VibePSA is on http://localhost:3000. The schema is applied on start and demo
+XantyPSA is on http://localhost:3000. The schema is applied on start and demo
 data seeded on first run (`RUN_SEED=false` to skip).
 
 The first-run administrator password is generated and printed once:
@@ -72,10 +72,10 @@ docker compose down            # stop
 docker compose down -v         # stop and delete the database
 ```
 
-Your data lives in the `vibepsa-db` volume. Back it up:
+Your data lives in the `xantypsa-db` volume. Back it up:
 
 ```bash
-docker compose exec db pg_dump -U vibepsa vibepsa > backup.sql
+docker compose exec db pg_dump -U xantypsa xantypsa > backup.sql
 ```
 
 > **Authentication is built in.** Passwords are bcrypt hashes in your own

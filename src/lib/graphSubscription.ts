@@ -1,7 +1,7 @@
 // ============================================================
 // Microsoft Graph mail subscriptions
 // ============================================================
-// Incoming email reaches VibePSA by webhook: Graph POSTs to
+// Incoming email reaches XantyPSA by webhook: Graph POSTs to
 // /api/webhooks/microsoft-email the moment a message lands, and a ticket is
 // raised from it. There is no polling.
 //

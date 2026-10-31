@@ -1,7 +1,7 @@
 {
-  "name": "vibepsa",
+  "name": "xantypsa",
   "version": "1.0.0",
-  "description": "VibePSA - Professional Services Automation Platform",
+  "description": "XantyPSA - Professional Services Automation Platform",
   "private": true,
   "scripts": {
     "dev": "next dev",

@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "vibepsa",
+      "name": "xantypsa",
       "runtimeExecutable": "npx",
       "runtimeArgs": ["next", "dev", "--port", "3001"],
       "port": 3001

@@ -33,7 +33,7 @@ id into the next query.
 With no tenant set, every policy evaluates false and the role sees **nothing**.
 It fails closed.
 
-VibePSA's own connection is unaffected: it owns these tables and holds
+XantyPSA's own connection is unaffected: it owns these tables and holds
 `rolbypassrls`, so the application behaves exactly as it did before.
 
 ## Setting it up

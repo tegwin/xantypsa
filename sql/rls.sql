@@ -43,6 +43,11 @@ DROP POLICY IF EXISTS ai_tenant_isolation ON "audit_logs";
 CREATE POLICY ai_tenant_isolation ON "audit_logs"
   FOR SELECT USING ("tenantId" = current_setting('app.tenant_id', true));
 
+ALTER TABLE "billing_events" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS ai_tenant_isolation ON "billing_events";
+CREATE POLICY ai_tenant_isolation ON "billing_events"
+  FOR SELECT USING ("tenantId" = current_setting('app.tenant_id', true));
+
 ALTER TABLE "billing_rates" ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS ai_tenant_isolation ON "billing_rates";
 CREATE POLICY ai_tenant_isolation ON "billing_rates"
@@ -159,10 +164,24 @@ DROP POLICY IF EXISTS ai_tenant_isolation ON "opportunities";
 CREATE POLICY ai_tenant_isolation ON "opportunities"
   FOR SELECT USING ("tenantId" = current_setting('app.tenant_id', true));
 
+ALTER TABLE "password_reset_tokens" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS ai_tenant_isolation ON "password_reset_tokens";
+-- PasswordResetToken: no path to a tenant — denied by default.
+
 ALTER TABLE "payments" ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS ai_tenant_isolation ON "payments";
 CREATE POLICY ai_tenant_isolation ON "payments"
   FOR SELECT USING ("tenantId" = current_setting('app.tenant_id', true));
+
+ALTER TABLE "plans" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS ai_tenant_isolation ON "plans";
+-- Plan: no path to a tenant — denied by default.
+
+ALTER TABLE "portal_login_tokens" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS ai_tenant_isolation ON "portal_login_tokens";
+-- PortalLoginToken is scoped through Contact.
+CREATE POLICY ai_tenant_isolation ON "portal_login_tokens"
+  FOR SELECT USING (EXISTS (SELECT 1 FROM "contacts" AS p WHERE p."id" = "contactId" AND p."tenantId" = current_setting('app.tenant_id', true)));
 
 ALTER TABLE "products" ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS ai_tenant_isolation ON "products";
@@ -230,6 +249,11 @@ CREATE POLICY ai_tenant_isolation ON "sites"
 ALTER TABLE "sla_profiles" ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS ai_tenant_isolation ON "sla_profiles";
 CREATE POLICY ai_tenant_isolation ON "sla_profiles"
+  FOR SELECT USING ("tenantId" = current_setting('app.tenant_id', true));
+
+ALTER TABLE "subscriptions" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS ai_tenant_isolation ON "subscriptions";
+CREATE POLICY ai_tenant_isolation ON "subscriptions"
   FOR SELECT USING ("tenantId" = current_setting('app.tenant_id', true));
 
 ALTER TABLE "tag_assignments" ENABLE ROW LEVEL SECURITY;

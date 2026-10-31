@@ -1,6 +1,6 @@
-# Connecting VibePSA to Claude Desktop (MCP)
+# Connecting XantyPSA to Claude Desktop (MCP)
 
-The MCP server exposes VibePSA to Claude Desktop, Claude Code, or any other MCP
+The MCP server exposes XantyPSA to Claude Desktop, Claude Code, or any other MCP
 client, so you can ask for work in plain English instead of clicking through
 screens:
 
@@ -42,14 +42,14 @@ Then add it to Claude Desktop's config file, at
 ```json
 {
   "mcpServers": {
-    "vibepsa": {
+    "xantypsa": {
       "command": "npx",
       "args": [
         "tsx",
         "--env-file=.env",
         "src/mcp/server.ts"
       ],
-      "cwd": "/absolute/path/to/vibepsa",
+      "cwd": "/absolute/path/to/xantypsa",
       "env": {
         "MCP_TENANT": "Your Company Ltd"
       }
@@ -58,7 +58,7 @@ Then add it to Claude Desktop's config file, at
 }
 ```
 
-Restart Claude Desktop. VibePSA appears in the tools menu.
+Restart Claude Desktop. XantyPSA appears in the tools menu.
 
 ## Configuration
 
@@ -92,7 +92,7 @@ every table to the one tenant.
 error lists the available names.
 
 **Claude Desktop shows the server as failed** — it captures stderr in
-`~/Library/Logs/Claude/mcp-server-vibepsa.log`. The usual cause is a `cwd` that
+`~/Library/Logs/Claude/mcp-server-xantypsa.log`. The usual cause is a `cwd` that
 isn't the project root, so `.env` can't be found.
 
 **Nothing appears in the tools menu** — Claude Desktop only reads its config at

@@ -30,7 +30,7 @@ export default function ForgotPasswordPage() {
     return (
       <div className="space-y-8">
         <div className="text-center space-y-3">
-          <Image src="/logo.png" alt="VibePSA" width={56} height={56}
+          <Image src="/logo.png" alt="XantyPSA" width={56} height={56}
             className="mx-auto rounded-2xl shadow-lg shadow-brand-600/20" />
           <h1 className="text-2xl font-bold text-surface-50">Check your email</h1>
         </div>
@@ -56,7 +56,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="space-y-8">
       <div className="text-center space-y-3">
-        <Image src="/logo.png" alt="VibePSA" width={56} height={56}
+        <Image src="/logo.png" alt="XantyPSA" width={56} height={56}
           className="mx-auto rounded-2xl shadow-lg shadow-brand-600/20" />
         <div>
           <h1 className="text-2xl font-bold text-surface-50">Reset your password</h1>

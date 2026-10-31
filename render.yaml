@@ -1,7 +1,7 @@
 # Render alternative to railway.json — same image, same health check.
 services:
   - type: web
-    name: vibepsa
+    name: xantypsa
     runtime: docker
     dockerfilePath: ./Dockerfile
     plan: starter
@@ -9,11 +9,11 @@ services:
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: vibepsa-db
+          name: xantypsa-db
           property: connectionString
       - key: DIRECT_DATABASE_URL
         fromDatabase:
-          name: vibepsa-db
+          name: xantypsa-db
           property: connectionString
       - key: AI_ENCRYPTION_KEY
         generateValue: true
@@ -23,6 +23,6 @@ services:
         sync: false
 
 databases:
-  - name: vibepsa-db
+  - name: xantypsa-db
     plan: basic-256mb
     postgresMajorVersion: '16'

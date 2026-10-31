@@ -1,7 +1,7 @@
 // ============================================================
 // Application session
 // ============================================================
-// VibePSA authenticates its own users — see lib/auth/local. The signed session
+// XantyPSA authenticates its own users — see lib/auth/local. The signed session
 // cookie says *who you are*; the database says which tenant, role and
 // permissions you have, and is re-read on every request.
 //

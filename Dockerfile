@@ -1,5 +1,5 @@
 # ============================================================
-# VibePSA container image
+# XantyPSA container image
 # ============================================================
 # Multi-stage so the runtime image carries only what it needs to serve: the
 # standalone Next server, static assets, and the Prisma client with its query

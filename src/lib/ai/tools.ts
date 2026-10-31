@@ -1,5 +1,5 @@
 // ============================================================
-// The VibePSA tool surface
+// The XantyPSA tool surface
 // ============================================================
 // Defined once and consumed twice: by the in-app AI panel and by the MCP
 // server. Adding a capability here exposes it to both, so they cannot drift.
@@ -226,7 +226,7 @@ export async function executeTool(
 // ------------------------------------------------------------
 
 export function buildSystemPrompt(module?: string): string {
-  return `You are the AI assistant built into VibePSA, a multi-tenant Professional Services Automation platform for MSPs. You help with tickets, companies, contacts, contracts, quotes, invoices, projects, time entries and reporting.
+  return `You are the AI assistant built into XantyPSA, a multi-tenant Professional Services Automation platform for MSPs. You help with tickets, companies, contacts, contracts, quotes, invoices, projects, time entries and reporting.
 
 ${module ? `The user is currently on the ${module} screen, so assume that context unless they say otherwise.\n` : ''}
 ## How the system is structured

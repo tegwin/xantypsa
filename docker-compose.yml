@@ -1,5 +1,5 @@
 # ============================================================
-# Self-hosting VibePSA
+# Self-hosting XantyPSA
 # ============================================================
 #   cp .env.docker.example .env
 #   docker compose up -d
@@ -35,7 +35,7 @@ services:
     # Named so the image can be built once and reused, and so a published
     # image can be pulled instead of built:
     #   docker compose pull && docker compose up -d
-    image: vibepsa:latest
+    image: xantypsa:latest
     build: .
     restart: unless-stopped
     depends_on:

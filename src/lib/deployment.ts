@@ -1,5 +1,5 @@
 // ============================================================
-// Which VibePSA is this?
+// Which XantyPSA is this?
 // ============================================================
 // The same codebase ships two ways, and the difference has to be explicit
 // rather than inferred:

@@ -14,7 +14,7 @@ import crypto from 'crypto';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 
-export const PORTAL_COOKIE = 'vibepsa_portal';
+export const PORTAL_COOKIE = 'xantypsa_portal';
 
 /** Long enough to be useful, short enough that a shared laptop is not a breach. */
 const TTL_SECONDS = 60 * 60 * 12;

@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     await sendEmail(
       config,
       user.email,
-      'Reset your VibePSA password',
+      'Reset your XantyPSA password',
       `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
          <p>Hello ${user.name},</p>
          <p>Use the link below to choose a new password.</p>

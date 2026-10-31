@@ -35,7 +35,7 @@ export default function ImpersonationBanner({
       <div className="flex items-center gap-2 min-w-0 text-sm">
         <AlertTriangle className="h-4 w-4 shrink-0" />
         <span className="truncate">
-          You are viewing VibePSA as <strong>{viewingAs}</strong>. Anything you do is recorded
+          You are viewing XantyPSA as <strong>{viewingAs}</strong>. Anything you do is recorded
           against {realName}.
         </span>
       </div>

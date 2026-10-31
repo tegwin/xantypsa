@@ -1,5 +1,5 @@
 -- =============================================================================
--- VibePSA — complete database schema (PostgreSQL)
+-- XantyPSA — complete database schema (PostgreSQL)
 -- =============================================================================
 -- Generated from prisma/schema.prisma. Creates all 58 tables, 106 foreign keys
 -- and their indexes on an empty database.

@@ -1,5 +1,5 @@
 // ============================================================
-// VibePSA - Role-Based Access Control System
+// XantyPSA - Role-Based Access Control System
 // ============================================================
 
 export const MODULES = [

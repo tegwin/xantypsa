@@ -38,10 +38,10 @@ export default function RegisterPage() {
   return (
     <div className="space-y-8">
       <div className="text-center space-y-3">
-        <Image src="/logo.png" alt="VibePSA" width={56} height={56} className="mx-auto rounded-2xl shadow-lg shadow-brand-600/20" />
+        <Image src="/logo.png" alt="XantyPSA" width={56} height={56} className="mx-auto rounded-2xl shadow-lg shadow-brand-600/20" />
         <div>
           <h1 className="text-2xl font-bold text-surface-50">Create account</h1>
-          <p className="text-sm text-surface-400 mt-1">Get started with VibePSA</p>
+          <p className="text-sm text-surface-400 mt-1">Get started with XantyPSA</p>
         </div>
       </div>
 

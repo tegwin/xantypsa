@@ -1,7 +1,7 @@
 // ============================================================
 // Self-contained authentication
 // ============================================================
-// VibePSA authenticates its own staff: no Supabase, no external identity
+// XantyPSA authenticates its own staff: no Supabase, no external identity
 // service, nothing to sign up for. `docker compose up` gives a working login.
 //
 // Design mirrors the client portal, which already worked this way:
@@ -23,7 +23,7 @@ import { prisma } from '@/lib/prisma';
 import { encryptSecret, decryptStoredSecret } from '@/lib/crypto';
 import { verifyCode } from './totp';
 
-export const SESSION_COOKIE = 'vibepsa_session';
+export const SESSION_COOKIE = 'xantypsa_session';
 
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7; // a working week
 const BCRYPT_ROUNDS = 12;

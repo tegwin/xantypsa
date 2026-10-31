@@ -1,7 +1,7 @@
 // ============================================================
-// VibePSA MCP server
+// XantyPSA MCP server
 // ============================================================
-// Exposes VibePSA to Claude Desktop (or any MCP client) over stdio.
+// Exposes XantyPSA to Claude Desktop (or any MCP client) over stdio.
 //
 // The tools are the same ones the in-app AI panel uses — imported from
 // lib/ai/tools rather than redefined — so the two surfaces cannot drift apart.
@@ -101,11 +101,11 @@ async function main() {
 
   // stderr, never stdout — stdout carries the MCP protocol itself.
   console.error(
-    `[vibepsa-mcp] ${tenant.name} as ${user.email} — ${allowWrites ? 'read/write' : 'read-only'}`
+    `[xantypsa-mcp] ${tenant.name} as ${user.email} — ${allowWrites ? 'read/write' : 'read-only'}`
   );
 
   const server = new Server(
-    { name: 'vibepsa', version: '1.0.0' },
+    { name: 'xantypsa', version: '1.0.0' },
     {
       capabilities: { tools: {} },
       // The same domain briefing the in-app assistant gets, so a Claude Desktop
@@ -136,6 +136,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(`[vibepsa-mcp] ${err.message}`);
+  console.error(`[xantypsa-mcp] ${err.message}`);
   process.exit(1);
 });

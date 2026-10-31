@@ -1,16 +1,16 @@
-# Contributing to VibePSA
+# Contributing to XantyPSA
 
-VibePSA is built in the open by an MSP consultancy. The most valuable thing you
+XantyPSA is built in the open by an MSP consultancy. The most valuable thing you
 can bring is not necessarily code — it is knowing how MSPs actually work.
 
 ## The most useful contribution
 
 **Tell us where it's wrong.** If a workflow here doesn't match how your business
 runs, that's a bug even if nothing crashes. An issue that says "our contracts
-renew on the anniversary of go-live, not the calendar year, and VibePSA can't
+renew on the anniversary of go-live, not the calendar year, and XantyPSA can't
 express that" is worth more than a typo fix.
 
-Open an issue describing what you do today and what VibePSA made you do instead.
+Open an issue describing what you do today and what XantyPSA made you do instead.
 
 ## Getting set up
 
@@ -18,7 +18,7 @@ You need Node 18+ and a PostgreSQL database.
 
 ```bash
 git clone https://github.com/xantaradev/vibepsa.git
-cd vibepsa
+cd xantypsa
 npm install
 cp .env.example .env      # set DATABASE_URL at minimum
 npx prisma db push
@@ -64,6 +64,6 @@ and keep `sql/schema.sql` in step so a fresh install still works.
 
 ## Licence
 
-VibePSA is [AGPL-3.0](LICENSE). By contributing you agree your work is released
+XantyPSA is [AGPL-3.0](LICENSE). By contributing you agree your work is released
 under the same licence. There is no CLA and no copyright assignment — your
 commits stay yours.

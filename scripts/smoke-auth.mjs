@@ -85,10 +85,10 @@ async function main() {
   remember(ok);
   const okBody = await ok.json().catch(() => ({}));
   check('sign in succeeds', ok.status === 200 && okBody.ok === true, `HTTP ${ok.status}`);
-  check('session cookie issued', jar.includes('vibepsa_session='), jar.split('=')[0]);
+  check('session cookie issued', jar.includes('xantypsa_session='), jar.split('=')[0]);
 
   // Cookie must be httpOnly, or any script on the page could steal it.
-  const setCookie = (ok.headers.getSetCookie?.() ?? []).find((c) => c.startsWith('vibepsa_session='));
+  const setCookie = (ok.headers.getSetCookie?.() ?? []).find((c) => c.startsWith('xantypsa_session='));
   check('session cookie is httpOnly', /httponly/i.test(setCookie ?? ''));
 
   // Now the protected page should render.
@@ -96,7 +96,7 @@ async function main() {
   check('protected page reachable once signed in', inside.status === 200, `HTTP ${inside.status}`);
 
   // A tampered cookie must not be accepted — this is the whole point of signing.
-  const tampered = jar.replace(/vibepsa_session=[^;]+/, 'vibepsa_session=eyJmYWtlIjoxfQ.bogus');
+  const tampered = jar.replace(/xantypsa_session=[^;]+/, 'xantypsa_session=eyJmYWtlIjoxfQ.bogus');
   const forged = await fetch(`${base}/dashboard`, {
     redirect: 'manual',
     headers: { cookie: tampered },

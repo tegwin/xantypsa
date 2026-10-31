@@ -6,8 +6,8 @@ import { getAppSession } from '@/lib/session';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'VibePSA',
-  description: 'Professional Services Automation by VibePSA',
+  title: 'XantyPSA',
+  description: 'Professional Services Automation by XantyPSA',
   icons: { icon: '/favicon.ico' },
 };
 

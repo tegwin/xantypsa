@@ -1,4 +1,4 @@
-# The VibePSA stack
+# The XantyPSA stack
 
 What this is built in, and why each piece is there.
 
@@ -6,8 +6,8 @@ Two separate applications:
 
 | | What | Where |
 |---|---|---|
-| **The app** | VibePSA itself | `vibepsa/` |
-| **The site** | The marketing page for vibepsa.net | `vibepsa-site/` |
+| **The app** | XantyPSA itself | `xantypsa/` |
+| **The site** | The marketing page for vibepsa.net | `xantypsa-site/` |
 
 ---
 
@@ -146,7 +146,7 @@ src/
 | **Microsoft 365** | Graph webhook. Mail is pushed on arrival and becomes a ticket — no polling, no cron. Subscriptions renew on Graph lifecycle events and on incoming mail. |
 | **SMTP** | Nodemailer for outbound. Passwords encrypted at rest. |
 | **LLMs** | Anthropic, OpenAI, or anything OpenAI-compatible including local Ollama. Bring your own key. |
-| **MCP** | `npm run mcp` exposes VibePSA to Claude Desktop over stdio, sharing the in-app assistant's tools. |
+| **MCP** | `npm run mcp` exposes XantyPSA to Claude Desktop over stdio, sharing the in-app assistant's tools. |
 
 ---
 
@@ -154,7 +154,7 @@ src/
 
 - **Multi-tenancy** — every query scoped by `tenantId`, applied *after* any
   caller-supplied `where` so it cannot be overridden.
-- **Row-level security** — the AI's SQL tool runs as `vibepsa_ai`, a SELECT-only
+- **Row-level security** — the AI's SQL tool runs as `xantypsa_ai`, a SELECT-only
   Postgres role with RLS on all tables. Auth tables are unreadable to it. With
   no tenant set it sees nothing — it fails closed. See
   [SECURITY-AI.md](SECURITY-AI.md).

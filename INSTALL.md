@@ -1,4 +1,4 @@
-# VibePSA — Installation
+# XantyPSA — Installation
 
 Getting a working instance from nothing. Takes about 15 minutes, most of it
 waiting for Supabase to provision.
@@ -48,8 +48,8 @@ From **Settings → Database → Connection string**:
 ## 2. Configure the app
 
 ```bash
-git clone <your-repo-url> vibepsa
-cd vibepsa
+git clone <your-repo-url> xantypsa
+cd xantypsa
 npm install
 ```
 

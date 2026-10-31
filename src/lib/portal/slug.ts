@@ -10,7 +10,7 @@ const RESERVED = new Set([
   'api', 'admin', 'login', 'logout', 'auth', 'portal', 'settings', 'quote',
   'quotes', 'invoice', 'invoices', 'ticket', 'tickets', 'support', 'help',
   'app', 'www', 'static', 'assets', 'public', 'new', 'edit', 'delete',
-  'vibepsa', 'system', 'root', 'null', 'undefined', 'test',
+  'xantypsa', 'system', 'root', 'null', 'undefined', 'test',
 ]);
 
 export interface SlugCheck {

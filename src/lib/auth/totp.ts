@@ -114,7 +114,7 @@ export function verifyCode(secretBase32: string, code: string, window = 1): bool
 }
 
 /** The otpauth:// URI an authenticator app scans or imports. */
-export function otpauthUri(secretBase32: string, account: string, issuer = 'VibePSA'): string {
+export function otpauthUri(secretBase32: string, account: string, issuer = 'XantyPSA'): string {
   // Issuer and account are encoded individually, but the ":" separator stays
   // literal. Encoding it as %3A is legal but some authenticators then treat the
   // whole thing as one account name and drop the issuer.

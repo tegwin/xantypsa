@@ -131,7 +131,7 @@ const MODULES: { match: RegExp; ctx: ModuleContext }[] = [
 
 const FALLBACK: ModuleContext = {
   module: 'dashboard',
-  label: 'VibePSA',
+  label: 'XantyPSA',
   suggestions: [
     'How many tickets are open?',
     'What is outstanding on invoices right now?',

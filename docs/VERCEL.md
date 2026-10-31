@@ -1,4 +1,4 @@
-# Putting VibePSA on Vercel
+# Putting XantyPSA on Vercel
 
 End-to-end, from a working local install to logging in from a browser anywhere.
 Budget 30 minutes the first time.
@@ -7,8 +7,8 @@ There are two separate deployments and they are independent:
 
 | | What it is | Domain |
 |---|---|---|
-| **The app** | VibePSA itself — the thing you log into | `app.vibepsa.net` |
-| **The site** | The marketing page in `vibepsa-site/` | `vibepsa.net` |
+| **The app** | XantyPSA itself — the thing you log into | `app.vibepsa.net` |
+| **The site** | The marketing page in `xantypsa-site/` | `vibepsa.net` |
 
 Do the app first; that's the one you asked about.
 
@@ -28,7 +28,7 @@ later without rewriting history, and it is visible to anyone who clones. Both
 repos are already set to a project identity rather than a personal one:
 
 ```bash
-git config user.name    # → VibePSA
+git config user.name    # → XantyPSA
 git config user.email   # → noreply@vibepsa.net
 ```
 
@@ -43,11 +43,11 @@ git config --local user.email "<id>+<username>@users.noreply.github.com"
 Then commit and push:
 
 ```bash
-cd /path/to/vibepsa
+cd /path/to/xantypsa
 git add -A
-git commit -m "VibePSA"
+git commit -m "XantyPSA"
 gh auth login          # sign in as the new account, not your usual one
-gh repo create vibepsa --private --source=. --push
+gh repo create xantypsa --private --source=. --push
 ```
 
 > `gh` remembers whichever account you last authenticated. Run `gh auth status`
@@ -114,7 +114,7 @@ Supabase Auth migration and can be dropped.
 
 ### 5. Deploy
 
-Click Deploy. You'll get `vibepsa-something.vercel.app`.
+Click Deploy. You'll get `xantypsa-something.vercel.app`.
 
 **It will not let you log in yet.** One more step.
 
@@ -157,12 +157,12 @@ domain — step 6 again, with the final address.
 
 ## Part 2 — The marketing site
 
-Separate Vercel project, same account, from `vibepsa-site/`.
+Separate Vercel project, same account, from `xantypsa-site/`.
 
 ```bash
-cd ../vibepsa-site
-git add -A && git commit -m "VibePSA site"
-gh repo create vibepsa-site --public --source=. --push
+cd ../xantypsa-site
+git add -A && git commit -m "XantyPSA site"
+gh repo create xantypsa-site --public --source=. --push
 ```
 
 Already initialised on `main` with the same project commit identity.

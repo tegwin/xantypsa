@@ -13,7 +13,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 // Prisma, none of which exist on the Edge runtime this file executes in.
 import { verifySessionCookie } from '@/lib/auth/edge';
 
-const SESSION_COOKIE = 'vibepsa_session';
+const SESSION_COOKIE = 'xantypsa_session';
 
 /**
  * Routes reachable without a session.
