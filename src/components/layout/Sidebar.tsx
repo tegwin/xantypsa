@@ -63,8 +63,15 @@ const NAV_ITEMS: NavItem[] = [
     icon: <Users className="h-4.5 w-4.5" />,
     module: 'crm',
     children: [
-      { label: 'Contacts', href: '/crm/contacts' },
-      { label: 'Companies', href: '/crm/companies' },
+      // Contacts and prospects belong to a company, so they sit under it.
+      {
+        label: 'Companies',
+        href: '/crm/companies',
+        children: [
+          { label: 'Contacts', href: '/crm/contacts' },
+          { label: 'Prospects', href: '/crm/prospects' },
+        ],
+      },
       { label: 'Opportunities', href: '/crm/opportunities' },
     ],
   },
@@ -146,6 +153,7 @@ const NAV_ITEMS: NavItem[] = [
     module: 'reports',
     children: [
       { label: 'Profitability', href: '/reports/profitability' },
+      { label: 'Sales Pipeline', href: '/reports/pipeline' },
     ],
   },
   {
@@ -173,6 +181,7 @@ const NAV_ITEMS: NavItem[] = [
         ],
       },
       { label: 'Service Desk', href: '/settings/service-desk' },
+      { label: 'CRM', href: '/settings/crm' },
       { label: 'Products & Services', href: '/settings/products' },
       {
         label: 'Billing',

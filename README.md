@@ -17,6 +17,32 @@ Built in the open. Contributions welcome - see [CONTRIBUTING.md](CONTRIBUTING.md
 
 Copyright © 2026 The Xanty PSA Authors.
 
+## Documentation
+
+Full documentation lives in `docs/`, built with MkDocs Material.
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r requirements-docs.txt
+.venv/bin/mkdocs serve      # read locally at http://127.0.0.1:8000
+.venv/bin/mkdocs build      # static HTML into site-docs/
+```
+
+| | |
+|---|---|
+| [Service desk](docs/SERVICE-DESK.md) | Public and private notes, the timer, statuses |
+| [CRM](docs/CRM.md) | Companies, prospects, the sales pipeline, the funnel |
+| [Profitability](docs/PROFITABILITY.md) | Burden rates, T&M, contracts, break even |
+| [API](docs/API.md) | Conventions and a reference for each area |
+| [API index](docs/API-INDEX.md) | Every route, generated from the source |
+| [Webhooks](docs/WEBHOOKS.md) | Events, signing and verification |
+
+Regenerate the API index after adding or changing a route:
+
+```bash
+node scripts/generate-api-index.mjs
+```
+
 ## Modules
 
 - **Dashboard** - KPIs, recent tickets, activity feed, revenue charts

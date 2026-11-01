@@ -6,7 +6,9 @@ export default async function CompaniesPage() {
   const session = await getAppSession();
   if (!session?.user?.tenantId) return null;
   const companies = await prisma.company.findMany({
-    where: { tenantId: session.user.tenantId },
+    // Prospects have their own section under Companies, so they are not
+    // mixed into the customer list.
+    where: { tenantId: session.user.tenantId, type: { not: 'prospect' } },
     include: { _count: { select: { contacts: true, tickets: true, contracts: true } } },
     orderBy: { createdAt: 'desc' },
     take: 100,

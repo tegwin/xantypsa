@@ -90,6 +90,7 @@ export function parseSearchParams(url: string) {
     assigneeId: searchParams.get('assigneeId') || '',
     userId: searchParams.get('userId') || '',
     projectId: searchParams.get('projectId') || '',
+    opportunityId: searchParams.get('opportunityId') || '',
     ticketId: searchParams.get('ticketId') || '',
     sortBy: searchParams.get('sortBy') || 'createdAt',
     sortDir: (searchParams.get('sortDir') || 'desc') as 'asc' | 'desc',

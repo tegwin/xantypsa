@@ -1,0 +1,53 @@
+site_name: Xanty PSA
+site_description: Open source PSA for smaller MSPs
+docs_dir: docs
+# Not site/, which is a real directory in plenty of projects.
+site_dir: site-docs
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: deep orange
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: deep orange
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+
+nav:
+  - Home: index.md
+  - Running it:
+      - Hosting: HOSTING.md
+      - Vercel: VERCEL.md
+      - Stack: STACK.md
+  - Using it:
+      - Service desk: SERVICE-DESK.md
+      - CRM: CRM.md
+      - Profitability: PROFITABILITY.md
+  - Building on it:
+      - API: API.md
+      - API index: API-INDEX.md
+      - Webhooks: WEBHOOKS.md
+      - MCP: MCP.md
+      - AI security: SECURITY-AI.md
+
+markdown_extensions:
+  - admonition
+  - tables
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - toc:
+      permalink: true

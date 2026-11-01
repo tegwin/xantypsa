@@ -8,10 +8,19 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
   const opportunity = await prisma.opportunity.findFirst({
     where: { id, tenantId: session.user.tenantId },
     include: {
-      company: { select: { id: true, name: true } },
+      company: { select: { id: true, name: true, type: true } },
       contact: { select: { id: true, firstName: true, lastName: true, email: true } },
       owner: { select: { id: true, name: true } },
       quotes: { select: { id: true, title: true, quoteNumber: true, status: true, total: true } },
+      reason: { select: { id: true, name: true, type: true } },
+      tickets: {
+        select: { id: true, ticketNumber: true, title: true, status: true, priority: true },
+        orderBy: { createdAt: 'desc' },
+      },
+      opportunityNotes: {
+        include: { user: { select: { id: true, name: true } } },
+        orderBy: { createdAt: 'desc' },
+      },
     },
   });
 
@@ -36,6 +45,7 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
       ...(body.source !== undefined && { source: body.source }),
       ...(body.notes !== undefined && { notes: body.notes }),
       ...(body.lostReason !== undefined && { lostReason: body.lostReason }),
+      ...(body.reasonId !== undefined && { reasonId: body.reasonId || null }),
       ...(body.companyId !== undefined && { companyId: body.companyId || null }),
       ...(body.contactId !== undefined && { contactId: body.contactId || null }),
       ...(body.ownerId !== undefined && { ownerId: body.ownerId || null }),

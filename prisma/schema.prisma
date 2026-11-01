@@ -17,65 +17,68 @@ datasource db {
 // ============================================================
 
 model Tenant {
-  id          String   @id @default(cuid())
+  id           String        @id @default(cuid())
   /// Hosted service only; null for self-hosted installs.
   subscription Subscription?
-  name        String
-  slug        String   @unique
-  domain      String?  @unique
-  logo        String?
-  timezone    String   @default("UTC")
-  currency    String   @default("GBP")
-  taxRate     Float    @default(20.0)
-  address     String?
-  phone       String?
-  email       String?
-  website     String?
-  settings    Json     @default("{}")
-  plan        String   @default("starter") // starter, professional, enterprise
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  name         String
+  slug         String        @unique
+  domain       String?       @unique
+  logo         String?
+  timezone     String        @default("UTC")
+  currency     String        @default("GBP")
+  taxRate      Float         @default(20.0)
+  address      String?
+  phone        String?
+  email        String?
+  website      String?
+  settings     Json          @default("{}")
+  plan         String        @default("starter") // starter, professional, enterprise
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
   // Relations
-  users           TenantUser[]
-  roles           Role[]
-  contacts        Contact[]
-  companies       Company[]
-  sites           Site[]
-  opportunities   Opportunity[]
-  tickets         Ticket[]
-  ticketQueues    TicketQueue[]
-  ticketStatuses  TicketStatus[]
-  contracts       Contract[]
-  quotes          Quote[]
-  invoices        Invoice[]
-  payments        Payment[]
-  projects        Project[]
-  tasks           Task[]
-  timeEntries     TimeEntry[]
-  billingRates    BillingRate[]
-  products        Product[]
-  reports         Report[]
-  dashboards      Dashboard[]
-  webhooks        Webhook[]
-  webhookLogs     WebhookLog[]
-  auditLogs       AuditLog[]
-  emailTemplates  EmailTemplate[]
-  tags            Tag[]
-  customFields    CustomField[]
-  slaProfiles     SLAProfile[]
-  integrations    Integration[]
-  fieldLabels         FieldLabel[]
-  apiKeys             ApiKey[]
-  crmNotes            CrmNote[]
-  documents           Document[]
-  quoteTemplates      QuoteTemplate[]
-  emailLogs           EmailLog[]
-  accountingInvoices  AccountingInvoice[]
-  assets              Asset[]
-  aiProviders         AiProvider[]
-  aiConversations     AiConversation[]
+  users              TenantUser[]
+  roles              Role[]
+  contacts           Contact[]
+  companies          Company[]
+  sites              Site[]
+  opportunities      Opportunity[]
+  tickets            Ticket[]
+  ticketQueues       TicketQueue[]
+  ticketStatuses     TicketStatus[]
+  contracts          Contract[]
+  quotes             Quote[]
+  invoices           Invoice[]
+  payments           Payment[]
+  projects           Project[]
+  tasks              Task[]
+  timeEntries        TimeEntry[]
+  billingRates       BillingRate[]
+  products           Product[]
+  reports            Report[]
+  dashboards         Dashboard[]
+  webhooks           Webhook[]
+  webhookLogs        WebhookLog[]
+  auditLogs          AuditLog[]
+  emailTemplates     EmailTemplate[]
+  tags               Tag[]
+  customFields       CustomField[]
+  slaProfiles        SLAProfile[]
+  integrations       Integration[]
+  fieldLabels        FieldLabel[]
+  apiKeys            ApiKey[]
+  crmNotes           CrmNote[]
+  documents          Document[]
+  quoteTemplates     QuoteTemplate[]
+  emailLogs          EmailLog[]
+  accountingInvoices AccountingInvoice[]
+  assets             Asset[]
+  aiProviders        AiProvider[]
+  aiConversations    AiConversation[]
+  pipelineStages     PipelineStage[]
+  winLossReasons     WinLossReason[]
+  opportunityNotes   OpportunityNote[]
 
   @@map("tenants")
 }
@@ -87,17 +90,17 @@ model Tenant {
 // A tenant's connection to an LLM provider. The API key is encrypted at rest
 // and never returned to the client.
 model AiProvider {
-  id           String   @id @default(cuid())
-  tenantId     String
-  provider     String // anthropic, openai
-  label        String
-  model        String
-  apiKeyEnc    String // AES-256-GCM, see lib/ai/crypto.ts
-  baseUrl      String? // for self-hosted / proxied endpoints
-  isDefault    Boolean  @default(false)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id        String   @id @default(cuid())
+  tenantId  String
+  provider  String // anthropic, openai
+  label     String
+  model     String
+  apiKeyEnc String // AES-256-GCM, see lib/ai/crypto.ts
+  baseUrl   String? // for self-hosted / proxied endpoints
+  isDefault Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -115,7 +118,7 @@ model AiConversation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant   Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   messages AiMessage[]
 
   @@index([tenantId])
@@ -138,15 +141,15 @@ model AiMessage {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
+  id            String               @id @default(cuid())
+  email         String               @unique
   name          String
   // Supabase owns credentials; retained only for users not yet migrated.
   passwordHash  String?
   // Links this record to the Supabase auth user.
   /// Legacy. Kept so an install that used Supabase Auth can still match its
   /// users; new installs never set it.
-  supabaseId    String?   @unique
+  supabaseId    String?              @unique
   /// TOTP shared secret, encrypted with AI_ENCRYPTION_KEY. Null until enrolled.
   totpSecret    String?
   totpEnabledAt DateTime?
@@ -154,47 +157,48 @@ model User {
   avatar        String?
   phone         String?
   // When true, the user must enrol in TOTP two-factor before using the app.
-  mfaRequired   Boolean   @default(false)
-  isActive      Boolean   @default(true)
-  isSuperAdmin  Boolean   @default(false) // Platform-level admin
+  mfaRequired   Boolean              @default(false)
+  isActive      Boolean              @default(true)
+  isSuperAdmin  Boolean              @default(false) // Platform-level admin
   lastLogin     DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
 
   // Relations
-  tenants             TenantUser[]
-  assignedTickets     Ticket[]       @relation("AssignedAgent")
-  createdTickets      Ticket[]       @relation("TicketCreator")
-  assignedTasks       Task[]         @relation("TaskAssignee")
-  createdTasks        Task[]         @relation("TaskCreator")
-  timeEntries         TimeEntry[]
-  ticketNotes         TicketNote[]
-  opportunities      Opportunity[] @relation("OpportunityOwner")
-  quoteCreator        Quote[]
-  invoiceCreator      Invoice[]
-  projectManager      Project[]      @relation("ProjectManager")
-  projectMembers      ProjectMember[]
-  auditLogs           AuditLog[]
-  notifications       Notification[]
-  sessions            Session[]
-  accounts            Account[]
-  crmNotes            CrmNote[]
-  documents           Document[]
+  tenants          TenantUser[]
+  assignedTickets  Ticket[]          @relation("AssignedAgent")
+  createdTickets   Ticket[]          @relation("TicketCreator")
+  assignedTasks    Task[]            @relation("TaskAssignee")
+  createdTasks     Task[]            @relation("TaskCreator")
+  timeEntries      TimeEntry[]
+  ticketNotes      TicketNote[]
+  opportunities    Opportunity[]     @relation("OpportunityOwner")
+  quoteCreator     Quote[]
+  invoiceCreator   Invoice[]
+  projectManager   Project[]         @relation("ProjectManager")
+  projectMembers   ProjectMember[]
+  auditLogs        AuditLog[]
+  notifications    Notification[]
+  sessions         Session[]
+  accounts         Account[]
+  crmNotes         CrmNote[]
+  documents        Document[]
+  opportunityNotes OpportunityNote[] @relation("OpportunityNoteAuthor")
 
   @@map("users")
 }
 
 model TenantUser {
-  id        String   @id @default(cuid())
-  tenantId  String
-  userId    String
-  roleId    String
-  isOwner   Boolean  @default(false)
+  id       String   @id @default(cuid())
+  tenantId String
+  userId   String
+  roleId   String
+  isOwner  Boolean  @default(false)
   // Internal hourly cost of this engineer *within this tenant*. Lives on the
   // membership, not the user, because the same person can work for more than
   // one MSP at a different cost to each.
-  costRate  Float?
-  joinedAt  DateTime @default(now())
+  costRate Float?
+  joinedAt DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -255,7 +259,7 @@ model Role {
   name        String
   slug        String
   description String?
-  permissions Json     // Array of permission strings
+  permissions Json // Array of permission strings
   isSystem    Boolean  @default(false) // Cannot be deleted
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -272,40 +276,40 @@ model Role {
 // ============================================================
 
 model Contact {
-  id          String   @id @default(cuid())
-  tenantId    String
-  companyId   String?
-  firstName   String
-  lastName    String
-  email       String?
-  phone       String?
-  mobile      String?
-  jobTitle    String?
-  department  String?
-  address     String?
-  city        String?
-  state       String?
-  postcode    String?
-  country     String?
-  notes       String?
-  source      String?  // web, referral, cold-call, etc.
-  isActive    Boolean  @default(true)
+  id              String    @id @default(cuid())
+  tenantId        String
+  companyId       String?
+  firstName       String
+  lastName        String
+  email           String?
+  phone           String?
+  mobile          String?
+  jobTitle        String?
+  department      String?
+  address         String?
+  city            String?
+  state           String?
+  postcode        String?
+  country         String?
+  notes           String?
+  source          String? // web, referral, cold-call, etc.
+  isActive        Boolean   @default(true)
   // Portal access is per contact and off by default - being a contact does not
   // imply being allowed to see the company's tickets and invoices.
-  portalEnabled Boolean  @default(false)
+  portalEnabled   Boolean   @default(false)
   portalLastLogin DateTime?
-  customData  Json     @default("{}")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  customData      Json      @default("{}")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  company  Company? @relation(fields: [companyId], references: [id])
-  companies ContactCompany[]
-  portalTokens PortalLoginToken[]
-  tickets  Ticket[]
-  opportunities Opportunity[] @relation("OpportunityContact")
-  quotes   Quote[]
-  invoices Invoice[]
+  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company       Company?           @relation(fields: [companyId], references: [id])
+  companies     ContactCompany[]
+  portalTokens  PortalLoginToken[]
+  tickets       Ticket[]
+  opportunities Opportunity[]      @relation("OpportunityContact")
+  quotes        Quote[]
+  invoices      Invoice[]
 
   @@index([tenantId])
   @@map("contacts")
@@ -327,79 +331,79 @@ model ContactCompany {
 }
 
 model Company {
-  id           String   @id @default(cuid())
-  tenantId     String
-  name         String
-  website      String?
-  phone        String?
-  email        String?
-  address1     String?
-  address2     String?
-  address3     String?
-  city         String?
-  state        String?
-  postcode     String?
-  country      String?
-  industry     String?
-  size         String?  // 1-10, 11-50, etc.
-  type         String   @default("customer") // prospect, customer, vendor, partner
+  id            String   @id @default(cuid())
+  tenantId      String
+  name          String
+  website       String?
+  phone         String?
+  email         String?
+  address1      String?
+  address2      String?
+  address3      String?
+  city          String?
+  state         String?
+  postcode      String?
+  country       String?
+  industry      String?
+  size          String? // 1-10, 11-50, etc.
+  type          String   @default("customer") // prospect, customer, vendor, partner
   // Email domains that belong to this client, e.g. ["acme.com","acme.co.uk"].
   // Incoming mail is routed to a company by matching the sender's domain.
-  emailDomains String[] @default([])
+  emailDomains  String[] @default([])
   // System records cannot be deleted: the catch-all that unmatched email lands
   // on, and the MSP's own company. Removing either would break ticket routing.
-  isSystem     Boolean  @default(false)
+  isSystem      Boolean  @default(false)
   // Exactly one company per tenant is the catch-all.
-  isCatchAll   Boolean  @default(false)
+  isCatchAll    Boolean  @default(false)
   // The client's own portal address: /portal/<portalSlug>. Globally unique
   // because the URL carries no tenant, so the slug alone has to identify one
   // company. Clients pick their own.
   portalSlug    String?  @unique
   portalEnabled Boolean  @default(false)
-  taxId        String?  // VAT number etc.
-  notes        String?
-  slaProfileId String?
-  customData   Json     @default("{}")
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  taxId         String? // VAT number etc.
+  notes         String?
+  slaProfileId  String?
+  customData    Json     @default("{}")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  slaProfile SLAProfile? @relation(fields: [slaProfileId], references: [id])
-  contacts   Contact[]
+  tenant           Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  slaProfile       SLAProfile?      @relation(fields: [slaProfileId], references: [id])
+  contacts         Contact[]
   contactCompanies ContactCompany[]
-  sites      Site[]
-  tickets    Ticket[]
-  contracts  Contract[]
-  opportunities Opportunity[]
-  quotes     Quote[]
-  invoices   Invoice[]
-  projects   Project[]
-  assets     Asset[]
+  sites            Site[]
+  tickets          Ticket[]
+  contracts        Contract[]
+  opportunities    Opportunity[]
+  quotes           Quote[]
+  invoices         Invoice[]
+  projects         Project[]
+  assets           Asset[]
 
   @@index([tenantId])
   @@map("companies")
 }
 
 model Site {
-  id          String   @id @default(cuid())
-  tenantId    String
-  companyId   String
-  name        String   @default("Main")
-  isDefault   Boolean  @default(false)
-  address1    String?
-  address2    String?
-  address3    String?
-  city        String?
-  state       String?
-  postcode    String?
-  country     String?
-  phone       String?
-  email       String?
-  notes       String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  tenantId  String
+  companyId String
+  name      String   @default("Main")
+  isDefault Boolean  @default(false)
+  address1  String?
+  address2  String?
+  address3  String?
+  city      String?
+  state     String?
+  postcode  String?
+  country   String?
+  phone     String?
+  email     String?
+  notes     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -410,30 +414,34 @@ model Site {
 }
 
 model Opportunity {
-  id          String    @id @default(cuid())
-  tenantId    String
-  companyId   String?
-  contactId   String?
-  ownerId     String
-  title       String
-  value       Float     @default(0)
-  currency    String    @default("GBP")
-  stage       String    @default("lead") // lead, qualified, proposal, negotiation, won, lost
-  probability Int       @default(0) // 0-100
-  source      String?
-  notes       String?
+  id            String    @id @default(cuid())
+  tenantId      String
+  companyId     String?
+  contactId     String?
+  ownerId       String
+  title         String
+  value         Float     @default(0)
+  currency      String    @default("GBP")
+  stage         String    @default("lead") // lead, qualified, proposal, negotiation, won, lost
+  probability   Int       @default(0) // 0-100
+  source        String?
+  notes         String?
   expectedClose DateTime?
-  closedAt    DateTime?
-  lostReason  String?
-  customData  Json      @default("{}")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  closedAt      DateTime?
+  lostReason    String? // free text, kept for opportunities closed before reasons existed
+  reasonId      String? // the chosen win or loss reason, when the tenant defines any
+  customData    Json      @default("{}")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  company Company? @relation(fields: [companyId], references: [id])
-  contact Contact? @relation("OpportunityContact", fields: [contactId], references: [id])
-  owner   User     @relation("OpportunityOwner", fields: [ownerId], references: [id])
-  quotes  Quote[]
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company          Company?          @relation(fields: [companyId], references: [id])
+  contact          Contact?          @relation("OpportunityContact", fields: [contactId], references: [id])
+  owner            User              @relation("OpportunityOwner", fields: [ownerId], references: [id])
+  quotes           Quote[]
+  reason           WinLossReason?    @relation(fields: [reasonId], references: [id])
+  opportunityNotes OpportunityNote[]
+  tickets          Ticket[]
 
   @@index([tenantId])
   @@map("opportunities")
@@ -462,17 +470,17 @@ model TicketQueue {
 }
 
 model TicketStatus {
-  id          String   @id @default(cuid())
-  tenantId    String
-  name        String   // e.g. "New", "Open", "Pending", "Resolved", "Closed"
-  slug        String   // e.g. "new", "open", "pending", "resolved", "closed"
-  color       String   @default("#94a3b8") // hex color for badges
-  isClosed    Boolean  @default(false) // treat as closed (hidden from default views)
-  isDefault   Boolean  @default(false) // default status for new tickets
-  isSystem    Boolean  @default(false) // cannot be deleted (new, closed)
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String // e.g. "New", "Open", "Pending", "Resolved", "Closed"
+  slug      String // e.g. "new", "open", "pending", "resolved", "closed"
+  color     String   @default("#94a3b8") // hex color for badges
+  isClosed  Boolean  @default(false) // treat as closed (hidden from default views)
+  isDefault Boolean  @default(false) // default status for new tickets
+  isSystem  Boolean  @default(false) // cannot be deleted (new, closed)
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -491,6 +499,7 @@ model Ticket {
   createdById   String
   queueId       String?
   contractId    String?
+  opportunityId String? // work that came out of a deal
   title         String
   description   String
   status        String    @default("new") // new, open, pending, waiting, resolved, closed
@@ -499,8 +508,8 @@ model Ticket {
   category      String?
   subcategory   String?
   source        String    @default("portal") // portal, email, phone, chat, api
-  impact        String?   // high, medium, low
-  urgency       String?   // high, medium, low
+  impact        String? // high, medium, low
+  urgency       String? // high, medium, low
   dueDate       DateTime?
   resolvedAt    DateTime?
   closedAt      DateTime?
@@ -511,14 +520,15 @@ model Ticket {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  tenant     Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  company    Company?     @relation(fields: [companyId], references: [id])
-  contact    Contact?     @relation(fields: [contactId], references: [id])
-  assignedTo User?        @relation("AssignedAgent", fields: [assignedToId], references: [id])
-  createdBy  User         @relation("TicketCreator", fields: [createdById], references: [id])
-  queue      TicketQueue? @relation(fields: [queueId], references: [id])
-  contract   Contract?    @relation(fields: [contractId], references: [id])
-  notes      TicketNote[]
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company     Company?     @relation(fields: [companyId], references: [id])
+  contact     Contact?     @relation(fields: [contactId], references: [id])
+  assignedTo  User?        @relation("AssignedAgent", fields: [assignedToId], references: [id])
+  createdBy   User         @relation("TicketCreator", fields: [createdById], references: [id])
+  queue       TicketQueue? @relation(fields: [queueId], references: [id])
+  contract    Contract?    @relation(fields: [contractId], references: [id])
+  opportunity Opportunity? @relation(fields: [opportunityId], references: [id])
+  notes       TicketNote[]
   timeEntries TimeEntry[]
 
   @@unique([tenantId, ticketNumber])
@@ -545,22 +555,22 @@ model TicketNote {
 }
 
 model SLAProfile {
-  id                  String   @id @default(cuid())
-  tenantId            String
-  name                String
-  description         String?
-  responseTimeCritical Int     @default(60)   // minutes
-  responseTimeHigh    Int      @default(240)
-  responseTimeMedium  Int      @default(480)
-  responseTimeLow     Int      @default(1440)
-  resolveTimeCritical Int      @default(240)
-  resolveTimeHigh     Int      @default(480)
-  resolveTimeMedium   Int      @default(1440)
-  resolveTimeLow      Int      @default(2880)
-  businessHoursOnly   Boolean  @default(true)
-  isDefault           Boolean  @default(false)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  tenantId             String
+  name                 String
+  description          String?
+  responseTimeCritical Int      @default(60) // minutes
+  responseTimeHigh     Int      @default(240)
+  responseTimeMedium   Int      @default(480)
+  responseTimeLow      Int      @default(1440)
+  resolveTimeCritical  Int      @default(240)
+  resolveTimeHigh      Int      @default(480)
+  resolveTimeMedium    Int      @default(1440)
+  resolveTimeLow       Int      @default(2880)
+  businessHoursOnly    Boolean  @default(true)
+  isDefault            Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   companies Company[]
@@ -574,47 +584,47 @@ model SLAProfile {
 // ============================================================
 
 model Contract {
-  id              String    @id @default(cuid())
-  tenantId        String
-  companyId       String
-  contractNumber  String
-  name            String
+  id             String    @id @default(cuid())
+  tenantId       String
+  companyId      String
+  contractNumber String
+  name           String
   // Types: time_and_materials, fixed_price, prepay_hours, managed_service
-  type            String    @default("time_and_materials")
-  status          String    @default("draft") // draft, active, suspended, expired, cancelled
-  startDate       DateTime
-  endDate         DateTime?
-  autoRenew       Boolean   @default(false)
-  renewalPeriod   Int?      // months
-  billingCycle    String    @default("monthly") // monthly, quarterly, annually
-  currency        String    @default("GBP")
-  description     String?
-  terms           String?
-  notes           String?
+  type           String    @default("time_and_materials")
+  status         String    @default("draft") // draft, active, suspended, expired, cancelled
+  startDate      DateTime
+  endDate        DateTime?
+  autoRenew      Boolean   @default(false)
+  renewalPeriod  Int? // months
+  billingCycle   String    @default("monthly") // monthly, quarterly, annually
+  currency       String    @default("GBP")
+  description    String?
+  terms          String?
+  notes          String?
 
   // === Fixed Price fields ===
-  fixedPrice        Float?    // Total contract value
-  billingMode       String?   // one_off, instalment
-  instalmentCount   Int?      // Number of instalments
-  instalmentAmount  Float?    // Per-instalment amount
+  fixedPrice       Float? // Total contract value
+  billingMode      String? // one_off, instalment
+  instalmentCount  Int? // Number of instalments
+  instalmentAmount Float? // Per-instalment amount
 
   // === Pre-Pay Hours fields ===
-  totalHours      Float?    // Block of purchased hours
-  hoursUsed       Float     @default(0)
-  overhourRate    Float?    // Rate per hour when block is exceeded (null = cannot exceed)
-  alertThreshold  Float?    // Percentage (e.g. 80) to alert when block is running low
+  totalHours     Float? // Block of purchased hours
+  hoursUsed      Float  @default(0)
+  overhourRate   Float? // Rate per hour when block is exceeded (null = cannot exceed)
+  alertThreshold Float? // Percentage (e.g. 80) to alert when block is running low
 
   // === Managed Service fields ===
-  monthlyFee      Float?    // Recurring monthly fee
-  
-  // === Common / legacy ===
-  value           Float     @default(0) // General value field
-  customData      Json      @default("{}")
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  monthlyFee Float? // Recurring monthly fee
 
-  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  company     Company             @relation(fields: [companyId], references: [id])
+  // === Common / legacy ===
+  value      Float    @default(0) // General value field
+  customData Json     @default("{}")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant      Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company     Company              @relation(fields: [companyId], references: [id])
   items       ContractItem[]
   tickets     Ticket[]
   invoices    Invoice[]
@@ -628,7 +638,7 @@ model Contract {
 
 // Billing rates EXCLUDED from a contract (charged T&M instead)
 model ContractExclusion {
-  id            String  @id @default(cuid())
+  id            String @id @default(cuid())
   contractId    String
   billingRateId String
 
@@ -641,17 +651,17 @@ model ContractExclusion {
 
 // Instalment schedule for fixed-price contracts
 model ContractInstalment {
-  id                  String    @id @default(cuid())
-  contractId          String
-  number              Int       // Instalment 1, 2, 3...
-  description         String?   // Milestone name/description
-  amount              Float
-  dueDate             DateTime
-  status              String    @default("pending") // pending, invoiced, paid
-  invoiceId           String?   // Link to invoice when billed
-  paidAt              DateTime?
-  projectMilestoneId  String?   // Link to project milestone/phase
-  createdAt           DateTime  @default(now())
+  id                 String    @id @default(cuid())
+  contractId         String
+  number             Int // Instalment 1, 2, 3...
+  description        String? // Milestone name/description
+  amount             Float
+  dueDate            DateTime
+  status             String    @default("pending") // pending, invoiced, paid
+  invoiceId          String? // Link to invoice when billed
+  paidAt             DateTime?
+  projectMilestoneId String? // Link to project milestone/phase
+  createdAt          DateTime  @default(now())
 
   contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
@@ -711,19 +721,19 @@ model Quote {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  company   Company?    @relation(fields: [companyId], references: [id])
-  contact   Contact?    @relation(fields: [contactId], references: [id])
-  opportunity Opportunity? @relation(fields: [opportunityId], references: [id])
-  accessToken   String?   @unique // UUID for portal access
-  securityMode  String    @default("none") // none, email, pin
-  pinHash       String?
-  rejectedAt    DateTime?
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company        Company?     @relation(fields: [companyId], references: [id])
+  contact        Contact?     @relation(fields: [contactId], references: [id])
+  opportunity    Opportunity? @relation(fields: [opportunityId], references: [id])
+  accessToken    String?      @unique // UUID for portal access
+  securityMode   String       @default("none") // none, email, pin
+  pinHash        String?
+  rejectedAt     DateTime?
   rejectedReason String?
 
-  createdBy User        @relation(fields: [createdById], references: [id])
+  createdBy User            @relation(fields: [createdById], references: [id])
   items     QuoteItem[]
-  invoice   Invoice?    @relation("QuoteInvoice")
+  invoice   Invoice?        @relation("QuoteInvoice")
   signature QuoteSignature?
   comments  QuoteComment[]
 
@@ -732,21 +742,21 @@ model Quote {
 }
 
 model QuoteItem {
-  id          String  @id @default(cuid())
-  quoteId     String
-  productId   String?
-  description String
-  quantity    Float   @default(1)
-  unitPrice   Float   @default(0)
-  taxRate     Float   @default(20)
-  discount    Float   @default(0)
-  total       Float   @default(0)
-  sortOrder   Int     @default(0)
-  isOptional  Boolean @default(false)
-  section     String? // Group items under sections
-  billingType String  @default("one_off") // one_off, recurring
+  id            String  @id @default(cuid())
+  quoteId       String
+  productId     String?
+  description   String
+  quantity      Float   @default(1)
+  unitPrice     Float   @default(0)
+  taxRate       Float   @default(20)
+  discount      Float   @default(0)
+  total         Float   @default(0)
+  sortOrder     Int     @default(0)
+  isOptional    Boolean @default(false)
+  section       String? // Group items under sections
+  billingType   String  @default("one_off") // one_off, recurring
   billingPeriod String? // monthly, quarterly, annual
-  costPrice   Float?  // For profitability tracking
+  costPrice     Float? // For profitability tracking
 
   quote   Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   product Product? @relation(fields: [productId], references: [id])
@@ -784,7 +794,7 @@ model Invoice {
   terms         String?
   paymentTerms  String    @default("net_30") // due_on_receipt, net_15, net_30, net_60
   isRecurring   Boolean   @default(false)
-  recurringFreq String?   // monthly, quarterly, annually
+  recurringFreq String? // monthly, quarterly, annually
   nextRecurring DateTime?
   customData    Json      @default("{}")
   createdAt     DateTime  @default(now())
@@ -823,16 +833,16 @@ model InvoiceItem {
 }
 
 model Payment {
-  id          String   @id @default(cuid())
-  tenantId    String
-  invoiceId   String
-  amount      Float
-  currency    String   @default("GBP")
-  method      String   @default("bank_transfer") // bank_transfer, card, cash, cheque, paypal, stripe, direct_debit
-  reference   String?
-  notes       String?
-  paidAt      DateTime @default(now())
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  tenantId  String
+  invoiceId String
+  amount    Float
+  currency  String   @default("GBP")
+  method    String   @default("bank_transfer") // bank_transfer, card, cash, cheque, paypal, stripe, direct_debit
+  reference String?
+  notes     String?
+  paidAt    DateTime @default(now())
+  createdAt DateTime @default(now())
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoice Invoice @relation(fields: [invoiceId], references: [id])
@@ -929,13 +939,13 @@ model Task {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  project    Project?   @relation(fields: [projectId], references: [id])
-  milestone  Milestone? @relation(fields: [milestoneId], references: [id])
-  assignee   User?      @relation("TaskAssignee", fields: [assigneeId], references: [id])
-  createdBy  User       @relation("TaskCreator", fields: [createdById], references: [id])
-  parentTask Task?      @relation("Subtasks", fields: [parentTaskId], references: [id])
-  subtasks   Task[]     @relation("Subtasks")
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  project     Project?    @relation(fields: [projectId], references: [id])
+  milestone   Milestone?  @relation(fields: [milestoneId], references: [id])
+  assignee    User?       @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdBy   User        @relation("TaskCreator", fields: [createdById], references: [id])
+  parentTask  Task?       @relation("Subtasks", fields: [parentTaskId], references: [id])
+  subtasks    Task[]      @relation("Subtasks")
   timeEntries TimeEntry[]
 
   @@index([tenantId])
@@ -949,9 +959,9 @@ model Task {
 model BillingRate {
   id              String   @id @default(cuid())
   tenantId        String
-  name            String   // e.g. "Standard", "Premium", "Emergency", "Out of Hours"
-  code            String?  // e.g. "STD", "PREM", "OOH"
-  rate            Float    // £ per hour
+  name            String // e.g. "Standard", "Premium", "Emergency", "Out of Hours"
+  code            String? // e.g. "STD", "PREM", "OOH"
+  rate            Float // £ per hour
   costRate        Float    @default(0) // internal cost rate
   minimumMinutes  Int      @default(15) // minimum billable time
   roundingMinutes Int      @default(15) // round up to nearest X minutes
@@ -966,8 +976,8 @@ model BillingRate {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  timeEntries TimeEntry[]
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  timeEntries        TimeEntry[]
   contractExclusions ContractExclusion[]
 
   @@unique([tenantId, name])
@@ -983,7 +993,7 @@ model TimeEntry {
   taskId        String?
   projectId     String?
   billingRateId String?
-  contractId    String?   // Which contract this was charged against
+  contractId    String? // Which contract this was charged against
   // How this entry is charged: contract (included in contract), tam (time & materials), excluded (rate excluded from contract, billed T&M)
   chargeType    String    @default("tam") // tam, contract, excluded
   description   String?
@@ -993,8 +1003,8 @@ model TimeEntry {
   billable      Boolean   @default(true)
   billed        Boolean   @default(false)
   isOOH         Boolean   @default(false) // out of hours
-  rate          Float?    // actual rate charged (after multiplier)
-  billedAmount  Float?    // calculated: roundedMinutes / 60 * rate
+  rate          Float? // actual rate charged (after multiplier)
+  billedAmount  Float? // calculated: roundedMinutes / 60 * rate
   internalCost  Float?
   startTime     DateTime?
   endTime       DateTime?
@@ -1031,9 +1041,9 @@ model Product {
   taxRate       Float    @default(20)
   unit          String   @default("each") // each, hour, month, year, user, device
   isRecurring   Boolean  @default(false)
-  recurringFreq String?  // monthly, quarterly, annually
+  recurringFreq String? // monthly, quarterly, annually
   billingType   String   @default("one_off") // one_off, recurring
-  billingPeriod String?  // monthly, quarterly, semi_annual, annual
+  billingPeriod String? // monthly, quarterly, semi_annual, annual
   isService     Boolean  @default(false)
   isBundle      Boolean  @default(false)
   isActive      Boolean  @default(true)
@@ -1065,7 +1075,7 @@ model Dashboard {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenant  Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant  Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   widgets DashboardWidget[]
 
   @@index([tenantId])
@@ -1087,17 +1097,17 @@ model DashboardWidget {
 }
 
 model Report {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   tenantId    String
   name        String
   description String?
-  type        String   // tickets, revenue, time, projects, sla, custom
-  config      Json     @default("{}") // Filters, grouping, date range etc.
-  schedule    String?  // cron expression for scheduled reports
-  recipients  Json     @default("[]") // email addresses
+  type        String // tickets, revenue, time, projects, sla, custom
+  config      Json      @default("{}") // Filters, grouping, date range etc.
+  schedule    String? // cron expression for scheduled reports
+  recipients  Json      @default("[]") // email addresses
   lastRunAt   DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -1110,17 +1120,17 @@ model Report {
 // ============================================================
 
 model Webhook {
-  id          String   @id @default(cuid())
-  tenantId    String
-  name        String
-  url         String
-  secret      String?
-  events      Json     @default("[]") // ticket.created, invoice.paid, etc.
-  isActive    Boolean  @default(true)
-  headers     Json     @default("{}")
-  retryCount  Int      @default(3)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  tenantId   String
+  name       String
+  url        String
+  secret     String?
+  events     Json     @default("[]") // ticket.created, invoice.paid, etc.
+  isActive   Boolean  @default(true)
+  headers    Json     @default("{}")
+  retryCount Int      @default(3)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   tenant Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   logs   WebhookLog[]
@@ -1149,15 +1159,15 @@ model WebhookLog {
 }
 
 model Integration {
-  id          String   @id @default(cuid())
-  tenantId    String
-  type        String   // halo, autotask, xero, quickbooks, stripe, mailgun
-  name        String
-  config      Json     @default("{}") // API keys, URLs, etc. (encrypted at app level)
-  isActive    Boolean  @default(true)
-  lastSyncAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String    @id @default(cuid())
+  tenantId   String
+  type       String // halo, autotask, xero, quickbooks, stripe, mailgun
+  name       String
+  config     Json      @default("{}") // API keys, URLs, etc. (encrypted at app level)
+  isActive   Boolean   @default(true)
+  lastSyncAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -1198,10 +1208,10 @@ model TagAssignment {
 model CustomField {
   id         String  @id @default(cuid())
   tenantId   String
-  entityType String  // contact, company, ticket, etc.
+  entityType String // contact, company, ticket, etc.
   name       String
   fieldKey   String
-  fieldType  String  // text, number, date, select, multiselect, checkbox, url, email
+  fieldType  String // text, number, date, select, multiselect, checkbox, url, email
   options    Json    @default("[]") // For select/multiselect
   required   Boolean @default(false)
   sortOrder  Int     @default(0)
@@ -1216,7 +1226,7 @@ model AuditLog {
   id         String   @id @default(cuid())
   tenantId   String
   userId     String?
-  action     String   // created, updated, deleted, login, etc.
+  action     String // created, updated, deleted, login, etc.
   entityType String
   entityId   String
   changes    Json     @default("{}")
@@ -1272,9 +1282,9 @@ model EmailTemplate {
 model FieldLabel {
   id         String @id @default(cuid())
   tenantId   String
-  entityType String   // "company", "contact", "site", etc.
-  fieldName  String   // "address1", "phone", "email", etc.
-  label      String   // Custom label text
+  entityType String // "company", "contact", "site", etc.
+  fieldName  String // "address1", "phone", "email", etc.
+  label      String // Custom label text
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -1288,7 +1298,7 @@ model ApiKey {
   tenantId    String
   name        String
   keyHash     String
-  keyPrefix   String    // first 8 chars for display
+  keyPrefix   String // first 8 chars for display
   permissions Json      @default("[]")
   lastUsedAt  DateTime?
   expiresAt   DateTime?
@@ -1305,7 +1315,7 @@ model ApiKey {
 model CrmNote {
   id         String   @id @default(cuid())
   tenantId   String
-  entityType String   // "company", "contact", "opportunity"
+  entityType String // "company", "contact", "opportunity"
   entityId   String
   userId     String
   content    String
@@ -1349,7 +1359,7 @@ model Document {
 model QuoteSignature {
   id            String   @id @default(cuid())
   quoteId       String   @unique
-  signatureData String   // Base64 PNG
+  signatureData String // Base64 PNG
   signerName    String
   signerEmail   String?
   signerTitle   String?
@@ -1363,18 +1373,18 @@ model QuoteSignature {
 }
 
 model QuoteComment {
-  id           String   @id @default(cuid())
-  quoteId      String
-  authorName   String
-  authorEmail  String?
-  content      String
-  isFromCustomer Boolean @default(false)
-  isInternal   Boolean  @default(false)
-  parentId     String?
-  createdAt    DateTime @default(now())
+  id             String   @id @default(cuid())
+  quoteId        String
+  authorName     String
+  authorEmail    String?
+  content        String
+  isFromCustomer Boolean  @default(false)
+  isInternal     Boolean  @default(false)
+  parentId       String?
+  createdAt      DateTime @default(now())
 
-  quote  Quote         @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-  parent QuoteComment? @relation("CommentReplies", fields: [parentId], references: [id])
+  quote   Quote          @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  parent  QuoteComment?  @relation("CommentReplies", fields: [parentId], references: [id])
   replies QuoteComment[] @relation("CommentReplies")
 
   @@index([quoteId])
@@ -1417,21 +1427,21 @@ model EmailLog {
 }
 
 model AccountingInvoice {
-  id                   String    @id @default(cuid())
-  tenantId             String
-  quoteId              String?
-  invoiceId            String?
-  platform             String    // xero, quickbooks
-  externalInvoiceId    String?
+  id                    String    @id @default(cuid())
+  tenantId              String
+  quoteId               String?
+  invoiceId             String?
+  platform              String // xero, quickbooks
+  externalInvoiceId     String?
   externalInvoiceNumber String?
-  externalUrl          String?
-  status               String    @default("pending") // pending, synced, error
-  errorMessage         String?
-  totalAmount          Float?
-  currency             String?
-  syncedAt             DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  externalUrl           String?
+  status                String    @default("pending") // pending, synced, error
+  errorMessage          String?
+  totalAmount           Float?
+  currency              String?
+  syncedAt              DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -1445,26 +1455,26 @@ model AccountingInvoice {
 // ============================================================
 
 model Asset {
-  id            String    @id @default(cuid())
-  tenantId      String
-  companyId     String?
-  siteId        String?
-  contactId     String?
-  name          String
-  assetTag      String?
-  serialNumber  String?
-  type          String    @default("device") // device, server, network, software, peripheral, other
-  manufacturer  String?
-  model         String?
-  status        String    @default("active") // active, inactive, retired, in_repair, lost
-  purchaseDate  DateTime?
+  id             String    @id @default(cuid())
+  tenantId       String
+  companyId      String?
+  siteId         String?
+  contactId      String?
+  name           String
+  assetTag       String?
+  serialNumber   String?
+  type           String    @default("device") // device, server, network, software, peripheral, other
+  manufacturer   String?
+  model          String?
+  status         String    @default("active") // active, inactive, retired, in_repair, lost
+  purchaseDate   DateTime?
   warrantyExpiry DateTime?
-  notes         String?
-  rmmSource     String?   // ninja, datto, manual
-  rmmExternalId String?   // ID in the RMM system
-  customData    Json      @default("{}")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  notes          String?
+  rmmSource      String? // ninja, datto, manual
+  rmmExternalId  String? // ID in the RMM system
+  customData     Json      @default("{}")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   company Company? @relation(fields: [companyId], references: [id])
@@ -1507,15 +1517,15 @@ model PortalLoginToken {
 /// The hosted plan a tenant is on. Flat monthly per MSP, tiered by size - 
 /// deliberately not per seat, so growing a team never costs more.
 model Plan {
-  id          String  @id @default(cuid())
+  id           String  @id @default(cuid())
   /// Stable key used in code: starter, growth, scale.
-  key         String  @unique
-  name        String
-  description String?
+  key          String  @unique
+  name         String
+  description  String?
   /// Pence per month, to avoid floating point on money.
   priceMonthly Int
   priceYearly  Int?
-  currency     String @default("GBP")
+  currency     String  @default("GBP")
 
   /// Soft limits. Null means unlimited. Enforced only when hosted.
   maxUsers     Int?
@@ -1548,14 +1558,14 @@ model Subscription {
   status String @default("trialing")
 
   /// Paddle (merchant of record - it handles VAT and sales tax liability).
-  provider           String  @default("paddle")
-  providerCustomerId String?
+  provider               String  @default("paddle")
+  providerCustomerId     String?
   providerSubscriptionId String? @unique
 
-  trialEndsAt        DateTime?
-  currentPeriodEnd   DateTime?
-  cancelAt           DateTime?
-  cancelledAt        DateTime?
+  trialEndsAt      DateTime?
+  currentPeriodEnd DateTime?
+  cancelAt         DateTime?
+  cancelledAt      DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1573,15 +1583,15 @@ model Subscription {
 /// and a replay is recognised rather than double-applied. It is also the only
 /// record of what the provider actually said when a charge is disputed.
 model BillingEvent {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   provider        String
-  providerEventId String   @unique
+  providerEventId String    @unique
   eventType       String
   tenantId        String?
   payload         Json
   processedAt     DateTime?
   error           String?
-  createdAt       DateTime @default(now())
+  createdAt       DateTime  @default(now())
 
   @@index([tenantId])
   @@index([eventType])
@@ -1605,4 +1615,75 @@ model PasswordResetToken {
 
   @@index([userId])
   @@map("password_reset_tokens")
+}
+
+// ============================================================
+// CRM configuration
+// ============================================================
+
+/// A stage in the sales pipeline. Defined per tenant so each MSP can run its
+/// own process, and reported on as a funnel.
+model PipelineStage {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  slug        String
+  color       String   @default("#3b82f6")
+  /// Default probability applied to an opportunity entering this stage.
+  probability Int      @default(0)
+  /// Terminal stages. An opportunity in one of these is out of the pipeline.
+  isWon       Boolean  @default(false)
+  isLost      Boolean  @default(false)
+  isDefault   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("pipeline_stages")
+}
+
+/// Why an opportunity was won or lost. Optional: a tenant that defines none
+/// simply never sees the field.
+model WinLossReason {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  /// "win" or "loss".
+  type      String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  opportunities Opportunity[]
+
+  @@unique([tenantId, type, name])
+  @@index([tenantId])
+  @@map("win_loss_reasons")
+}
+
+/// A note on an opportunity. Stage changes write a system note here, so the
+/// history of a deal reads in one place.
+model OpportunityNote {
+  id            String   @id @default(cuid())
+  tenantId      String
+  opportunityId String
+  userId        String?
+  content       String
+  isSystem      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  user        User?       @relation("OpportunityNoteAuthor", fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([opportunityId])
+  @@map("opportunity_notes")
 }

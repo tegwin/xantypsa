@@ -48,6 +48,7 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
   if (body.contactId !== undefined) data.contactId = body.contactId || null;
   if (body.assignedToId !== undefined) data.assignedToId = body.assignedToId || null;
   if (body.contractId !== undefined) data.contractId = body.contractId || null;
+  if (body.opportunityId !== undefined) data.opportunityId = body.opportunityId || null;
   if (body.dueDate !== undefined) data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
 
   if (body.status !== undefined && body.status !== ticket.status) {

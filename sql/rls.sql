@@ -164,6 +164,11 @@ DROP POLICY IF EXISTS ai_tenant_isolation ON "opportunities";
 CREATE POLICY ai_tenant_isolation ON "opportunities"
   FOR SELECT USING ("tenantId" = current_setting('app.tenant_id', true));
 
+ALTER TABLE "opportunity_notes" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS ai_tenant_isolation ON "opportunity_notes";
+CREATE POLICY ai_tenant_isolation ON "opportunity_notes"
+  FOR SELECT USING ("tenantId" = current_setting('app.tenant_id', true));
+
 ALTER TABLE "password_reset_tokens" ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS ai_tenant_isolation ON "password_reset_tokens";
 -- PasswordResetToken: no path to a tenant - denied by default.
@@ -171,6 +176,11 @@ DROP POLICY IF EXISTS ai_tenant_isolation ON "password_reset_tokens";
 ALTER TABLE "payments" ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS ai_tenant_isolation ON "payments";
 CREATE POLICY ai_tenant_isolation ON "payments"
+  FOR SELECT USING ("tenantId" = current_setting('app.tenant_id', true));
+
+ALTER TABLE "pipeline_stages" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS ai_tenant_isolation ON "pipeline_stages";
+CREATE POLICY ai_tenant_isolation ON "pipeline_stages"
   FOR SELECT USING ("tenantId" = current_setting('app.tenant_id', true));
 
 ALTER TABLE "plans" ENABLE ROW LEVEL SECURITY;
@@ -324,6 +334,11 @@ CREATE POLICY ai_tenant_isolation ON "webhook_logs"
 ALTER TABLE "webhooks" ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS ai_tenant_isolation ON "webhooks";
 CREATE POLICY ai_tenant_isolation ON "webhooks"
+  FOR SELECT USING ("tenantId" = current_setting('app.tenant_id', true));
+
+ALTER TABLE "win_loss_reasons" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS ai_tenant_isolation ON "win_loss_reasons";
+CREATE POLICY ai_tenant_isolation ON "win_loss_reasons"
   FOR SELECT USING ("tenantId" = current_setting('app.tenant_id', true));
 
 COMMIT;

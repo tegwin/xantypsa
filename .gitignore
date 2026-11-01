@@ -41,3 +41,4 @@ yarn-error.log*
 # Private domain list for scripts/secret-scan.sh
 .secret-scan-domains
 .env*
+site-docs

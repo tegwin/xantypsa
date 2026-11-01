@@ -20,6 +20,7 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
   if (p.status) where.status = p.status;
   if (p.type) where.type = p.type;
   if (p.companyId) where.companyId = p.companyId;
+  if (p.opportunityId) where.opportunityId = p.opportunityId;
   if (p.assigneeId) where.assignedToId = p.assigneeId;
 
   const [items, total] = await Promise.all([
@@ -65,6 +66,7 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
       source: body.source || 'portal',
       category: body.category || null,
       companyId: body.companyId || null,
+      opportunityId: body.opportunityId || null,
       contactId: body.contactId || null,
       assignedToId: body.assignedToId || null,
       contractId: body.contractId || null,
