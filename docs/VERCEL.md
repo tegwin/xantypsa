@@ -1,4 +1,4 @@
-# Putting XantyPSA on Vercel
+# Putting Xanty PSA on Vercel
 
 End-to-end, from a working local install to logging in from a browser anywhere.
 Budget 30 minutes the first time.
@@ -7,7 +7,7 @@ There are two separate deployments and they are independent:
 
 | | What it is | Domain |
 |---|---|---|
-| **The app** | XantyPSA itself — the thing you log into | `app.vibepsa.net` |
+| **The app** | Xanty PSA itself — the thing you log into | `app.vibepsa.net` |
 | **The site** | The marketing page in `xantypsa-site/` | `vibepsa.net` |
 
 Do the app first; that's the one you asked about.
@@ -28,7 +28,7 @@ later without rewriting history, and it is visible to anyone who clones. Both
 repos are already set to a project identity rather than a personal one:
 
 ```bash
-git config user.name    # → XantyPSA
+git config user.name    # → Xanty PSA
 git config user.email   # → noreply@vibepsa.net
 ```
 
@@ -45,7 +45,7 @@ Then commit and push:
 ```bash
 cd /path/to/xantypsa
 git add -A
-git commit -m "XantyPSA"
+git commit -m "Xanty PSA"
 gh auth login          # sign in as the new account, not your usual one
 gh repo create xantypsa --private --source=. --push
 ```
@@ -161,7 +161,7 @@ Separate Vercel project, same account, from `xantypsa-site/`.
 
 ```bash
 cd ../xantypsa-site
-git add -A && git commit -m "XantyPSA site"
+git add -A && git commit -m "Xanty PSA site"
 gh repo create xantypsa-site --public --source=. --push
 ```
 

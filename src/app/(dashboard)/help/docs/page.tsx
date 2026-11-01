@@ -191,7 +191,7 @@ const HELP_SECTIONS: HelpSection[] = [
     content: (
       <div className="space-y-4 text-sm text-slate-400 leading-relaxed">
         <p>
-          Contracts define the commercial terms between you and your clients. XantyPSA supports four contract types: Time &
+          Contracts define the commercial terms between you and your clients. Xanty PSA supports four contract types: Time &
           Materials (T&M), Fixed Price, Pre-Pay Hours, and Managed Service. Each type has specific billing behaviour that
           determines how time entries logged against tickets are charged.
         </p>
@@ -367,7 +367,7 @@ const HELP_SECTIONS: HelpSection[] = [
     content: (
       <div className="space-y-4 text-sm text-slate-400 leading-relaxed">
         <p>
-          Project Management in XantyPSA provides tools for planning, tracking, and delivering client projects. Each project
+          Project Management in Xanty PSA provides tools for planning, tracking, and delivering client projects. Each project
           has a name, description, manager, status, priority, budget (hours and/or monetary), start and end dates, and a
           billing method (fixed price, time & materials, or retainer).
         </p>
@@ -435,7 +435,7 @@ const HELP_SECTIONS: HelpSection[] = [
     content: (
       <div className="space-y-4 text-sm text-slate-400 leading-relaxed">
         <p>
-          Email settings configure how XantyPSA sends and receives email. Outgoing email can be configured via SMTP or
+          Email settings configure how Xanty PSA sends and receives email. Outgoing email can be configured via SMTP or
           Microsoft 365 Graph API integration. SMTP requires a server address, port, username, and password. Microsoft
           365 integration uses OAuth for secure, modern authentication.
         </p>
@@ -468,7 +468,7 @@ const HELP_SECTIONS: HelpSection[] = [
     content: (
       <div className="space-y-4 text-sm text-slate-400 leading-relaxed">
         <p>
-          Custom Fields extend the data model of XantyPSA to capture information unique to your business. You can add custom
+          Custom Fields extend the data model of Xanty PSA to capture information unique to your business. You can add custom
           fields to Companies, Contacts, Tickets, Assets, Contracts, and other entities. Field types include text, number,
           date, dropdown (select), checkbox, and multi-select.
         </p>
@@ -499,7 +499,7 @@ const HELP_SECTIONS: HelpSection[] = [
     content: (
       <div className="space-y-4 text-sm text-slate-400 leading-relaxed">
         <p>
-          Webhooks allow XantyPSA to notify external systems when events occur. You can configure outgoing webhooks that send
+          Webhooks allow Xanty PSA to notify external systems when events occur. You can configure outgoing webhooks that send
           HTTP POST requests to a URL of your choice when specific events are triggered. Supported events include ticket
           creation, ticket status changes, invoice creation, contract changes, and more.
         </p>
@@ -530,7 +530,7 @@ const HELP_SECTIONS: HelpSection[] = [
     content: (
       <div className="space-y-4 text-sm text-slate-400 leading-relaxed">
         <p>
-          API Keys provide programmatic access to the XantyPSA API. Each key has a name, permission set, and expiry date.
+          API Keys provide programmatic access to the Xanty PSA API. Each key has a name, permission set, and expiry date.
           Keys are generated in the Settings area and displayed once at creation time. Store them securely as they cannot be
           retrieved after initial display.
         </p>
@@ -561,7 +561,7 @@ const HELP_SECTIONS: HelpSection[] = [
     content: (
       <div className="space-y-4 text-sm text-slate-400 leading-relaxed">
         <p>
-          Integrations connect XantyPSA with external tools and platforms to streamline your workflows. Currently supported
+          Integrations connect Xanty PSA with external tools and platforms to streamline your workflows. Currently supported
           integrations include RMM tools (for asset synchronisation), accounting platforms (for invoice sync), and documentation
           systems (for knowledge base linking).
         </p>
@@ -571,8 +571,8 @@ const HELP_SECTIONS: HelpSection[] = [
           by serial number or hostname and linked to the correct company.
         </p>
         <p>
-          Accounting integrations (e.g., Xero, QuickBooks) sync invoices and payments between XantyPSA and your accounting
-          software. When an invoice is created or payment recorded in XantyPSA, the corresponding transaction is created in
+          Accounting integrations (e.g., Xero, QuickBooks) sync invoices and payments between Xanty PSA and your accounting
+          software. When an invoice is created or payment recorded in Xanty PSA, the corresponding transaction is created in
           your accounting platform, eliminating double entry.
         </p>
         <p>
@@ -582,7 +582,7 @@ const HELP_SECTIONS: HelpSection[] = [
         <p className="text-white/70 font-medium">Key Tips:</p>
         <ul className="list-disc list-inside space-y-1 text-slate-400">
           <li>Configure RMM sync schedules to balance freshness with API rate limits.</li>
-          <li>Map companies between XantyPSA and your accounting platform carefully.</li>
+          <li>Map companies between Xanty PSA and your accounting platform carefully.</li>
           <li>Test integrations with a small data set before enabling full synchronisation.</li>
         </ul>
         <p className="text-xs text-slate-500">Related: Assets, Invoices, API Keys</p>
@@ -596,12 +596,12 @@ const HELP_SECTIONS: HelpSection[] = [
     content: (
       <div className="space-y-4 text-sm text-slate-400 leading-relaxed">
         <p>
-          The Import tool lets you bulk-load data into XantyPSA from CSV files. Supported entity types include Companies,
+          The Import tool lets you bulk-load data into Xanty PSA from CSV files. Supported entity types include Companies,
           Contacts, Assets, Tickets, and Products. Each import type has a specific column mapping that you configure during
           the import process.
         </p>
         <p>
-          The import wizard walks you through uploading your CSV file, mapping columns to XantyPSA fields, previewing the data,
+          The import wizard walks you through uploading your CSV file, mapping columns to Xanty PSA fields, previewing the data,
           and executing the import. Validation runs before the import to catch errors like missing required fields, invalid
           email formats, or duplicate records. You can fix issues in the preview before committing.
         </p>
@@ -660,7 +660,7 @@ const HELP_SECTIONS: HelpSection[] = [
     content: (
       <div className="space-y-4 text-sm text-slate-400 leading-relaxed">
         <p>
-          XantyPSA provides a REST API for programmatic access to all data and operations. The API uses JSON for request and
+          Xanty PSA provides a REST API for programmatic access to all data and operations. The API uses JSON for request and
           response bodies, and authentication is handled via Bearer tokens (API Keys). All endpoints follow RESTful
           conventions with standard HTTP methods (GET, POST, PATCH, DELETE).
         </p>
@@ -712,7 +712,7 @@ export default function HelpDocsPage() {
 
   return (
     <div className="animate-fadeIn">
-      <PageHeader title="Help Documentation" subtitle="Comprehensive guide to using XantyPSA">
+      <PageHeader title="Help Documentation" subtitle="Comprehensive guide to using Xanty PSA">
         <div className="flex gap-2">
           <button onClick={expandAll} className="btn-secondary text-sm">Expand All</button>
           <button onClick={collapseAll} className="btn-secondary text-sm">Collapse All</button>

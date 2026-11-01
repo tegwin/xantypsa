@@ -164,7 +164,7 @@ const NAV_ITEMS: NavItem[] = [
           { label: 'Quote Templates', href: '/settings/quote-templates' },
         ],
       },
-      // Everything that connects XantyPSA to something else lives under
+      // Everything that connects Xanty PSA to something else lives under
       // Integrations rather than as siblings of it.
       {
         label: 'Integrations',
@@ -224,10 +224,10 @@ export default function Sidebar() {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-surface-700/50">
-        <Image src="/logo.png" alt="XantyPSA" width={32} height={32} className="rounded-lg" />
+        <Image src="/logo.png" alt="Xanty PSA" width={32} height={32} className="rounded-lg" />
         {!collapsed && (
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-surface-100 truncate">XantyPSA</p>
+            <p className="text-sm font-semibold text-surface-100 truncate">Xanty PSA</p>
             <p className="text-xs text-surface-500 truncate">{session?.user?.tenantName}</p>
           </div>
         )}

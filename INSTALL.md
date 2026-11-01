@@ -1,4 +1,4 @@
-# XantyPSA — Installation
+# Xanty PSA — Installation
 
 Getting a working instance from nothing. Takes about 15 minutes, most of it
 waiting for Supabase to provision.

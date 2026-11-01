@@ -9,6 +9,8 @@
 // Exists because the auth path is the one thing that must never quietly break,
 // and typechecking cannot tell you a cookie round-trips.
 
+import { randomUUID } from 'node:crypto';
+
 const [, , baseArg, email, password] = process.argv;
 const base = (baseArg ?? 'http://localhost:3000').replace(/\/$/, '');
 
@@ -57,7 +59,9 @@ async function main() {
   const bad = await get('/api/auth/signin', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', cookie: jar },
-    body: JSON.stringify({ email, password: 'definitely-not-the-password' }),
+    // Generated, never a literal: a scanner cannot tell a test password from a
+    // real one, and neither can someone reading the diff.
+    body: JSON.stringify({ email, password: randomUUID() }),
   });
   check('wrong password refused', bad.status === 401, `HTTP ${bad.status}`);
 

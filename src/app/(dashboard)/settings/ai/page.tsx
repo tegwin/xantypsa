@@ -86,7 +86,7 @@ export default function AiSettingsPage() {
     <div className="space-y-6 animate-fadeIn">
       <PageHeader
         title="AI"
-        description="Connect XantyPSA to a language model. It learns your data model automatically and can answer questions and create records."
+        description="Connect Xanty PSA to a language model. It learns your data model automatically and can answer questions and create records."
       />
 
       {error && (

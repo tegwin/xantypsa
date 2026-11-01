@@ -72,7 +72,7 @@ export default function UserEditPage() {
   };
 
   const impersonate = async () => {
-    if (!confirm(`View XantyPSA as ${user.name}? Everything you do will be recorded against you.`)) return;
+    if (!confirm(`View Xanty PSA as ${user.name}? Everything you do will be recorded against you.`)) return;
     setImpersonating(true);
     try {
       const res = await fetch('/api/impersonate', {
@@ -201,7 +201,7 @@ export default function UserEditPage() {
               <span className="font-medium text-surface-100">Require two-factor authentication</span>
               <br />
               Enforced immediately: on their next page load they are sent to set up an
-              authenticator and cannot reach XantyPSA until it is done.
+              authenticator and cannot reach Xanty PSA until it is done.
             </span>
           </label>
 

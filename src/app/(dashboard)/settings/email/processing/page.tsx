@@ -67,7 +67,7 @@ export default function EmailProcessingPage() {
               </h2>
               {connected ? (
                 <p className="mt-1 text-sm text-surface-400">
-                  Microsoft 365 pushes each new message to XantyPSA as it arrives —{' '}
+                  Microsoft 365 pushes each new message to Xanty PSA as it arrives —{' '}
                   <span className="text-surface-300">{status.mailbox}</span>. Nothing is polled and
                   nothing needs pressing.
                 </p>
@@ -164,7 +164,7 @@ export default function EmailProcessingPage() {
           <div className="text-sm text-surface-400">
             <p className="font-medium text-surface-200">Why there is no &ldquo;fetch now&rdquo;</p>
             <p className="mt-1">
-              Microsoft 365 notifies XantyPSA the moment a message lands, so tickets appear in
+              Microsoft 365 notifies Xanty PSA the moment a message lands, so tickets appear in
               seconds without anything on a timer. A manual fetch would only ever hide a broken
               subscription — if mail is not arriving, this page says so and the fix is to reconnect.
             </p>

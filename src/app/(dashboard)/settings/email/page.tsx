@@ -157,7 +157,7 @@ export default function EmailSettingsPage() {
                     <ul className="list-disc list-inside ml-4 mt-1 text-slate-400">
                       <li>Go to <a href="https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">Azure Portal → App Registrations</a></li>
                       <li>Click "New Registration"</li>
-                      <li>Name: "XantyPSA Email Integration"</li>
+                      <li>Name: "Xanty PSA Email Integration"</li>
                       <li>Supported account types: "Single tenant"</li>
                       <li>Click "Register"</li>
                     </ul>
@@ -219,7 +219,7 @@ export default function EmailSettingsPage() {
             </div>
             <p className="text-xs text-slate-400 mt-2">
               <strong>Connect Mailbox</strong> registers with Microsoft so new email is pushed
-              straight to XantyPSA as tickets. It renews itself; if the mailbox is quiet for
+              straight to Xanty PSA as tickets. It renews itself; if the mailbox is quiet for
               several days and the connection lapses, press it again.
             </p>
           </div>
@@ -233,7 +233,7 @@ export default function EmailSettingsPage() {
             </div>
 
             <p className="text-sm text-slate-400">
-              Microsoft 365 notifies XantyPSA the moment a message arrives, so tickets appear in
+              Microsoft 365 notifies Xanty PSA the moment a message arrives, so tickets appear in
               seconds. Nothing polls the mailbox and there is no interval to tune.
             </p>
 

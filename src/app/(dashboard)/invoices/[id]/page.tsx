@@ -66,7 +66,7 @@ export default function InvoiceDetailPage() {
       paymentTerms: invoice.paymentTerms,
       company: invoice.company,
       contact: invoice.contact,
-      tenant: { name: 'XantyPSA' },
+      tenant: { name: 'Xanty PSA' },
       items: (invoice.items || []).map((li: any) => ({
         description: li.description,
         quantity: li.quantity,

@@ -1,6 +1,6 @@
-# Connecting XantyPSA to Claude Desktop (MCP)
+# Connecting Xanty PSA to Claude Desktop (MCP)
 
-The MCP server exposes XantyPSA to Claude Desktop, Claude Code, or any other MCP
+The MCP server exposes Xanty PSA to Claude Desktop, Claude Code, or any other MCP
 client, so you can ask for work in plain English instead of clicking through
 screens:
 
@@ -58,7 +58,7 @@ Then add it to Claude Desktop's config file, at
 }
 ```
 
-Restart Claude Desktop. XantyPSA appears in the tools menu.
+Restart Claude Desktop. Xanty PSA appears in the tools menu.
 
 ## Configuration
 

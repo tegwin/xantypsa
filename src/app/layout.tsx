@@ -6,8 +6,8 @@ import { getAppSession } from '@/lib/session';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'XantyPSA',
-  description: 'Professional Services Automation by XantyPSA',
+  title: 'Xanty PSA',
+  description: 'Professional Services Automation by Xanty PSA',
   icons: { icon: '/favicon.ico' },
 };
 

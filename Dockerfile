@@ -39,8 +39,8 @@ COPY . .
 # values are injected at run time by the platform — but the build must not fail
 # for want of a database it will never contact.
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
-ENV DIRECT_DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
+ENV DATABASE_URL="postgresql://unused@127.0.0.1:5432/unused"
+ENV DIRECT_DATABASE_URL="postgresql://unused@127.0.0.1:5432/unused"
 
 RUN npx prisma generate
 RUN npm run build

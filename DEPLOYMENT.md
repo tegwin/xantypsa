@@ -1,4 +1,4 @@
-# XantyPSA — Deployment
+# Xanty PSA — Deployment
 
 Deploying to Vercel. The same codebase runs locally with no changes — Supabase
 provides the database and authentication in both cases, so there is no
@@ -70,7 +70,7 @@ Two changes remove the Supabase branding entirely.
 Fill in your provider's host, port, username and password, then set:
 
 - **Sender email** — e.g. `noreply@yourdomain.com`
-- **Sender name** — e.g. `XantyPSA`
+- **Sender name** — e.g. `Xanty PSA`
 
 This replaces the from-address, the sender name, and drops the opt-out footer
 (that line is added by Supabase's shared sender, not by the template). It also

@@ -1,4 +1,4 @@
-# Hosting XantyPSA
+# Hosting Xanty PSA
 
 One container image, three ways to run it.
 
@@ -15,7 +15,7 @@ runs in production.
 
 ## Why not serverless any more
 
-XantyPSA started on Vercel. It works, but a PSA wants things serverless makes
+Xanty PSA started on Vercel. It works, but a PSA wants things serverless makes
 awkward:
 
 - **Execution limits.** Report generation, bulk imports and long AI turns all
@@ -55,7 +55,7 @@ Then:
 docker compose up -d
 ```
 
-XantyPSA is on http://localhost:3000. The schema is applied on start and demo
+Xanty PSA is on http://localhost:3000. The schema is applied on start and demo
 data seeded on first run (`RUN_SEED=false` to skip).
 
 The first-run administrator password is generated and printed once:

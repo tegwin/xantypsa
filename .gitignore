@@ -37,3 +37,6 @@ yarn-error.log*
 # Verification builds, kept separate so they never clobber a running dev server
 .next-verify/
 .env.selfhosttest
+
+# Private domain list for scripts/secret-scan.sh
+.secret-scan-domains

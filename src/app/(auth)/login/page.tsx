@@ -93,14 +93,14 @@ export default function LoginPage() {
       <div className="text-center space-y-3">
         <Image
           src="/logo.png"
-          alt="XantyPSA"
+          alt="Xanty PSA"
           width={56}
           height={56}
           className="mx-auto rounded-2xl shadow-lg shadow-brand-600/20"
         />
         <div>
           <h1 className="text-2xl font-bold text-surface-50">Welcome back</h1>
-          <p className="text-sm text-surface-400 mt-1">Sign in to XantyPSA</p>
+          <p className="text-sm text-surface-400 mt-1">Sign in to Xanty PSA</p>
         </div>
       </div>
 

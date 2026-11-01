@@ -1,4 +1,4 @@
-# The XantyPSA stack
+# The Xanty PSA stack
 
 What this is built in, and why each piece is there.
 
@@ -6,7 +6,7 @@ Two separate applications:
 
 | | What | Where |
 |---|---|---|
-| **The app** | XantyPSA itself | `xantypsa/` |
+| **The app** | Xanty PSA itself | `xantypsa/` |
 | **The site** | The marketing page for vibepsa.net | `xantypsa-site/` |
 
 ---
@@ -146,7 +146,7 @@ src/
 | **Microsoft 365** | Graph webhook. Mail is pushed on arrival and becomes a ticket — no polling, no cron. Subscriptions renew on Graph lifecycle events and on incoming mail. |
 | **SMTP** | Nodemailer for outbound. Passwords encrypted at rest. |
 | **LLMs** | Anthropic, OpenAI, or anything OpenAI-compatible including local Ollama. Bring your own key. |
-| **MCP** | `npm run mcp` exposes XantyPSA to Claude Desktop over stdio, sharing the in-app assistant's tools. |
+| **MCP** | `npm run mcp` exposes Xanty PSA to Claude Desktop over stdio, sharing the in-app assistant's tools. |
 
 ---
 

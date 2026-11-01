@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Refuse a commit that carries a credential.
+#
+# A rule in a document is something a person or an agent can drift past. This
+# cannot be drifted past: it fails the commit.
+#
+# Installed with:  git config core.hooksPath .githooks
+# Bypassed with:   git commit --no-verify   (do not)
+
+if [ -x scripts/secret-scan.sh ]; then
+    if ! scripts/secret-scan.sh; then
+        echo
+        echo "Commit refused: see the findings above."
+        echo "Move the value to .env and fail loud when it is unset."
+        exit 1
+    fi
+fi

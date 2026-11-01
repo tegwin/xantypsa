@@ -1,16 +1,16 @@
-# Contributing to XantyPSA
+# Contributing to Xanty PSA
 
-XantyPSA is built in the open by an MSP consultancy. The most valuable thing you
+Xanty PSA is built in the open by an MSP consultancy. The most valuable thing you
 can bring is not necessarily code — it is knowing how MSPs actually work.
 
 ## The most useful contribution
 
 **Tell us where it's wrong.** If a workflow here doesn't match how your business
 runs, that's a bug even if nothing crashes. An issue that says "our contracts
-renew on the anniversary of go-live, not the calendar year, and XantyPSA can't
+renew on the anniversary of go-live, not the calendar year, and Xanty PSA can't
 express that" is worth more than a typo fix.
 
-Open an issue describing what you do today and what XantyPSA made you do instead.
+Open an issue describing what you do today and what Xanty PSA made you do instead.
 
 ## Getting set up
 
@@ -64,6 +64,6 @@ and keep `sql/schema.sql` in step so a fresh install still works.
 
 ## Licence
 
-XantyPSA is [AGPL-3.0](LICENSE). By contributing you agree your work is released
+Xanty PSA is [AGPL-3.0](LICENSE). By contributing you agree your work is released
 under the same licence. There is no CLA and no copyright assignment — your
 commits stay yours.

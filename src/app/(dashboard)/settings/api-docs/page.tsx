@@ -390,7 +390,7 @@ export default function ApiDocsPage() {
     <div className="animate-fadeIn">
       <PageHeader
         title="API Documentation"
-        subtitle="Integrate with the XantyPSA REST API"
+        subtitle="Integrate with the Xanty PSA REST API"
         actions={
           <a
             href="/settings/api-keys"
@@ -503,7 +503,7 @@ export default function ApiDocsPage() {
           <h2 className="text-lg font-semibold text-white">MCP Server</h2>
         </div>
         <p className="text-sm text-slate-400 mb-4">
-          XantyPSA includes an MCP (Model Context Protocol) server for AI integration.
+          Xanty PSA includes an MCP (Model Context Protocol) server for AI integration.
           Connect AI assistants directly to your PSA data.
         </p>
         <div className="space-y-3 text-sm">
@@ -559,7 +559,7 @@ export default function ApiDocsPage() {
       <div className="glass rounded-xl p-6">
         <h2 className="text-lg font-semibold text-white mb-3">Webhooks</h2>
         <p className="text-sm text-slate-400 mb-3">
-          XantyPSA can send HTTP POST requests to your endpoints when events occur.
+          Xanty PSA can send HTTP POST requests to your endpoints when events occur.
           Configure webhooks in the{' '}
           <a href="/settings/webhooks" className="text-blue-400 hover:text-blue-300 underline">
             Webhooks

@@ -33,7 +33,7 @@ export function emailDomain(address?: string | null): string | null {
 
 /**
  * The bare domain of a company's website, for matching senders against it.
- * "https://www.sondelaconsulting.com/about" → "sondelaconsulting.com".
+ * "https://www.example.com/about" -> "example.com".
  */
 export function websiteDomain(website?: string | null): string | null {
   if (!website) return null;
