@@ -26,7 +26,46 @@ function monthEnd(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0, 23, 59, 59, 999));
 }
 
+
+/**
+ * Make sure a one-off contract has the block it was sold with.
+ *
+ * The hours live on the contract as well as in blocks, and a contract can be
+ * created or edited without a block ever being raised. Without this, the
+ * balance reads zero and every hour looks like it is beyond the block.
+ *
+ * Idempotent: it does nothing once any block exists.
+ */
+export async function ensureOpeningBlock(contractId: string, tenantId: string) {
+  const existing = await prisma.contractHourBlock.count({ where: { contractId, tenantId } });
+  if (existing > 0) return null;
+
+  const contract = await prisma.contract.findFirst({
+    where: { id: contractId, tenantId, type: 'prepay_hours' },
+  });
+  if (!contract) return null;
+
+  // A monthly contract gets its blocks from the scheduled job, not from here.
+  if (contract.blockMode === 'monthly') return null;
+  if (!contract.totalHours || contract.totalHours <= 0) return null;
+
+  const rate = contract.blockHourlyRate ?? 0;
+  const block = await prisma.contractHourBlock.create({
+    data: {
+      tenantId,
+      contractId,
+      source: 'one_off',
+      hours: contract.totalHours,
+      hoursUsed: contract.hoursUsed ?? 0,
+      hourlyRate: rate,
+      amount: round2(contract.totalHours * rate),
+    },
+  });
+  return block;
+}
+
 export async function blockBalance(contractId: string, tenantId: string): Promise<BlockBalance> {
+  await ensureOpeningBlock(contractId, tenantId);
   const [contract, blocks] = await Promise.all([
     prisma.contract.findFirst({ where: { id: contractId, tenantId } }),
     prisma.contractHourBlock.findMany({ where: { contractId, tenantId } }),
@@ -182,6 +221,8 @@ export async function consumeHours(
   hours: number,
 ): Promise<{ consumed: number; uncovered: number }> {
   if (hours <= 0) return { consumed: 0, uncovered: 0 };
+
+  await ensureOpeningBlock(contractId, tenantId);
 
   const blocks = await prisma.contractHourBlock.findMany({
     where: { contractId, tenantId },

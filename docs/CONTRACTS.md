@@ -48,10 +48,15 @@ goes negative while nobody is looking. It is also checked by the scheduled job.
 
 ### Going over the block
 
+Hours past the block are always chargeable.
+
 | Overage rate | What happens |
 |---|---|
-| Set | Hours beyond the block are charged at that rate, and the time entry is marked as an overhour |
-| Blank | Hours beyond the block are not chargeable, and the note says so |
+| Set | Hours beyond the block are charged at that rate |
+| Blank | Hours beyond the block are charged at the normal time and materials rate for the work |
+
+Either way the time entry is marked as an overhour, so it is clear on the
+invoice which hours came out of the block and which did not.
 
 ### How hours are drawn down
 

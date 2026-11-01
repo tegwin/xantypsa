@@ -514,7 +514,8 @@ export default function TicketDetailPage() {
                               </span>
                             ) : over > 0 ? (
                               <span className="text-amber-400">
-                                Nothing. {over.toFixed(2)}h beyond the block, not chargeable
+                                £{(over * preview.rate).toFixed(2)} for {over.toFixed(2)}h over the block,
+                                at the normal rate
                               </span>
                             ) : (
                               <span className="text-purple-300">Deducted from pre-pay</span>
@@ -754,7 +755,7 @@ export default function TicketDetailPage() {
                   )}
                   {ticket.contract.overhourRate == null && (ticket.contract.totalHours || 0) > 0 && (
                     <p className="text-xs text-surface-500 mt-1">
-                      Hours beyond the block are not chargeable.
+                      Over the block: charged at the normal rate.
                     </p>
                   )}
                 </div>

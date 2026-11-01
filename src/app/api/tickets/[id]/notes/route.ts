@@ -115,14 +115,16 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
             const { remaining } = await blockBalance(contract.id, session.user.tenantId);
 
             if (uncovered > 0) {
-              if (contract.overhourRate != null) {
-                billedAmount = round2(uncovered * contract.overhourRate);
-                chargeType = 'overhour';
-                contractNote = ` [${(hours - uncovered).toFixed(2)}h from ${contract.name}, ${uncovered.toFixed(2)}h over the block at ${contract.overhourRate}/h]`;
-              } else {
-                billedAmount = 0;
-                contractNote = ` [${(hours - uncovered).toFixed(2)}h from ${contract.name}, ${uncovered.toFixed(2)}h beyond the block and not chargeable]`;
-              }
+              // Hours past the block are chargeable. The overage rate takes
+              // precedence where one is set; otherwise they bill at the normal
+              // time and materials rate for the work.
+              const overRate = contract.overhourRate ?? actualRate;
+              billedAmount = round2(uncovered * overRate);
+              chargeType = 'overhour';
+              const covered = round2(hours - uncovered);
+              contractNote = covered > 0
+                ? ` [${covered.toFixed(2)}h from ${contract.name}, ${uncovered.toFixed(2)}h over the block at ${overRate.toFixed(2)}/h]`
+                : ` [Block exhausted: ${uncovered.toFixed(2)}h at ${overRate.toFixed(2)}/h]`;
             } else {
               billedAmount = 0;
               contractNote = ` [Deducted from ${contract.name}: ${remaining.toFixed(1)}h remaining]`;
