@@ -24,6 +24,9 @@ export default function TicketDetailPage() {
   const [noteText, setNoteText] = useState('');
   // Note id currently being switched between public and internal.
   const [togglingNote, setTogglingNote] = useState<string | null>(null);
+  // Which save button is hovered or focused. Drives the visibility preview on
+  // the panel, so you can see where a note is going before committing to it.
+  const [previewInternal, setPreviewInternal] = useState<boolean | null>(null);
   const [showTimeEntry, setShowTimeEntry] = useState(false);
   const [timeMinutes, setTimeMinutes] = useState('');
   const [billingRateId, setBillingRateId] = useState('');
@@ -138,6 +141,38 @@ export default function TicketDetailPage() {
   const unbilledEntries = ticket.timeEntries?.filter((te: any) => !te.billed && te.billable) || [];
   const unbilledTotal = unbilledEntries.reduce((sum: number, te: any) => sum + (te.billedAmount || 0), 0);
 
+  const nothingToSave = !noteText.trim() && !timeMinutes && !newStatus;
+
+  // The same pair of save buttons sits above and below the form, so a long note
+  // does not need scrolling back to save it. Hovering or focusing either one
+  // previews where the note and its time entry are about to go.
+  const saveButtons = (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      <button
+        onClick={() => handleSubmit(true)}
+        onMouseEnter={() => setPreviewInternal(true)}
+        onMouseLeave={() => setPreviewInternal(null)}
+        onFocus={() => setPreviewInternal(true)}
+        onBlur={() => setPreviewInternal(null)}
+        disabled={submitting || nothingToSave}
+        className="text-sm px-4 py-2 rounded-lg border border-amber-500/40 text-amber-300 hover:bg-amber-500/10 transition-colors disabled:opacity-50"
+      >
+        {submitting ? 'Saving...' : 'Save internal note'}
+      </button>
+      <button
+        onClick={() => handleSubmit(false)}
+        onMouseEnter={() => setPreviewInternal(false)}
+        onMouseLeave={() => setPreviewInternal(null)}
+        onFocus={() => setPreviewInternal(false)}
+        onBlur={() => setPreviewInternal(null)}
+        disabled={submitting || nothingToSave}
+        className="btn-primary text-sm disabled:opacity-50"
+      >
+        {submitting ? 'Saving...' : 'Save public note'}
+      </button>
+    </div>
+  );
+
   return (
     <div className="animate-fadeIn">
       <PageHeader title={`${ticket.ticketNumber}`} subtitle={ticket.title}>
@@ -156,7 +191,10 @@ export default function TicketDetailPage() {
 
           {/* === ADD NOTE / TIME / STATUS === */}
           <div className="glass-panel p-6">
-            <h3 className="text-white font-semibold mb-4">Add Note / Time</h3>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <h3 className="text-white font-semibold">Add Note / Time</h3>
+              {saveButtons}
+            </div>
 
             <textarea className="w-full mb-3" rows={3} placeholder="Add a note..."
               value={noteText} onChange={(e) => setNoteText(e.target.value)} />
@@ -174,10 +212,33 @@ export default function TicketDetailPage() {
 
             {/* Time Entry Section */}
             {showTimeEntry && (
-              <div className="bg-surface-800/80 border border-surface-700/50 rounded-lg p-4 mb-4 space-y-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <Clock className="h-4 w-4 text-brand-400" />
-                  <span className="text-sm font-medium text-surface-200">Time Entry</span>
+              <div className={`rounded-lg p-4 mb-4 space-y-3 border transition-colors ${
+                previewInternal === true
+                  ? 'bg-amber-500/5 border-amber-500/30'
+                  : previewInternal === false
+                    ? 'bg-green-500/5 border-green-500/30'
+                    : 'bg-surface-800/80 border-surface-700/50'
+              }`}>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-brand-400" />
+                    <span className="text-sm font-medium text-surface-200">Time Entry</span>
+                  </div>
+                  {/* This time is saved as part of the note, so it takes the
+                      visibility of whichever save button is used. */}
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${
+                    previewInternal === true
+                      ? 'bg-amber-500/20 text-amber-400'
+                      : previewInternal === false
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-surface-600/50 text-surface-400'
+                  }`}>
+                    {previewInternal === true
+                      ? 'Internal'
+                      : previewInternal === false
+                        ? 'Public'
+                        : 'Saved with the note'}
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -267,18 +328,11 @@ export default function TicketDetailPage() {
               </div>
             )}
 
-            <div className="flex flex-wrap justify-end items-center gap-2">
-              <p className="text-xs text-surface-500 mr-auto">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-surface-500">
                 A public note is visible to the customer. An internal note is not.
               </p>
-              <button onClick={() => handleSubmit(true)} disabled={submitting || (!noteText.trim() && !timeMinutes && !newStatus)}
-                className="text-sm px-4 py-2 rounded-lg border border-amber-500/40 text-amber-300 hover:bg-amber-500/10 transition-colors disabled:opacity-50">
-                {submitting ? 'Saving...' : 'Save internal note'}
-              </button>
-              <button onClick={() => handleSubmit(false)} disabled={submitting || (!noteText.trim() && !timeMinutes && !newStatus)}
-                className="btn-primary text-sm disabled:opacity-50">
-                {submitting ? 'Saving...' : 'Save public note'}
-              </button>
+              {saveButtons}
             </div>
           </div>
 
