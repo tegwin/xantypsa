@@ -53,7 +53,9 @@ export default function TicketDetailPage() {
     timerOnlyOnPublicNotes: false,
   });
   const [showTimeEntry, setShowTimeEntry] = useState(false);
-  const [timeMinutes, setTimeMinutes] = useState('');
+  // Entered in hours, because that is how people think about a day's work.
+  // Minutes stay the unit everywhere else, derived from this.
+  const [timeHours, setTimeHours] = useState('');
   // While true the minutes field tracks the timer. Typing a figure by hand, or
   // picking a quick value, hands control back to the person.
   const [minutesFollowTimer, setMinutesFollowTimer] = useState(true);
@@ -136,12 +138,12 @@ export default function TicketDetailPage() {
   // note is saved rather than needing the elapsed time pushed into it.
   useEffect(() => {
     if (!minutesFollowTimer || !timer.running) return;
-    setTimeMinutes(timer.minutes > 0 ? String(timer.minutes) : '');
+    setTimeHours(timer.minutes > 0 ? (timer.minutes / 60).toFixed(2) : '');
   }, [timer.minutes, timer.running, minutesFollowTimer]);
 
   // Calculate billing preview
   useEffect(() => {
-    const mins = parseInt(timeMinutes) || 0;
+    const mins = Math.round((parseFloat(timeHours) || 0) * 60);
     if (mins <= 0 || !billable) {
       setPreview({ billableMinutes: 0, rate: 0, total: 0 });
       return;
@@ -157,7 +159,7 @@ export default function TicketDetailPage() {
     const actualRate = isOOH ? rate.rate * rate.oohMultiplier : rate.rate;
     const total = (billableMins / 60) * actualRate;
     setPreview({ billableMinutes: billableMins, rate: actualRate, total });
-  }, [timeMinutes, billingRateId, billable, isOOH, billingRates]);
+  }, [timeHours, billingRateId, billable, isOOH, billingRates]);
 
   const toggleNoteVisibility = async (noteId: string, makeInternal: boolean) => {
     setTogglingNote(noteId);
@@ -173,7 +175,7 @@ export default function TicketDetailPage() {
   };
 
   const handleSubmit = async (asInternal: boolean) => {
-    if (!noteText.trim() && !timeMinutes && !newStatus) {
+    if (!noteText.trim() && !timeHours && !newStatus) {
       toast.error('Add a note, time entry, or change status');
       return;
     }
@@ -183,7 +185,7 @@ export default function TicketDetailPage() {
         content: noteText,
         isInternal: asInternal,
         emailCustomer: !asInternal && emailCustomer,
-        timeMinutes: showTimeEntry ? timeMinutes : undefined,
+        timeMinutes: showTimeEntry ? Math.round((parseFloat(timeHours) || 0) * 60) : undefined,
         billingRateId: showTimeEntry && billable ? billingRateId : undefined,
         billable: showTimeEntry ? billable : undefined,
         isOOH: showTimeEntry ? isOOH : undefined,
@@ -195,7 +197,7 @@ export default function TicketDetailPage() {
       if (result?.emailError) toast.error(`Note saved, but not emailed: ${result.emailError}`);
       else if (result?.emailed) toast.success('Emailed to the customer');
       setNoteText('');
-      setTimeMinutes('');
+      setTimeHours('');
       setMinutesFollowTimer(true);
       setNewStatus('');
       setShowTimeEntry(false);
@@ -207,7 +209,7 @@ export default function TicketDetailPage() {
     }
   };
 
-  const quickTime = (mins: number) => { setMinutesFollowTimer(false); setTimeMinutes(mins.toString()); };
+  const quickTime = (hours: number) => { setMinutesFollowTimer(false); setTimeHours(String(hours)); };
 
   if (loading) return <LoadingSpinner />;
   if (!ticket) return <div className="text-surface-400 p-8">Ticket not found</div>;
@@ -232,7 +234,7 @@ export default function TicketDetailPage() {
   const unbilledEntries = ticket.timeEntries?.filter((te: any) => !te.billed && te.billable) || [];
   const unbilledTotal = unbilledEntries.reduce((sum: number, te: any) => sum + (te.billedAmount || 0), 0);
 
-  const nothingToSave = !noteText.trim() && !timeMinutes && !newStatus;
+  const nothingToSave = !noteText.trim() && !timeHours && !newStatus;
 
 
   // Jump to the composer and put the cursor in it, so the action bar at the
@@ -425,7 +427,7 @@ export default function TicketDetailPage() {
                     {timerWidget}
                     {timerSettings.timerEnabled && timer.seconds > 0 && (
                       <button
-                        onClick={() => { setMinutesFollowTimer(true); setTimeMinutes(String(timer.minutes)); }}
+                        onClick={() => { setMinutesFollowTimer(true); setTimeHours((timer.minutes / 60).toFixed(2)); }}
                         className={`text-xs px-2 py-1 rounded border ${
                           minutesFollowTimer
                             ? 'border-brand-500/40 text-brand-300 bg-brand-500/10'
@@ -433,7 +435,9 @@ export default function TicketDetailPage() {
                         }`}
                         title="Keep the minutes field in step with the timer"
                       >
-                        {minutesFollowTimer ? `Tracking ${timer.minutes}m` : `Use ${timer.minutes}m`}
+                        {minutesFollowTimer
+                          ? `Tracking ${(timer.minutes / 60).toFixed(2)}h`
+                          : `Use ${(timer.minutes / 60).toFixed(2)}h`}
                       </button>
                     )}
                   </div>
@@ -441,17 +445,17 @@ export default function TicketDetailPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-surface-400 mb-1">Minutes</label>
-                    <input type="number" value={timeMinutes}
-                      onChange={(e) => { setMinutesFollowTimer(false); setTimeMinutes(e.target.value); }}
-                      placeholder="0" min="1" />
-                    <div className="flex gap-1 mt-1.5">
-                      {[15, 30, 45, 60, 90, 120].map(m => (
-                        <button key={m} onClick={() => quickTime(m)} type="button"
+                    <label className="block text-xs text-surface-400 mb-1">Hours</label>
+                    <input type="number" value={timeHours} step="0.25" min="0"
+                      onChange={(e) => { setMinutesFollowTimer(false); setTimeHours(e.target.value); }}
+                      placeholder="0" />
+                    <div className="flex gap-1 mt-1.5 flex-wrap">
+                      {[0.25, 0.5, 0.75, 1, 2, 4, 8].map(h => (
+                        <button key={h} onClick={() => quickTime(h)} type="button"
                           className={`px-2 py-0.5 text-xs rounded transition-colors ${
-                            timeMinutes === m.toString() ? 'bg-brand-500/30 text-brand-400 border border-brand-500/30' : 'bg-surface-700 text-surface-400 hover:bg-surface-600'
+                            timeHours === String(h) ? 'bg-brand-500/30 text-brand-400 border border-brand-500/30' : 'bg-surface-700 text-surface-400 hover:bg-surface-600'
                           }`}>
-                          {m >= 60 ? `${m/60}h` : `${m}m`}
+                          {h}h
                         </button>
                       ))}
                     </div>
@@ -482,7 +486,7 @@ export default function TicketDetailPage() {
 
                 {/* Billing preview. Work on a pre-pay or managed contract is
                     already paid for, so showing a charge would be wrong. */}
-                {billable && parseInt(timeMinutes) > 0 && preview.rate > 0 && (() => {
+                {billable && (parseFloat(timeHours) || 0) > 0 && preview.rate > 0 && (() => {
                   const contract = ticket.contract;
                   const isPrepay = contract?.type === 'prepay_hours';
                   const isManaged = contract?.type === 'managed_service';
@@ -494,10 +498,10 @@ export default function TicketDetailPage() {
                   return (
                     <div className="bg-surface-900/50 border border-surface-700/30 rounded-lg p-3 text-xs space-y-1">
                       <div className="flex justify-between text-surface-400">
-                        <span>Actual time:</span><span>{timeMinutes} mins</span>
+                        <span>Actual time:</span><span>{timeHours}h</span>
                       </div>
                       <div className="flex justify-between text-surface-300">
-                        <span>Billed time (after min/rounding):</span><span className="font-medium">{preview.billableMinutes} mins</span>
+                        <span>Billed time (after min/rounding):</span><span className="font-medium">{(preview.billableMinutes / 60).toFixed(2)}h</span>
                       </div>
 
                       {isPrepay ? (

@@ -149,6 +149,22 @@ A one-off block contract never creates a recurring invoice, the "create the
 recurring invoice now" option is not offered for it, and the recurring job
 skips it. Choosing Monthly is what makes a block arrangement recurring.
 
+## Seeing the blocks
+
+A pre-pay contract lists every block it has: when it was added, how it came
+about (the opening block, a monthly one, a top-up or hours carried over), the
+hours, the rate, what it cost, how much has been used, and whether it has been
+invoiced.
+
+Each unbilled block can be edited, and removed if nothing has been drawn from
+it. A block that has been invoiced is locked: changing what was billed after
+the fact would put the invoice and the contract out of step.
+
+A block cannot be reduced below the hours already used from it.
+
+Topping up adds a block rather than quietly raising the total, so the history
+of what the customer bought stays readable.
+
 ## Invoicing a block
 
 A pre-pay contract bills its **blocks**, never the labour. The labour is what

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApi, apiPatch, apiPost, apiDelete } from '@/hooks/useApi';
 import ContractItemsPanel from '@/components/contracts/ContractItemsPanel';
 import { PageHeader, StatusBadge, LoadingSpinner, Modal } from '@/components/ui';
@@ -83,18 +83,87 @@ export default function ContractDetailPage() {
     }
   };
 
+  // A top-up is a block in its own right, so it can be listed, priced and
+  // invoiced separately. Bumping totalHours alone left no record of it.
   const handleTopup = async () => {
     const hours = parseFloat(topupHours);
     if (!hours || hours <= 0) { toast.error('Enter a valid number of hours'); return; }
-    const newTotal = (contract.totalHours || 0) + hours;
-    await apiPatch(`/api/contracts/${id}`, { totalHours: newTotal, notes: `${contract.notes || ''}${contract.notes ? '\n' : ''}[Topup] +${hours}h added on ${new Date().toLocaleDateString('en-GB')}${topupNote ? ': ' + topupNote : ''}` });
-    setShowTopup(false);
-    setTopupHours('');
-    setTopupNote('');
-    refetch();
+    try {
+      await apiPost(`/api/contracts/${id}/hour-blocks`, {
+        hours,
+        source: 'top_up',
+        note: topupNote || undefined,
+      });
+      toast.success(`${hours}h added`);
+      setShowTopup(false);
+      setTopupHours('');
+      setTopupNote('');
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Could not add the hours');
+    }
   };
 
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
+
+  // Every block bought on this contract, with what it cost and whether it has
+  // been invoiced.
+  const [blocks, setBlocks] = useState<any[]>([]);
+  const [editBlock, setEditBlock] = useState<any>(null);
+  const [blockForm, setBlockForm] = useState({ hours: '', hourlyRate: '', note: '' });
+
+  const loadBlocks = async () => {
+    if (!id) return;
+    try {
+      const res = await fetch(`/api/contracts/${id}/hour-blocks`);
+      const data = await res.json();
+      setBlocks(data.items || []);
+    } catch {
+      setBlocks([]);
+    }
+  };
+
+  useEffect(() => {
+    if (contract?.type === 'prepay_hours') loadBlocks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contract?.type, contract?.totalHours, id]);
+
+  const openBlockEdit = (b: any) => {
+    setEditBlock(b);
+    setBlockForm({
+      hours: String(b.hours),
+      hourlyRate: String(b.hourlyRate ?? 0),
+      note: b.note || '',
+    });
+  };
+
+  const saveBlock = async () => {
+    try {
+      const res = await fetch(`/api/contracts/${id}/hour-blocks`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blockId: editBlock.id, ...blockForm }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not save the block');
+      toast.success('Block updated');
+      setEditBlock(null);
+      await loadBlocks();
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const removeBlock = async (b: any) => {
+    if (!confirm(`Remove this ${b.hours}h block?`)) return;
+    const res = await fetch(`/api/contracts/${id}/hour-blocks?blockId=${b.id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) { toast.error(data.error || 'Could not remove the block'); return; }
+    toast.success('Block removed');
+    await loadBlocks();
+    refetch();
+  };
 
   const handleGenerateInvoice = async () => {
     setGeneratingInvoice(true);
@@ -356,6 +425,76 @@ export default function ContractDetailPage() {
                       : ' - '}
                 </div></div>
                 <div><div className="text-surface-500">Overage Rate</div><div className="text-white font-medium">{contract.overhourRate ? formatCurrency(contract.overhourRate) + '/hr' : 'No overages'}</div></div>
+              </div>
+            </div>
+          )}
+
+          {/* Blocks purchased */}
+          {contract.type === 'prepay_hours' && blocks.length > 0 && (
+            <div className="glass rounded-xl p-6">
+              <h3 className="text-white font-semibold mb-4">
+                Blocks
+                <span className="text-surface-500 font-normal text-sm ml-2">
+                  ({blocks.length}, {blocks.reduce((a: number, b: any) => a + b.hours, 0)}h in total)
+                </span>
+              </h3>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <caption className="sr-only">Blocks purchased on this contract</caption>
+                  <thead>
+                    <tr className="text-left text-xs text-surface-400 border-b border-surface-700">
+                      <th scope="col" className="py-2 pr-4">Added</th>
+                      <th scope="col" className="py-2 pr-4">Type</th>
+                      <th scope="col" className="py-2 pr-4 text-right">Hours</th>
+                      <th scope="col" className="py-2 pr-4 text-right">Rate</th>
+                      <th scope="col" className="py-2 pr-4 text-right">Price</th>
+                      <th scope="col" className="py-2 pr-4 text-right">Used</th>
+                      <th scope="col" className="py-2 pr-4">Invoiced</th>
+                      <th scope="col" className="py-2 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {blocks.map((b: any) => (
+                      <tr key={b.id} className="border-b border-surface-800">
+                        <td className="py-2 pr-4 text-surface-300">{formatDate(b.createdAt)}</td>
+                        <td className="py-2 pr-4 text-surface-300 capitalize">
+                          {b.source.replace(/_/g, ' ')}
+                          {b.note && <span className="block text-xs text-surface-500">{b.note}</span>}
+                        </td>
+                        <td className="py-2 pr-4 text-right text-white">{b.hours}h</td>
+                        <td className="py-2 pr-4 text-right text-surface-300">{formatCurrency(b.hourlyRate || 0)}</td>
+                        <td className="py-2 pr-4 text-right text-white">{formatCurrency(b.amount || 0)}</td>
+                        <td className="py-2 pr-4 text-right text-surface-300">{b.hoursUsed}h</td>
+                        <td className="py-2 pr-4">
+                          {b.invoiceId
+                            ? <span className="text-xs px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">Invoiced</span>
+                            : <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">Not invoiced</span>}
+                        </td>
+                        <td className="py-2 text-right whitespace-nowrap">
+                          {/* An invoiced block is fixed: changing it would put
+                              the invoice and the contract out of step. */}
+                          {b.invoiceId ? (
+                            <span className="text-xs text-surface-600">Locked</span>
+                          ) : (
+                            <>
+                              <button onClick={() => openBlockEdit(b)}
+                                className="text-xs px-2 py-1 rounded border border-surface-600 text-surface-300 hover:border-surface-500">
+                                Edit
+                              </button>
+                              {b.hoursUsed === 0 && (
+                                <button onClick={() => removeBlock(b)}
+                                  className="ml-1 text-xs px-2 py-1 rounded border border-red-500/40 text-red-400 hover:bg-red-500/10">
+                                  Remove
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
@@ -827,6 +966,46 @@ export default function ContractDetailPage() {
                 className="btn-primary">
                 {pmSaving ? 'Creating...' : 'Create Milestone'}
               </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {editBlock && (
+        <Modal isOpen={!!editBlock} onClose={() => setEditBlock(null)} title="Edit block">
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="label">Hours</label>
+                <input className="input w-full" type="number" step="0.5" value={blockForm.hours}
+                  onChange={(e) => setBlockForm({ ...blockForm, hours: e.target.value })} />
+                {editBlock.hoursUsed > 0 && (
+                  <p className="text-xs text-surface-500 mt-1">
+                    {editBlock.hoursUsed}h already used, so it cannot go below that.
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="label">Hourly rate (£)</label>
+                <input className="input w-full" type="number" step="0.01" value={blockForm.hourlyRate}
+                  onChange={(e) => setBlockForm({ ...blockForm, hourlyRate: e.target.value })} />
+              </div>
+            </div>
+            <p className="text-sm text-purple-300">
+              {parseFloat(blockForm.hours) || 0}h at £{(parseFloat(blockForm.hourlyRate) || 0).toFixed(2)}/hr ={' '}
+              <span className="font-semibold text-white">
+                £{((parseFloat(blockForm.hours) || 0) * (parseFloat(blockForm.hourlyRate) || 0)).toFixed(2)}
+              </span>
+            </p>
+            <div>
+              <label className="label">Note</label>
+              <input className="input w-full" value={blockForm.note}
+                onChange={(e) => setBlockForm({ ...blockForm, note: e.target.value })}
+                placeholder="Why this block was added" />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setEditBlock(null)} className="btn-secondary text-sm">Cancel</button>
+              <button onClick={saveBlock} className="btn-primary text-sm">Save changes</button>
             </div>
           </div>
         </Modal>

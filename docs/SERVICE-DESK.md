@@ -24,7 +24,8 @@ A work timer runs on each ticket, in the action bar and again in the time entry
 panel. It keeps running when you leave the ticket and across a page reload,
 because it is stored against the ticket rather than the page.
 
-The minutes field tracks the clock while it runs. Type a figure or pick a quick
+Time is entered in **hours**, not minutes: 8 rather than 480. Quick picks cover
+0.25 up to 8 hours. The field tracks the clock while it runs. Type a figure or pick a quick
 value and it stops tracking and leaves your number alone.
 
 Under Settings, Service Desk, Timer:

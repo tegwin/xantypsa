@@ -1736,6 +1736,8 @@ model ContractHourBlock {
   invoiceId  String?
   /// Carried-over hours point back at the block they came from.
   carriedFromId String?
+  /// Free text, for example why a top-up was agreed.
+  note          String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
