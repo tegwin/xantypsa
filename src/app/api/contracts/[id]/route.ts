@@ -38,10 +38,6 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
   });
   if (!contract) return errorResponse('Contract not found', 404);
 
-  // Nothing that real work points at may be deleted.
-  const blocked = describeDependencies('contract', await contractDependencies(id, session.user.tenantId));
-  if (blocked) return errorResponse(blocked, 409);
-
   // Calculate hours used from time entries
   const hoursAgg = await prisma.timeEntry.aggregate({
     where: { contractId: id, chargeType: 'contract' },
@@ -125,6 +121,10 @@ export const DELETE = withTenant(async (req: NextRequest, session: any) => {
   const id = extractId(req);
   const contract = await prisma.contract.findFirst({ where: { id, tenantId: session.user.tenantId } });
   if (!contract) return errorResponse('Contract not found', 404);
+
+  // Nothing that real work points at may be deleted.
+  const blocked = describeDependencies('contract', await contractDependencies(id, session.user.tenantId));
+  if (blocked) return errorResponse(blocked, 409);
   await prisma.contract.delete({ where: { id } });
   return jsonResponse({ success: true });
 }, 'contracts', 'write');

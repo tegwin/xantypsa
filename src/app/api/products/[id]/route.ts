@@ -9,10 +9,6 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
     where: { id, tenantId: session.user.tenantId },
   });
   if (!product) return errorResponse('Product not found', 404);
-
-  // Nothing that real work points at may be deleted.
-  const blocked = describeDependencies('product', await productDependencies(id, session.user.tenantId));
-  if (blocked) return errorResponse(blocked, 409);
   return jsonResponse(product);
 }, 'settings', 'read');
 
@@ -53,6 +49,10 @@ export const DELETE = withTenant(async (req: NextRequest, session: any) => {
     where: { id, tenantId: session.user.tenantId },
   });
   if (!product) return errorResponse('Product not found', 404);
+
+  // Nothing that real work points at may be deleted.
+  const blocked = describeDependencies('product', await productDependencies(id, session.user.tenantId));
+  if (blocked) return errorResponse(blocked, 409);
   await prisma.product.delete({ where: { id } });
   return jsonResponse({ success: true });
 }, 'settings', 'write');

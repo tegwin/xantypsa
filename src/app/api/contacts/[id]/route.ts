@@ -18,10 +18,6 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
     },
   });
   if (!contact) return errorResponse('Contact not found', 404);
-
-  // Nothing that real work points at may be deleted.
-  const blocked = describeDependencies('contact', await contactDependencies(id, session.user.tenantId));
-  if (blocked) return errorResponse(blocked, 409);
   return jsonResponse(contact);
 }, 'crm', 'read');
 
@@ -56,6 +52,10 @@ export const DELETE = withTenant(async (req: NextRequest, session: any) => {
   const id = req.nextUrl.pathname.split('/').pop()!;
   const contact = await prisma.contact.findFirst({ where: { id, tenantId: session.user.tenantId } });
   if (!contact) return errorResponse('Contact not found', 404);
+
+  // Nothing that real work points at may be deleted.
+  const blocked = describeDependencies('contact', await contactDependencies(id, session.user.tenantId));
+  if (blocked) return errorResponse(blocked, 409);
 
   await prisma.contact.delete({ where: { id } });
   return jsonResponse({ success: true });

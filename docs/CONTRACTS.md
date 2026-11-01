@@ -170,3 +170,18 @@ block is raised.
 
 Labour on a block contract, and anything logged at a non-billable rate, is
 excluded from unbilled time entirely. Neither can reach an invoice as a charge.
+
+## Deleting
+
+A record that real work points at cannot be deleted. Deleting a contract that
+invoices and time entries reference would either orphan them or quietly unlink
+them and change what the customer gets billed.
+
+The refusal says what is holding it:
+
+> This contract is used by 3 invoices, 12 time entries and 4 tickets, so it
+> cannot be deleted. Deactivate it instead if you want it out of the way.
+
+The same rule covers contacts, products, opportunities and projects. Clear the
+dependent records first, or set the record inactive and leave the history
+intact, which is almost always the better answer.

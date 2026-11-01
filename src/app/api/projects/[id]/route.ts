@@ -32,10 +32,6 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
   });
   if (!project) return errorResponse('Project not found', 404);
 
-  // Nothing that real work points at may be deleted.
-  const blocked = describeDependencies('project', await projectDependencies(id, session.user.tenantId));
-  if (blocked) return errorResponse(blocked, 409);
-
   const totalHours = project.timeEntries.reduce((s, e) => s + e.hours, 0);
   const billableHours = project.timeEntries.filter(e => e.billable).reduce((s, e) => s + e.hours, 0);
   const billableAmount = project.timeEntries.filter(e => e.billable).reduce((s, e) => s + e.hours * (e.rate || 0), 0);
@@ -88,6 +84,10 @@ export const DELETE = withTenant(async (req: NextRequest, session: any) => {
 
   const project = await prisma.project.findFirst({ where: { id, tenantId: session.user.tenantId } });
   if (!project) return errorResponse('Project not found', 404);
+
+  // Nothing that real work points at may be deleted.
+  const blocked = describeDependencies('project', await projectDependencies(id, session.user.tenantId));
+  if (blocked) return errorResponse(blocked, 409);
 
   await prisma.project.delete({ where: { id } });
   return jsonResponse({ success: true });

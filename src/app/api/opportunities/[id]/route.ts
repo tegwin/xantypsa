@@ -26,10 +26,6 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
   });
 
   if (!opportunity) return errorResponse('Opportunity not found', 404);
-
-  // Nothing that real work points at may be deleted.
-  const blocked = describeDependencies('opportunity', await opportunityDependencies(id, session.user.tenantId));
-  if (blocked) return errorResponse(blocked, 409);
   return jsonResponse(opportunity);
 }, 'crm', 'read');
 
@@ -74,6 +70,10 @@ export const DELETE = withTenant(async (req: NextRequest, session: any) => {
 
   const opportunity = await prisma.opportunity.findFirst({ where: { id, tenantId: session.user.tenantId } });
   if (!opportunity) return errorResponse('Opportunity not found', 404);
+
+  // Nothing that real work points at may be deleted.
+  const blocked = describeDependencies('opportunity', await opportunityDependencies(id, session.user.tenantId));
+  if (blocked) return errorResponse(blocked, 409);
 
   await prisma.opportunity.delete({ where: { id } });
   return jsonResponse({ success: true });
