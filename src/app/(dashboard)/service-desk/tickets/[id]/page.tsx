@@ -22,7 +22,8 @@ export default function TicketDetailPage() {
 
   // Note + Time form state
   const [noteText, setNoteText] = useState('');
-  const [isInternal, setIsInternal] = useState(false);
+  // Note id currently being switched between public and internal.
+  const [togglingNote, setTogglingNote] = useState<string | null>(null);
   const [showTimeEntry, setShowTimeEntry] = useState(false);
   const [timeMinutes, setTimeMinutes] = useState('');
   const [billingRateId, setBillingRateId] = useState('');
@@ -70,7 +71,20 @@ export default function TicketDetailPage() {
     setPreview({ billableMinutes: billableMins, rate: actualRate, total });
   }, [timeMinutes, billingRateId, billable, isOOH, billingRates]);
 
-  const handleSubmit = async () => {
+  const toggleNoteVisibility = async (noteId: string, makeInternal: boolean) => {
+    setTogglingNote(noteId);
+    try {
+      await apiPatch(`/api/tickets/${id}/notes`, { noteId, isInternal: makeInternal });
+      toast.success(makeInternal ? 'Note is now internal' : 'Note is now public');
+      await refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Could not change the note');
+    } finally {
+      setTogglingNote(null);
+    }
+  };
+
+  const handleSubmit = async (asInternal: boolean) => {
     if (!noteText.trim() && !timeMinutes && !newStatus) {
       toast.error('Add a note, time entry, or change status');
       return;
@@ -79,14 +93,14 @@ export default function TicketDetailPage() {
     try {
       await apiPost(`/api/tickets/${id}/notes`, {
         content: noteText,
-        isInternal,
+        isInternal: asInternal,
         timeMinutes: showTimeEntry ? timeMinutes : undefined,
         billingRateId: showTimeEntry && billable ? billingRateId : undefined,
         billable: showTimeEntry ? billable : undefined,
         isOOH: showTimeEntry ? isOOH : undefined,
         newStatus: newStatus || undefined,
       });
-      toast.success('Updated');
+      toast.success(noteText.trim() ? (asInternal ? 'Internal note added' : 'Public note added') : 'Updated');
       setNoteText('');
       setTimeMinutes('');
       setNewStatus('');
@@ -148,11 +162,6 @@ export default function TicketDetailPage() {
               value={noteText} onChange={(e) => setNoteText(e.target.value)} />
 
             <div className="flex flex-wrap items-center gap-3 mb-4">
-              <label className="flex items-center gap-2 text-sm text-surface-400 cursor-pointer">
-                <input type="checkbox" checked={isInternal} onChange={(e) => setIsInternal(e.target.checked)} />
-                Internal note
-              </label>
-
               <button onClick={() => setShowTimeEntry(!showTimeEntry)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors border ${
                   showTimeEntry ? 'bg-brand-500/20 border-brand-500/30 text-brand-400' : 'border-surface-600 text-surface-400 hover:border-surface-500'
@@ -258,10 +267,17 @@ export default function TicketDetailPage() {
               </div>
             )}
 
-            <div className="flex justify-end">
-              <button onClick={handleSubmit} disabled={submitting || (!noteText.trim() && !timeMinutes && !newStatus)}
+            <div className="flex flex-wrap justify-end items-center gap-2">
+              <p className="text-xs text-surface-500 mr-auto">
+                A public note is visible to the customer. An internal note is not.
+              </p>
+              <button onClick={() => handleSubmit(true)} disabled={submitting || (!noteText.trim() && !timeMinutes && !newStatus)}
+                className="text-sm px-4 py-2 rounded-lg border border-amber-500/40 text-amber-300 hover:bg-amber-500/10 transition-colors disabled:opacity-50">
+                {submitting ? 'Saving...' : 'Save internal note'}
+              </button>
+              <button onClick={() => handleSubmit(false)} disabled={submitting || (!noteText.trim() && !timeMinutes && !newStatus)}
                 className="btn-primary text-sm disabled:opacity-50">
-                {submitting ? 'Saving...' : 'Save'}
+                {submitting ? 'Saving...' : 'Save public note'}
               </button>
             </div>
           </div>
@@ -281,10 +297,31 @@ export default function TicketDetailPage() {
                     <div className="flex items-center gap-2">
                       <Avatar name={note.user?.name || 'System'} size="sm" />
                       <span className="text-white text-sm font-medium">{note.user?.name || 'System'}</span>
-                      {note.isInternal && !note.isSystem && <span className="text-xs bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded">Internal</span>}
+                      {!note.isSystem && (
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${
+                          note.isInternal
+                            ? 'bg-amber-500/20 text-amber-400'
+                            : 'bg-green-500/20 text-green-400'
+                        }`}>
+                          {note.isInternal ? 'Internal' : 'Public'}
+                        </span>
+                      )}
                       {note.isSystem && <span className="text-xs bg-surface-600/50 text-surface-400 px-1.5 py-0.5 rounded">System</span>}
                     </div>
-                    <span className="text-xs text-surface-500">{formatRelativeTime(note.createdAt)}</span>
+                    <div className="flex items-center gap-2">
+                      {!note.isSystem && (
+                        <button
+                          onClick={() => toggleNoteVisibility(note.id, !note.isInternal)}
+                          disabled={togglingNote === note.id}
+                          className="text-xs text-surface-400 hover:text-white underline underline-offset-2 disabled:opacity-50"
+                        >
+                          {togglingNote === note.id
+                            ? 'Changing...'
+                            : note.isInternal ? 'Make public' : 'Make internal'}
+                        </button>
+                      )}
+                      <span className="text-xs text-surface-500">{formatRelativeTime(note.createdAt)}</span>
+                    </div>
                   </div>
                   <p className="text-surface-300 text-sm whitespace-pre-wrap">{note.content}</p>
                 </div>
