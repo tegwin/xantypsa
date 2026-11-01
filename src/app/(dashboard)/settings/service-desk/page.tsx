@@ -27,6 +27,11 @@ export default function ServiceDeskSettingsPage() {
   const [queueForm, setQueueForm] = useState({ name: '', description: '', isDefault: false });
 
   const [saving, setSaving] = useState(false);
+  const [timer, setTimer] = useState({
+    timerEnabled: true,
+    timerOnlyOnTimeEntry: false,
+    timerOnlyOnPublicNotes: false,
+  });
 
   useEffect(() => {
     Promise.all([
@@ -35,6 +40,11 @@ export default function ServiceDeskSettingsPage() {
       fetch('/api/ticket-queues').then(r => r.json()),
     ]).then(([sdSettings, statusData, queueData]) => {
       setBillingMode(sdSettings.billingMode || 'anytime');
+      setTimer({
+        timerEnabled: sdSettings.timerEnabled ?? true,
+        timerOnlyOnTimeEntry: sdSettings.timerOnlyOnTimeEntry ?? false,
+        timerOnlyOnPublicNotes: sdSettings.timerOnlyOnPublicNotes ?? false,
+      });
       setStatuses(statusData.items || []);
       setQueues(queueData.items || []);
       setLoading(false);
@@ -50,6 +60,18 @@ export default function ServiceDeskSettingsPage() {
       body: JSON.stringify({ billingMode: mode }),
     });
     toast.success(`Billing mode set to: ${mode === 'anytime' ? 'Bill anytime' : 'Bill on close'}`);
+  };
+
+  // === Timer ===
+  const saveTimer = async (patch: Partial<typeof timer>) => {
+    const next = { ...timer, ...patch };
+    setTimer(next);
+    await fetch('/api/settings/service-desk', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    });
+    toast.success('Timer settings saved');
   };
 
   // === Statuses ===
@@ -165,6 +187,51 @@ export default function ServiceDeskSettingsPage() {
             </div>
             <p className="text-xs text-surface-400">Time entries only become available for invoicing once the ticket is closed.</p>
           </button>
+        </div>
+      </div>
+
+      {/* === TIMER === */}
+      <div className="glass-panel p-6">
+        <div className="mb-4">
+          <h2 className="text-white font-semibold">Timer</h2>
+          <p className="text-sm text-surface-400">
+            A work timer on each ticket, shown in the action bar and in the time entry panel.
+            It keeps running when you leave the ticket and across a page reload.
+          </p>
+        </div>
+
+        <label className="flex items-start gap-3 p-3 rounded-lg border border-surface-700 cursor-pointer hover:border-surface-600">
+          <input type="checkbox" className="mt-1" checked={timer.timerEnabled}
+            onChange={e => saveTimer({ timerEnabled: e.target.checked })} />
+          <span>
+            <span className="block text-sm text-surface-200">Show the timer on tickets</span>
+            <span className="block text-xs text-surface-400">Turn this off to hide the timer everywhere.</span>
+          </span>
+        </label>
+
+        <div className={`mt-3 space-y-3 ${timer.timerEnabled ? '' : 'opacity-40 pointer-events-none'}`}>
+          <p className="text-xs text-surface-500">
+            With both of these off the timer runs the whole time a ticket is open. Each one
+            below narrows when it runs.
+          </p>
+
+          <label className="flex items-start gap-3 p-3 rounded-lg border border-surface-700 cursor-pointer hover:border-surface-600">
+            <input type="checkbox" className="mt-1" checked={timer.timerOnlyOnTimeEntry}
+              onChange={e => saveTimer({ timerOnlyOnTimeEntry: e.target.checked })} />
+            <span>
+              <span className="block text-sm text-surface-200">Only run while the time entry panel is open</span>
+              <span className="block text-xs text-surface-400">The timer stays paused on the ticket until you open Add Time.</span>
+            </span>
+          </label>
+
+          <label className="flex items-start gap-3 p-3 rounded-lg border border-surface-700 cursor-pointer hover:border-surface-600">
+            <input type="checkbox" className="mt-1" checked={timer.timerOnlyOnPublicNotes}
+              onChange={e => saveTimer({ timerOnlyOnPublicNotes: e.target.checked })} />
+            <span>
+              <span className="block text-sm text-surface-200">Only run while writing a public note</span>
+              <span className="block text-xs text-surface-400">Switching to a private note pauses the timer, so internal work is not timed.</span>
+            </span>
+          </label>
         </div>
       </div>
 

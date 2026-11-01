@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApi, apiPatch, apiPost } from '@/hooks/useApi';
-import { PageHeader, StatusBadge, LoadingSpinner, Avatar, Badge } from '@/components/ui';
+import { useTicketTimer } from '@/hooks/useTicketTimer';
+import { PageHeader, StatusBadge, LoadingSpinner, Avatar, Badge, Modal, Input, Textarea, Select } from '@/components/ui';
 import { formatDate, formatRelativeTime, formatCurrency } from '@/lib/utils';
 import { useRouter, useParams } from 'next/navigation';
-import { Clock, DollarSign, ChevronDown, ChevronUp, Moon } from 'lucide-react';
+import { Clock, DollarSign, ChevronDown, ChevronUp, Moon, Mail, EyeOff, Play, Pause, RotateCcw, Pencil } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface BillingRate {
@@ -24,9 +25,22 @@ export default function TicketDetailPage() {
   const [noteText, setNoteText] = useState('');
   // Note id currently being switched between public and internal.
   const [togglingNote, setTogglingNote] = useState<string | null>(null);
-  // Which save button is hovered or focused. Drives the visibility preview on
-  // the panel, so you can see where a note is going before committing to it.
-  const [previewInternal, setPreviewInternal] = useState<boolean | null>(null);
+  // Public or private is chosen from the action bar at the top of the ticket.
+  // The composer then shows the options that belong to that kind of note.
+  const [noteMode, setNoteMode] = useState<'public' | 'internal'>('public');
+  const noteRef = useRef<HTMLTextAreaElement | null>(null);
+  // Ticket edit modal
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState<any>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+  const [contacts, setContacts] = useState<{ id: string; name: string }[]>([]);
+
+  const [timerSettings, setTimerSettings] = useState({
+    timerEnabled: true,
+    timerOnlyOnTimeEntry: false,
+    timerOnlyOnPublicNotes: false,
+  });
   const [showTimeEntry, setShowTimeEntry] = useState(false);
   const [timeMinutes, setTimeMinutes] = useState('');
   const [billingRateId, setBillingRateId] = useState('');
@@ -52,7 +66,52 @@ export default function TicketDetailPage() {
     fetch('/api/users').then(r => r.json()).then(data => {
       setAgents((data.items || []).map((u: any) => ({ id: u.id, name: u.name })));
     }).catch(() => {});
+    fetch('/api/companies').then(r => r.json()).then(data => {
+      setCompanies((data.items || []).map((c: any) => ({ id: c.id, name: c.name })));
+    }).catch(() => {});
+    fetch('/api/settings/service-desk').then(r => r.json()).then(data => {
+      setTimerSettings({
+        timerEnabled: data.timerEnabled ?? true,
+        timerOnlyOnTimeEntry: data.timerOnlyOnTimeEntry ?? false,
+        timerOnlyOnPublicNotes: data.timerOnlyOnPublicNotes ?? false,
+      });
+    }).catch(() => {});
   }, []);
+
+  const isInternalMode = noteMode === 'internal';
+
+  // With neither option set the timer simply runs. Each option is a condition
+  // that has to hold for it to keep running.
+  const timerShouldRun =
+    timerSettings.timerEnabled &&
+    (!timerSettings.timerOnlyOnTimeEntry || showTimeEntry) &&
+    (!timerSettings.timerOnlyOnPublicNotes || !isInternalMode);
+
+  const timer = useTicketTimer(typeof id === 'string' ? id : undefined);
+
+  // The settings decide when the timer may run; manual pause still wins until
+  // the conditions change again.
+  const { start: startTimer, pause: pauseTimer, running: timerRunning } = timer;
+  useEffect(() => {
+    if (timerShouldRun && !timerRunning) startTimer();
+    if (!timerShouldRun && timerRunning) pauseTimer();
+    // Only react to the conditions changing, not to every manual toggle.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timerShouldRun]);
+
+  // Contacts are per company, so the list reloads whenever the company changes
+  // in the edit form rather than being fetched once.
+  useEffect(() => {
+    const companyId = editForm?.companyId;
+    if (!editing || !companyId) { setContacts([]); return; }
+    fetch(`/api/contacts?companyId=${companyId}`)
+      .then(r => r.json())
+      .then(data => setContacts((data.items || []).map((c: any) => ({
+        id: c.id,
+        name: c.name || [c.firstName, c.lastName].filter(Boolean).join(' '),
+      }))))
+      .catch(() => setContacts([]));
+  }, [editing, editForm?.companyId]);
 
   // Calculate billing preview
   useEffect(() => {
@@ -143,34 +202,89 @@ export default function TicketDetailPage() {
 
   const nothingToSave = !noteText.trim() && !timeMinutes && !newStatus;
 
-  // The same pair of save buttons sits above and below the form, so a long note
-  // does not need scrolling back to save it. Hovering or focusing either one
-  // previews where the note and its time entry are about to go.
-  const saveButtons = (
-    <div className="flex flex-wrap items-center justify-end gap-2">
+
+  // Jump to the composer and put the cursor in it, so the action bar at the
+  // top behaves like a shortcut into the note rather than just a toggle.
+  const startNote = (mode: 'public' | 'internal') => {
+    setNoteMode(mode);
+    noteRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    noteRef.current?.focus({ preventScroll: true });
+  };
+
+  // Shown in the action bar and again inside the time entry panel.
+  const timerWidget = timerSettings.timerEnabled ? (
+    <div className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border ${
+      timer.running ? 'border-brand-500/40 bg-brand-500/10' : 'border-surface-600'
+    }`}>
+      <Clock className={`h-4 w-4 ${timer.running ? 'text-brand-400' : 'text-surface-500'}`} />
+      <span className="font-mono text-sm text-white tabular-nums">{timer.formatted}</span>
       <button
-        onClick={() => handleSubmit(true)}
-        onMouseEnter={() => setPreviewInternal(true)}
-        onMouseLeave={() => setPreviewInternal(null)}
-        onFocus={() => setPreviewInternal(true)}
-        onBlur={() => setPreviewInternal(null)}
-        disabled={submitting || nothingToSave}
-        className="text-sm px-4 py-2 rounded-lg border border-amber-500/40 text-amber-300 hover:bg-amber-500/10 transition-colors disabled:opacity-50"
+        onClick={() => (timer.running ? timer.pause() : timer.start())}
+        aria-label={timer.running ? 'Pause timer' : 'Start timer'}
+        className="p-1 rounded hover:bg-white/10 text-surface-300"
       >
-        {submitting ? 'Saving...' : 'Save internal note'}
+        {timer.running ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
       </button>
       <button
-        onClick={() => handleSubmit(false)}
-        onMouseEnter={() => setPreviewInternal(false)}
-        onMouseLeave={() => setPreviewInternal(null)}
-        onFocus={() => setPreviewInternal(false)}
-        onBlur={() => setPreviewInternal(null)}
-        disabled={submitting || nothingToSave}
-        className="btn-primary text-sm disabled:opacity-50"
+        onClick={timer.reset}
+        aria-label="Reset timer"
+        className="p-1 rounded hover:bg-white/10 text-surface-400"
       >
-        {submitting ? 'Saving...' : 'Save public note'}
+        <RotateCcw className="h-3.5 w-3.5" />
       </button>
     </div>
+  ) : null;
+
+  const openEdit = () => {
+    setEditForm({
+      title: ticket.title || '',
+      description: ticket.description || '',
+      priority: ticket.priority || 'medium',
+      type: ticket.type || '',
+      category: ticket.category || '',
+      companyId: ticket.companyId || '',
+      contactId: ticket.contactId || '',
+      dueDate: ticket.dueDate ? String(ticket.dueDate).slice(0, 10) : '',
+    });
+    setEditing(true);
+  };
+
+  const saveEdit = async () => {
+    if (!editForm?.title?.trim()) {
+      toast.error('A ticket needs a title');
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      await apiPatch(`/api/tickets/${id}`, {
+        ...editForm,
+        dueDate: editForm.dueDate || null,
+        category: editForm.category || null,
+        contactId: editForm.contactId || null,
+        companyId: editForm.companyId || null,
+      });
+      toast.success('Ticket updated');
+      setEditing(false);
+      await refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Could not update the ticket');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const saveButton = (
+    <button
+      onClick={() => handleSubmit(isInternalMode)}
+      disabled={submitting || nothingToSave}
+      className={`text-sm px-4 py-2 rounded-lg transition-colors disabled:opacity-50 ${
+        isInternalMode
+          ? 'border border-amber-500/40 text-amber-300 hover:bg-amber-500/10'
+          : 'btn-primary'
+      }`}
+    >
+      {submitting ? 'Saving...' : isInternalMode ? 'Save private note' : 'Save public note'}
+    </button>
   );
 
   return (
@@ -178,6 +292,42 @@ export default function TicketDetailPage() {
       <PageHeader title={`${ticket.ticketNumber}`} subtitle={ticket.title}>
         <button onClick={() => router.push('/service-desk/tickets')} className="btn-secondary">← Back</button>
       </PageHeader>
+
+      {/* Action bar: choosing here sets what the composer below is writing. */}
+      <div className="flex flex-wrap items-center gap-2 mb-6">
+        <button
+          onClick={() => startNote('public')}
+          aria-pressed={!isInternalMode}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors ${
+            !isInternalMode
+              ? 'bg-green-500/15 border-green-500/40 text-green-300'
+              : 'border-surface-600 text-surface-400 hover:border-surface-500'
+          }`}
+        >
+          <Mail className="h-4 w-4" />
+          Public Note
+        </button>
+        <button
+          onClick={() => startNote('internal')}
+          aria-pressed={isInternalMode}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors ${
+            isInternalMode
+              ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+              : 'border-surface-600 text-surface-400 hover:border-surface-500'
+          }`}
+        >
+          <EyeOff className="h-4 w-4" />
+          Private Note
+        </button>
+        <button
+          onClick={openEdit}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm border border-surface-600 text-surface-300 hover:border-surface-500 transition-colors"
+        >
+          <Pencil className="h-4 w-4" />
+          Edit Ticket
+        </button>
+        {timerWidget && <div className="ml-auto">{timerWidget}</div>}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}
@@ -192,11 +342,19 @@ export default function TicketDetailPage() {
           {/* === ADD NOTE / TIME / STATUS === */}
           <div className="glass-panel p-6">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <h3 className="text-white font-semibold">Add Note / Time</h3>
-              {saveButtons}
+              <div className="flex items-center gap-2">
+                <h3 className="text-white font-semibold">Add Note / Time</h3>
+                <span className={`text-xs px-2 py-0.5 rounded ${
+                  isInternalMode ? 'bg-amber-500/20 text-amber-400' : 'bg-green-500/20 text-green-400'
+                }`}>
+                  {isInternalMode ? 'Private note' : 'Public note'}
+                </span>
+              </div>
+              {saveButton}
             </div>
 
-            <textarea className="w-full mb-3" rows={3} placeholder="Add a note..."
+            <textarea ref={noteRef} className="w-full mb-3" rows={3}
+              placeholder={isInternalMode ? 'Private note, not visible to the customer...' : 'Public note, visible to the customer...'}
               value={noteText} onChange={(e) => setNoteText(e.target.value)} />
 
             <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -213,32 +371,33 @@ export default function TicketDetailPage() {
             {/* Time Entry Section */}
             {showTimeEntry && (
               <div className={`rounded-lg p-4 mb-4 space-y-3 border transition-colors ${
-                previewInternal === true
+                isInternalMode
                   ? 'bg-amber-500/5 border-amber-500/30'
-                  : previewInternal === false
-                    ? 'bg-green-500/5 border-green-500/30'
-                    : 'bg-surface-800/80 border-surface-700/50'
+                  : 'bg-green-500/5 border-green-500/30'
               }`}>
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-brand-400" />
                     <span className="text-sm font-medium text-surface-200">Time Entry</span>
                   </div>
-                  {/* This time is saved as part of the note, so it takes the
-                      visibility of whichever save button is used. */}
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${
-                    previewInternal === true
-                      ? 'bg-amber-500/20 text-amber-400'
-                      : previewInternal === false
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'bg-surface-600/50 text-surface-400'
-                  }`}>
-                    {previewInternal === true
-                      ? 'Internal'
-                      : previewInternal === false
-                        ? 'Public'
-                        : 'Saved with the note'}
-                  </span>
+                  {/* The time is saved as part of the note, so it carries the
+                      visibility chosen in the action bar at the top. */}
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${
+                      isInternalMode ? 'bg-amber-500/20 text-amber-400' : 'bg-green-500/20 text-green-400'
+                    }`}>
+                      {isInternalMode ? 'Private' : 'Public'}
+                    </span>
+                    {timerWidget}
+                    {timerSettings.timerEnabled && timer.seconds > 0 && (
+                      <button
+                        onClick={() => setTimeMinutes(String(timer.minutes))}
+                        className="text-xs px-2 py-1 rounded border border-brand-500/40 text-brand-300 hover:bg-brand-500/10"
+                      >
+                        Use {timer.minutes}m
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -330,9 +489,11 @@ export default function TicketDetailPage() {
 
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-xs text-surface-500">
-                A public note is visible to the customer. An internal note is not.
+                {isInternalMode
+                  ? 'Private notes stay on the ticket. The customer never sees them.'
+                  : 'Public notes are visible to the customer in the portal.'}
               </p>
-              {saveButtons}
+              {saveButton}
             </div>
           </div>
 
@@ -532,6 +693,65 @@ export default function TicketDetailPage() {
           )}
         </div>
       </div>
+
+      {editing && editForm && (
+        <Modal
+          isOpen={editing}
+          onClose={() => setEditing(false)}
+          title="Edit ticket"
+          size="lg"
+          footer={
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setEditing(false)} className="btn-secondary text-sm">Cancel</button>
+              <button onClick={saveEdit} disabled={savingEdit} className="btn-primary text-sm disabled:opacity-50">
+                {savingEdit ? 'Saving...' : 'Save changes'}
+              </button>
+            </div>
+          }
+        >
+          <div className="space-y-4">
+            <Input label="Title" value={editForm.title}
+              onChange={(e: any) => setEditForm({ ...editForm, title: e.target.value })} />
+
+            <Textarea label="Description" rows={5} value={editForm.description}
+              onChange={(e: any) => setEditForm({ ...editForm, description: e.target.value })} />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Select label="Company" value={editForm.companyId}
+                onChange={(e: any) => setEditForm({ ...editForm, companyId: e.target.value, contactId: '' })}
+                options={[{ value: '', label: 'No company' }, ...companies.map(c => ({ value: c.id, label: c.name }))]} />
+
+              <Select label="Contact" value={editForm.contactId}
+                onChange={(e: any) => setEditForm({ ...editForm, contactId: e.target.value })}
+                options={[{ value: '', label: 'No contact' }, ...contacts.map(c => ({ value: c.id, label: c.name }))]} />
+
+              <Select label="Priority" value={editForm.priority}
+                onChange={(e: any) => setEditForm({ ...editForm, priority: e.target.value })}
+                options={[
+                  { value: 'low', label: 'Low' },
+                  { value: 'medium', label: 'Medium' },
+                  { value: 'high', label: 'High' },
+                  { value: 'urgent', label: 'Urgent' },
+                ]} />
+
+              <Select label="Type" value={editForm.type}
+                onChange={(e: any) => setEditForm({ ...editForm, type: e.target.value })}
+                options={[
+                  { value: 'incident', label: 'Incident' },
+                  { value: 'request', label: 'Request' },
+                  { value: 'problem', label: 'Problem' },
+                  { value: 'change', label: 'Change' },
+                ]} />
+
+              <Input label="Category" value={editForm.category}
+                onChange={(e: any) => setEditForm({ ...editForm, category: e.target.value })} />
+
+              <Input label="Due date" type="date" value={editForm.dueDate}
+                onChange={(e: any) => setEditForm({ ...editForm, dueDate: e.target.value })} />
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
