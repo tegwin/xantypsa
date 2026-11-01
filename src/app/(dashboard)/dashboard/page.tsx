@@ -2,29 +2,46 @@ import { getAppSession } from '@/lib/session';
 import prisma from '@/lib/prisma';
 import { formatCurrency } from '@/lib/utils';
 import DashboardClient from './DashboardClient';
+import { closedStatusSlugs } from '@/lib/ticketStatus';
 
 async function getDashboardData(tenantId: string) {
   const now = new Date();
+
+  // Open means "not in a status this tenant has flagged as closed". The old
+  // hard coded list ignored every custom status.
+  const closedSlugs = await closedStatusSlugs(tenantId);
+
+  // Stages flagged won or lost are out of the pipeline. Falling back to the
+  // two default names for a tenant that has not defined its own.
+  const terminalStages = await prisma.pipelineStage.findMany({
+    where: { tenantId, OR: [{ isWon: true }, { isLost: true }] },
+    select: { slug: true },
+  });
+  const closedStages = terminalStages.length > 0
+    ? terminalStages.map((s) => s.slug)
+    : ['won', 'lost'];
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   const [
     openTickets,
     ticketsThisMonth,
     activeProjects,
-    _unusedRevenue,
+    allInvoiced,
     overdueInvoices,
     opportunities,
     recentTickets,
     contacts,
     companies,
   ] = await Promise.all([
-    prisma.ticket.count({ where: { tenantId, status: { in: ['new', 'open', 'pending', 'waiting'] } } }),
+    prisma.ticket.count({ where: { tenantId, status: { notIn: closedSlugs } } }),
     prisma.ticket.count({ where: { tenantId, createdAt: { gte: thirtyDaysAgo } } }),
-    prisma.project.count({ where: { tenantId, status: 'active' } }),
-    prisma.invoice.aggregate({ where: { tenantId, status: 'paid' }, _sum: { total: true } }),
+    prisma.project.count({ where: { tenantId, status: { in: ['planning', 'active'] } } }),
+    // Everything ever invoiced, which is every invoice that was not cancelled.
+    // Counting only paid ones showed zero until somebody settled a bill.
+    prisma.invoice.aggregate({ where: { tenantId, status: { not: 'cancelled' } }, _sum: { total: true } }),
     prisma.invoice.count({ where: { tenantId, status: 'overdue' } }),
     prisma.opportunity.findMany({
-      where: { tenantId, stage: { notIn: ['won', 'lost'] } },
+      where: { tenantId, stage: { notIn: closedStages } },
       select: { id: true, title: true, value: true, stage: true, probability: true },
       orderBy: { value: 'desc' },
       take: 10,
@@ -101,7 +118,7 @@ async function getDashboardData(tenantId: string) {
       openTickets,
       ticketsThisMonth,
       activeProjects,
-      totalRevenue: billedInvoices.reduce((s, inv) => s + inv.total, 0),
+      totalRevenue: allInvoiced._sum.total || 0,
       overdueInvoices,
       pipelineValue,
       weightedPipeline,
