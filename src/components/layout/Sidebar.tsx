@@ -224,7 +224,7 @@ export default function Sidebar() {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-surface-700/50">
-        <Image src="/logo.png" alt="Xanty PSA" width={32} height={32} className="rounded-lg" />
+        <Image src="/logo.svg" alt="Xanty PSA" width={32} height={32} className="rounded-lg" />
         {!collapsed && (
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-surface-100 truncate">Xanty PSA</p>

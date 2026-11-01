@@ -92,7 +92,7 @@ export default function LoginPage() {
     <div className="space-y-8">
       <div className="text-center space-y-3">
         <Image
-          src="/logo.png"
+          src="/logo.svg"
           alt="Xanty PSA"
           width={56}
           height={56}

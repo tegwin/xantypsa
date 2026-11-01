@@ -24,6 +24,56 @@ interface CategoryDef {
   integrations: IntegrationDef[];
 }
 
+// Brand colour per integration, used for the monogram tile shown when we do not
+// ship a logo file for that vendor. Dropping public/integrations/<key>.(svg|png)
+// in place is all it takes to switch a card over to the real mark.
+const BRAND_COLOURS: Record<string, string> = {
+  ninja: '#2a6ebb',
+  datto: '#0066a1',
+  hudu: '#4f46e5',
+  xero: '#13b5ea',
+  quickbooks: '#2ca01c',
+  stripe: '#635bff',
+  halopsa: '#f26522',
+  autotask: '#e31e24',
+  connectwise: '#1f3a93',
+  microsoft365: '#d83b01',
+  google: '#4285f4',
+  slack: '#4a154b',
+  teams: '#4b53bc',
+};
+
+function IntegrationLogo({ intKey, name }: { intKey: string; name: string }) {
+  const [failed, setFailed] = useState(false);
+  const colour = BRAND_COLOURS[intKey] ?? '#334155';
+
+  if (failed) {
+    return (
+      <div
+        className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold text-white shrink-0"
+        style={{ backgroundColor: colour }}
+        aria-hidden="true"
+      >
+        {name.charAt(0)}
+      </div>
+    );
+  }
+
+  return (
+    // A plain <img> rather than next/image: these are small static marks and we
+    // rely on onError to fall back to the monogram when no file is shipped.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`/integrations/${intKey}.png`}
+      alt=""
+      width={36}
+      height={36}
+      className="w-9 h-9 rounded-lg object-contain bg-white/5 p-1 shrink-0"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 const INTEGRATION_CATEGORIES: CategoryDef[] = [
   {
     name: 'RMM Tools',
@@ -347,8 +397,11 @@ export default function SettingsIntegrationsPage() {
                 const status = getStatus(int);
                 return (
                   <div key={int.key} className="glass rounded-xl p-6 hover:bg-white/5 transition-colors">
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="text-white font-semibold">{int.name}</h3>
+                    <div className="flex items-start justify-between mb-3 gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <IntegrationLogo intKey={int.key} name={int.name} />
+                        <h3 className="text-white font-semibold truncate">{int.name}</h3>
+                      </div>
                       {statusBadge(status)}
                     </div>
                     <p className="text-sm text-slate-400 mb-1">{int.description}</p>

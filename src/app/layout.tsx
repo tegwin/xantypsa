@@ -8,7 +8,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Xanty PSA',
   description: 'Professional Services Automation by Xanty PSA',
-  icons: { icon: '/favicon.ico' },
+  icons: { icon: '/logo.svg' },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

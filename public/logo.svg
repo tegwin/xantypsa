@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Xanty PSA">
+  <defs>
+    <linearGradient id="xBlue" x1="80" y1="80" x2="432" y2="432" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2a9df4"/>
+      <stop offset="1" stop-color="#1248b8"/>
+    </linearGradient>
+    <linearGradient id="xGreen" x1="110" y1="420" x2="440" y2="90" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1e7fb8"/>
+      <stop offset="0.45" stop-color="#17a98a"/>
+      <stop offset="1" stop-color="#5cc734"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Back stroke: straight tapered bar, top-left to bottom-right -->
+  <path fill="url(#xBlue)"
+        d="M84 140 L140 84 L436 364 L380 424 Z"/>
+
+  <!-- Front stroke: swoosh with a tapered flick, bottom-left to top-right -->
+  <path fill="url(#xGreen)"
+        d="M104 404
+           C 200 330 320 206 452 70
+           C 384 212 276 338 184 440
+           Z"/>
+</svg>
