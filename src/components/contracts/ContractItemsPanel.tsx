@@ -243,7 +243,7 @@ export default function ContractItemsPanel({
                 <div className="pt-2 mt-2 border-t border-white/10 space-y-1">
                   <div className="flex justify-between text-surface-400 text-xs">
                     <span>Cost of services</span>
-                    <span>−{formatCurrency(cost)}</span>
+                    <span>-{formatCurrency(cost)}</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-surface-300">Margin before labour</span>

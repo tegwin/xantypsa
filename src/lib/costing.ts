@@ -82,7 +82,7 @@ export interface Profitability {
  * Worked example - a £400/month contract, one hour logged by an engineer whose
  * cost rate is £40, and £100/month of resold M365:
  *
- *   revenue 400 − labour 40 − services 100 = £260 profit (65% margin)
+ *   revenue 400 - labour 40 - services 100 = £260 profit (65% margin)
  */
 export async function contractProfitability(
   contractId: string,
