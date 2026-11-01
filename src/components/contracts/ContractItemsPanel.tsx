@@ -5,7 +5,7 @@
 // ============================================================
 // These line items are what the contract actually charges. Their NET total
 // becomes the contract's value, and the recurring invoice raised against the
-// contract bills exactly these lines — so the two can never disagree.
+// contract bills exactly these lines - so the two can never disagree.
 
 import { useEffect, useState } from 'react';
 import { useApi } from '@/hooks/useApi';
@@ -20,7 +20,7 @@ interface Line {
   description: string;
   quantity: number;
   unitPrice: number;
-  /** What this line costs us per unit — wholesale seat price, licence fee, etc. */
+  /** What this line costs us per unit - wholesale seat price, licence fee, etc. */
   cost: number;
   taxRate: number;
   recurring: boolean;
@@ -154,7 +154,7 @@ export default function ContractItemsPanel({
 
       {lines.length === 0 ? (
         <p className="text-sm text-surface-400 py-4">
-          No products or services yet — this is why the contract value is {formatCurrency(0)}. Add a
+          No products or services yet - this is why the contract value is {formatCurrency(0)}. Add a
           line to price the contract.
         </p>
       ) : (
@@ -185,7 +185,7 @@ export default function ContractItemsPanel({
                 value={l.productId ?? ''}
                 onChange={(e) => pickProduct(idx, e.target.value)}
               >
-                <option value="">— none —</option>
+                <option value=""> - none - </option>
                 {products.map((p: any) => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
@@ -252,7 +252,7 @@ export default function ContractItemsPanel({
                     </span>
                   </div>
                   <p className="text-[11px] text-surface-500 pt-1">
-                    Engineer time is costed separately from time entries — this is the service
+                    Engineer time is costed separately from time entries - this is the service
                     margin only.
                   </p>
                 </div>

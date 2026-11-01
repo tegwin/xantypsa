@@ -46,7 +46,7 @@ async function getDashboardData(tenantId: string) {
     _count: { id: true },
   });
 
-  // Revenue by month (last 6 months) — include sent + paid invoices (not just paid)
+  // Revenue by month (last 6 months) - include sent + paid invoices (not just paid)
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
   const billedInvoices = await prisma.invoice.findMany({
     where: { tenantId, status: { in: ['sent', 'paid', 'partial'] }, issueDate: { gte: sixMonthsAgo } },

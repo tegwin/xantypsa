@@ -42,7 +42,7 @@ export default function UserEditPage() {
     }
   }, [user]);
 
-  // Only owners and super admins may see or change cost rates — it is
+  // Only owners and super admins may see or change cost rates - it is
   // effectively salary information.
   const canSeeCosts = session?.user?.isSuperAdmin || user?.isOwner || session?.user?.permissions?.includes('settings:manage');
   const isSelf = session?.user?.id === user?.id;
@@ -153,7 +153,7 @@ export default function UserEditPage() {
           <label className="flex items-center gap-2 text-sm text-surface-300">
             <input type="checkbox" checked={form.isActive}
               onChange={(e) => setForm({ ...form, isActive: e.target.checked })} />
-            Active — inactive users can&apos;t sign in and are hidden from assignment
+            Active - inactive users can&apos;t sign in and are hidden from assignment
           </label>
           <div className="pt-3 border-t border-white/10 text-xs text-surface-500 space-y-1">
             <div>Last sign-in: {user.lastLogin ? formatDate(user.lastLogin) : 'never'}</div>
@@ -208,7 +208,7 @@ export default function UserEditPage() {
           <div className="rounded-lg border border-white/10 p-3 text-sm text-surface-400">
             <p className="font-medium text-surface-200 mb-1">Passwords</p>
             <p>
-              Passwords are stored as bcrypt hashes — nobody, including you, can read one.
+              Passwords are stored as bcrypt hashes - nobody, including you, can read one.
               Send the user to <span className="text-surface-200">Forgot password?</span> on the
               sign-in screen and they will get an emailed link to set a new one.
             </p>
@@ -229,7 +229,7 @@ export default function UserEditPage() {
             <p className="text-xs text-surface-500 mt-2">
               What an hour of this person&apos;s time costs the business, for
               <strong> {session?.user?.tenantName ?? 'this tenant'}</strong>. Used to work out
-              profitability — revenue earned minus what delivering it cost. Never shown to
+              profitability - revenue earned minus what delivering it cost. Never shown to
               customers and never appears on an invoice.
             </p>
           </div>
@@ -238,7 +238,7 @@ export default function UserEditPage() {
             <p className="font-medium text-surface-200 mb-1">How this is used</p>
             <p>
               The rate is captured onto each time entry as it is logged, so changing it here
-              affects future work only — past profitability stays as it was reported. The rate
+              affects future work only - past profitability stays as it was reported. The rate
               applies to this tenant alone; the same person can carry a different cost in
               another tenant.
             </p>
@@ -246,7 +246,7 @@ export default function UserEditPage() {
 
           {!form.costRate && (
             <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-300">
-              No cost rate set — this person&apos;s time currently counts as free, which
+              No cost rate set - this person&apos;s time currently counts as free, which
               overstates profit on anything they work on.
             </div>
           )}

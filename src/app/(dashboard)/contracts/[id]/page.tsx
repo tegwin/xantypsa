@@ -299,7 +299,7 @@ export default function ContractDetailPage() {
         </div>
         <div className="glass rounded-xl p-5">
           <div className="text-xs text-surface-400 mb-1">Company</div>
-          <div className="text-white font-medium">{contract.company?.name || '—'}</div>
+          <div className="text-white font-medium">{contract.company?.name || ' - '}</div>
         </div>
       </div>
 
@@ -334,7 +334,7 @@ export default function ContractDetailPage() {
               </div>
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div><div className="text-surface-500">Block Price</div><div className="text-white font-medium">{formatCurrency(contract.value)}</div></div>
-                <div><div className="text-surface-500">Effective Rate</div><div className="text-white font-medium">{contract.totalHours ? formatCurrency(contract.value / contract.totalHours) + '/hr' : '—'}</div></div>
+                <div><div className="text-surface-500">Effective Rate</div><div className="text-white font-medium">{contract.totalHours ? formatCurrency(contract.value / contract.totalHours) + '/hr' : ' - '}</div></div>
                 <div><div className="text-surface-500">Overage Rate</div><div className="text-white font-medium">{contract.overhourRate ? formatCurrency(contract.overhourRate) + '/hr' : 'No overages'}</div></div>
               </div>
             </div>
@@ -598,7 +598,7 @@ export default function ContractDetailPage() {
               <div className="flex flex-wrap gap-2">
                 {contract.exclusions.map((ex: any) => (
                   <span key={ex.id} className="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm">
-                    {ex.billingRate.name} ({ex.billingRate.code}) — {formatCurrency(ex.billingRate.rate)}/hr → T&M
+                    {ex.billingRate.name} ({ex.billingRate.code}) - {formatCurrency(ex.billingRate.rate)}/hr → T&M
                   </span>
                 ))}
               </div>

@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 /**
  * The second factor at sign-in.
  *
- * Runs against the half-authenticated session set by /signin — the password is
+ * Runs against the half-authenticated session set by /signin - the password is
  * already proven, this raises the session's `mfa` flag. The flag lives inside a
  * signed cookie, so a client cannot set it themselves.
  */

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { PortalSession } from '@/lib/portal/session';
 
 /**
- * Portal chrome. Also carries the impersonation banner — a staff member
+ * Portal chrome. Also carries the impersonation banner - a staff member
  * previewing the portal must never be able to forget they are not the client.
  */
 export default function PortalHeader({

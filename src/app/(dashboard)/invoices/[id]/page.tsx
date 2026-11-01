@@ -144,7 +144,7 @@ export default function InvoiceDetailPage() {
                     <td className="py-3 text-right text-slate-300">{li.quantity}</td>
                     <td className="py-3 text-right text-slate-300">{formatCurrency(li.unitPrice)}</td>
                     <td className="py-3 text-right text-slate-400">{li.taxRate}%</td>
-                    <td className="py-3 text-right text-slate-400">{li.discount ? `${li.discount}%` : '—'}</td>
+                    <td className="py-3 text-right text-slate-400">{li.discount ? `${li.discount}%` : ' - '}</td>
                     <td className="py-3 text-right text-white font-medium">{formatCurrency(li.total)}</td>
                   </tr>
                 ))}
@@ -183,7 +183,7 @@ export default function InvoiceDetailPage() {
             <h3 className="text-white font-semibold">Details</h3>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between"><span className="text-slate-400">Status</span><StatusBadge status={invoice.status} /></div>
-              <div className="flex justify-between"><span className="text-slate-400">Company</span><span className="text-white">{invoice.company?.name || '—'}</span></div>
+              <div className="flex justify-between"><span className="text-slate-400">Company</span><span className="text-white">{invoice.company?.name || ' - '}</span></div>
               {invoice.contact && (
                 <div className="flex justify-between"><span className="text-slate-400">Contact</span><span className="text-white">{invoice.contact.firstName} {invoice.contact.lastName}</span></div>
               )}
@@ -197,11 +197,11 @@ export default function InvoiceDetailPage() {
               )}
               <div className="flex justify-between">
                 <span className="text-slate-400">Payment Terms</span>
-                <span className="text-white">{termsLabels[invoice.paymentTerms] || invoice.paymentTerms || '—'}</span>
+                <span className="text-white">{termsLabels[invoice.paymentTerms] || invoice.paymentTerms || ' - '}</span>
               </div>
               <div className="flex justify-between"><span className="text-slate-400">Due Date</span>
                 <span className={invoice.dueDate && new Date(invoice.dueDate) < new Date() && invoice.status !== 'paid' ? 'text-red-400' : 'text-white'}>
-                  {invoice.dueDate ? formatDate(invoice.dueDate) : '—'}
+                  {invoice.dueDate ? formatDate(invoice.dueDate) : ' - '}
                 </span>
               </div>
               {invoice.isRecurring && (
@@ -221,7 +221,7 @@ export default function InvoiceDetailPage() {
                 </>
               )}
               <div className="flex justify-between"><span className="text-slate-400">Created</span><span className="text-white">{formatDate(invoice.createdAt)}</span></div>
-              <div className="flex justify-between"><span className="text-slate-400">Created By</span><span className="text-white">{invoice.createdBy?.name || '—'}</span></div>
+              <div className="flex justify-between"><span className="text-slate-400">Created By</span><span className="text-white">{invoice.createdBy?.name || ' - '}</span></div>
               {invoice.sentAt && <div className="flex justify-between"><span className="text-slate-400">Sent</span><span className="text-white">{formatDate(invoice.sentAt)}</span></div>}
               {invoice.paidAt && <div className="flex justify-between"><span className="text-slate-400">Paid</span><span className="text-green-400">{formatDate(invoice.paidAt)}</span></div>}
             </div>

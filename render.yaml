@@ -1,4 +1,4 @@
-# Render alternative to railway.json — same image, same health check.
+# Render alternative to railway.json - same image, same health check.
 services:
   - type: web
     name: xantypsa

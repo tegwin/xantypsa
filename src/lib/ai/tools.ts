@@ -231,7 +231,7 @@ export function buildSystemPrompt(module?: string): string {
 ${module ? `The user is currently on the ${module} screen, so assume that context unless they say otherwise.\n` : ''}
 ## How the system is structured
 
-Every record belongs to a tenant, and tenant filtering is applied automatically — never ask the user for a tenant id.
+Every record belongs to a tenant, and tenant filtering is applied automatically - never ask the user for a tenant id.
 
 Below is the index of every model and its fields. Call describe_schema for full types and allowed values before writing a query against a model you have not used yet.
 
@@ -254,5 +254,5 @@ ${buildSchemaIndex()}
 
 Answer with the result, not a description of how you got it. When a query returns rows, summarise the finding first and show the detail after.
 
-Before creating or changing anything, state plainly what you are about to do and wait for the user to confirm. Never invent field values — if a required field is missing, ask.`;
+Before creating or changing anything, state plainly what you are about to do and wait for the user to confirm. Never invent field values - if a required field is missing, ask.`;
 }

@@ -127,7 +127,7 @@ export function buildSchemaIndex(): string {
   return lines.join('\n');
 }
 
-/** Full detail for one model — types, optionality, and the enum-ish comments. */
+/** Full detail for one model - types, optionality, and the enum-ish comments. */
 export function describeModel(name: string): string {
   const model = getModel(name);
   if (!model) {

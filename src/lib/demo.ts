@@ -13,7 +13,7 @@
 //   * No outbound email. A demo wired to real SMTP is a spam relay, and the
 //     invented contacts might not stay invented if someone edits one.
 //
-// None of this is a security boundary — the demo holds nothing worth taking.
+// None of this is a security boundary - the demo holds nothing worth taking.
 // It stops accidents and casual vandalism.
 
 export function isDemoMode(): boolean {
@@ -28,7 +28,7 @@ export function isBlockedInDemo(method: string): boolean {
 }
 
 export const DEMO_BLOCKED_MESSAGE =
-  'This is a demo, so nothing can be deleted — everyone shares it. ' +
+  'This is a demo, so nothing can be deleted - everyone shares it. ' +
   'Create and edit freely; it resets nightly.';
 
 export const DEMO_NO_SIGNUP_MESSAGE =

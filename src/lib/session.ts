@@ -1,12 +1,12 @@
 // ============================================================
 // Application session
 // ============================================================
-// XantyPSA authenticates its own users — see lib/auth/local. The signed session
+// XantyPSA authenticates its own users - see lib/auth/local. The signed session
 // cookie says *who you are*; the database says which tenant, role and
 // permissions you have, and is re-read on every request.
 //
 // The returned shape has been stable across NextAuth and Supabase Auth, so
-// every API route and page keeps working — the swap stays confined to this
+// every API route and page keeps working - the swap stays confined to this
 // file.
 
 import { cache } from 'react';
@@ -46,7 +46,7 @@ export interface AppSession {
  * don't each re-query Postgres.
  */
 export const getAppSession = cache(async (): Promise<AppSession | null> => {
-  // The cookie is signed, so its user id is trustworthy — but only as an
+  // The cookie is signed, so its user id is trustworthy - but only as an
   // identifier. Everything that governs access is read fresh below, so
   // deactivating someone takes effect on their next request.
   const payload = readSessionCookie();
@@ -72,7 +72,7 @@ export const getAppSession = cache(async (): Promise<AppSession | null> => {
 
   // An admin may be viewing the app as someone else. Resolve the real user
   // first (above) so the privilege check below is against *their* rights, never
-  // the target's — otherwise impersonating an admin would escalate privilege.
+  // the target's - otherwise impersonating an admin would escalate privilege.
   const impersonation = await readImpersonation();
   let effectiveUser = user;
   let impersonatedBy: AppSession['impersonatedBy'];
@@ -87,7 +87,7 @@ export const getAppSession = cache(async (): Promise<AppSession | null> => {
         where: {
           id: impersonation.targetUserId,
           isActive: true,
-          // Confined to the admin's own tenants — impersonation must never
+          // Confined to the admin's own tenants - impersonation must never
           // cross a tenant boundary.
           tenants: { some: { tenantId: { in: user.tenants.map((t) => t.tenantId) } } },
         },

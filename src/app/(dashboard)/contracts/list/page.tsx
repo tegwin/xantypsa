@@ -178,14 +178,14 @@ export default function ContractsPage() {
                   <Link href={`/contracts/${r.id}`} className="text-blue-400 hover:text-blue-300 font-mono text-xs">{r.contractNumber}</Link>
                 )},
                 { key: 'name', label: 'Name', render: (r: any) => <span className="text-white font-medium">{r.name}</span> },
-                { key: 'company', label: 'Company', render: (r: any) => <span className="text-surface-300">{r.company?.name || '—'}</span> },
+                { key: 'company', label: 'Company', render: (r: any) => <span className="text-surface-300">{r.company?.name || ' - '}</span> },
                 { key: 'type', label: 'Type', render: (r: any) => <span className={`text-xs font-medium ${typeColor(r.type)}`}>{typeLabel(r.type)}</span> },
                 { key: 'status', label: 'Status', render: (r: any) => <StatusBadge status={r.status} /> },
                 { key: 'value', label: 'Value', render: (r: any) => <span className="text-white font-medium">{valueDisplay(r)}</span> },
-                { key: 'hours', label: 'Hours', render: (r: any) => hoursDisplay(r) || <span className="text-surface-500">—</span> },
+                { key: 'hours', label: 'Hours', render: (r: any) => hoursDisplay(r) || <span className="text-surface-500"> - </span> },
                 { key: 'exclusions', label: 'Exclusions', render: (r: any) => r.exclusions?.length > 0 ? (
                   <span className="text-xs text-amber-400">{r.exclusions.length} rate{r.exclusions.length > 1 ? 's' : ''} excluded</span>
-                ) : <span className="text-surface-500">—</span> },
+                ) : <span className="text-surface-500"> - </span> },
                 { key: 'endDate', label: 'Expires', render: (r: any) => (
                   <span className={r.endDate && new Date(r.endDate) < new Date() ? 'text-red-400 text-sm' : 'text-surface-400 text-sm'}>
                     {r.endDate ? formatDate(r.endDate) : '∞'}
@@ -286,7 +286,7 @@ export default function ContractsPage() {
                       <div className="input w-full bg-surface-800 text-surface-300">
                         {form.fixedPrice && form.instalmentCount
                           ? formatCurrency(parseFloat(form.fixedPrice) / parseInt(form.instalmentCount))
-                          : '—'}
+                          : ' - '}
                       </div>
                     </div>
                   </div>
@@ -384,7 +384,7 @@ export default function ContractsPage() {
 
             {form.items.length === 0 ? (
               <p className="text-xs text-slate-500">
-                No lines yet — the contract will be created with a value of £0.00.
+                No lines yet - the contract will be created with a value of £0.00.
               </p>
             ) : (
               <div className="space-y-2">
@@ -454,7 +454,7 @@ export default function ContractsPage() {
                       className="rounded border-surface-600" />
                     <div>
                       <span className="text-sm text-white">{rate.name}</span>
-                      <span className="text-xs text-surface-500 ml-2">{rate.code} — {formatCurrency(rate.rate)}/hr</span>
+                      <span className="text-xs text-surface-500 ml-2">{rate.code} - {formatCurrency(rate.rate)}/hr</span>
                     </div>
                     {form.excludedRateIds.includes(rate.id) && (
                       <span className="text-xs text-amber-400 ml-auto">→ Charged as T&M</span>

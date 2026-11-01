@@ -67,7 +67,7 @@ export default function EmailProcessingPage() {
               </h2>
               {connected ? (
                 <p className="mt-1 text-sm text-surface-400">
-                  Microsoft 365 pushes each new message to Xanty PSA as it arrives —{' '}
+                  Microsoft 365 pushes each new message to Xanty PSA as it arrives - {' '}
                   <span className="text-surface-300">{status.mailbox}</span>. Nothing is polled and
                   nothing needs pressing.
                 </p>
@@ -103,7 +103,7 @@ export default function EmailProcessingPage() {
                 {hoursLeft != null && (
                   <span className={hoursLeft < 0 ? 'text-red-400' : 'text-surface-500'}>
                     {' '}
-                    — {hoursLeft < 0 ? 'expired' : `${hoursLeft}h left`}
+                    - {hoursLeft < 0 ? 'expired' : `${hoursLeft}h left`}
                   </span>
                 )}
               </dd>
@@ -111,7 +111,7 @@ export default function EmailProcessingPage() {
             <div>
               <dt className="text-xs uppercase tracking-wide text-surface-500">Expires</dt>
               <dd className="mt-1 text-sm text-surface-300">
-                {status.expiresAt ? formatDate(status.expiresAt) : '—'}
+                {status.expiresAt ? formatDate(status.expiresAt) : ' - '}
               </dd>
             </div>
           </dl>
@@ -166,7 +166,7 @@ export default function EmailProcessingPage() {
             <p className="mt-1">
               Microsoft 365 notifies Xanty PSA the moment a message lands, so tickets appear in
               seconds without anything on a timer. A manual fetch would only ever hide a broken
-              subscription — if mail is not arriving, this page says so and the fix is to reconnect.
+              subscription - if mail is not arriving, this page says so and the fix is to reconnect.
             </p>
           </div>
         </div>

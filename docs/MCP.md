@@ -11,7 +11,7 @@ screens:
 
 ## What it exposes
 
-Four tools, shared with the in-app AI panel — they are imported from
+Four tools, shared with the in-app AI panel - they are imported from
 `src/lib/ai/tools.ts` rather than written twice, so the two can't drift apart.
 
 | Tool | What it does |
@@ -19,7 +19,7 @@ Four tools, shared with the in-app AI panel — they are imported from
 | `describe_schema` | Field list, types and allowed values for any model |
 | `query_records` | Filtered reads against any of the 58 models |
 | `run_analytics_query` | Read-only SQL for aggregates and date maths |
-| `create_record` | Creates a record — **only when writes are enabled** |
+| `create_record` | Creates a record - **only when writes are enabled** |
 
 `query_records` and `create_record` work against every model, so four general
 tools cover the whole schema rather than needing a couple of hundred
@@ -75,8 +75,8 @@ deliberately, once you're comfortable with what the assistant is doing.
 ## How it's scoped
 
 The tenant is resolved once, at startup, from the environment. The MCP client
-never gets to choose it, so no prompt — however it's phrased, and whatever it
-claims — can talk the server into reading another tenant's data.
+never gets to choose it, so no prompt - however it's phrased, and whatever it
+claims - can talk the server into reading another tenant's data.
 
 Records created over MCP get their reference numbers (`TKT-`, `QTE-`, `INV-`,
 `CON-`) assigned the same way the API routes assign them, so they are
@@ -88,12 +88,12 @@ every table to the one tenant.
 
 ## Troubleshooting
 
-**"This database has N tenants — set MCP_TENANT"** — exactly what it says; the
+**"This database has N tenants - set MCP_TENANT"** - exactly what it says; the
 error lists the available names.
 
-**Claude Desktop shows the server as failed** — it captures stderr in
+**Claude Desktop shows the server as failed** - it captures stderr in
 `~/Library/Logs/Claude/mcp-server-xantypsa.log`. The usual cause is a `cwd` that
 isn't the project root, so `.env` can't be found.
 
-**Nothing appears in the tools menu** — Claude Desktop only reads its config at
+**Nothing appears in the tools menu** - Claude Desktop only reads its config at
 launch. Quit it fully and reopen.

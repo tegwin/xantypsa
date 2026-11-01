@@ -6,7 +6,7 @@
 #   → http://localhost:3000
 #
 # Brings its own PostgreSQL, so nothing needs installing but Docker. The same
-# image is what runs on Railway or Render — if it works here, it works there.
+# image is what runs on Railway or Render - if it works here, it works there.
 
 services:
   db:
@@ -29,7 +29,7 @@ services:
     # and exposing Postgres to the host is a needless risk. Uncomment to use a
     # GUI client.
     # ports:
-    #   - '5432:5432'
+    # - '5432:5432'
 
   app:
     # Named so the image can be built once and reused, and so a published

@@ -26,7 +26,7 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
   const currentSmtp = (settings as any)?.smtp || {};
 
   // The browser is sent bullets rather than the password, so that value coming
-  // back means "unchanged" — keep the stored ciphertext as-is. Anything else is
+  // back means "unchanged" - keep the stored ciphertext as-is. Anything else is
   // a new password and is encrypted before it touches the database.
   const password =
     body.password === '••••••••'

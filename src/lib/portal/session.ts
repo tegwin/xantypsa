@@ -4,7 +4,7 @@
 // Clients are Contacts, not Users, so they never touch Supabase Auth and can
 // never reach the staff application. A portal session is a signed cookie
 // naming one contact and one company, and every portal query is scoped to that
-// company id — the client never supplies it.
+// company id - the client never supplies it.
 //
 // Signed with AI_ENCRYPTION_KEY, same as admin impersonation. Unsigned, the
 // cookie would just be a company id anyone could edit to read another client's

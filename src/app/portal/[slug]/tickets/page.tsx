@@ -99,7 +99,7 @@ export default async function PortalTicketsPage({ params }: { params: { slug: st
                 open.map((t) => <Row key={t.id} t={t} />)
               ) : (
                 <p className="px-4 py-6 text-center text-sm text-slate-500">
-                  Nothing open — everything has been dealt with.
+                  Nothing open - everything has been dealt with.
                 </p>
               )}
             </div>

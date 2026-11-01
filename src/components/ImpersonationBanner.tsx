@@ -22,7 +22,7 @@ export default function ImpersonationBanner({
     setStopping(true);
     try {
       await fetch('/api/impersonate', { method: 'DELETE' });
-      // Full reload rather than router.refresh() — the session is resolved
+      // Full reload rather than router.refresh() - the session is resolved
       // server-side from a cookie, so everything must be re-fetched.
       window.location.href = '/settings/users';
     } catch {

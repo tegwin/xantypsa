@@ -4,7 +4,7 @@ import { signIn, setSessionCookie } from '@/lib/auth/local';
 
 export const dynamic = 'force-dynamic';
 
-// Per-IP throttle. In-memory, so a restart clears it — an acceptable trade for
+// Per-IP throttle. In-memory, so a restart clears it - an acceptable trade for
 // not requiring Redis in a self-hosted product.
 const WINDOW_MS = 15 * 60 * 1000;
 const MAX_ATTEMPTS = 10;

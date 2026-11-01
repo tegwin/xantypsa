@@ -2,7 +2,7 @@
 // Portal addresses
 // ============================================================
 // Each client gets /portal/<slug>, and picks the slug themselves. The URL
-// carries no tenant, so the slug alone identifies one company — hence the
+// carries no tenant, so the slug alone identifies one company - hence the
 // global unique constraint in the schema.
 
 /** Words that would collide with a real route or read as official. */

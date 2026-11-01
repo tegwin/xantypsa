@@ -63,7 +63,7 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
   if (body.isActive !== undefined) data.isActive = Boolean(body.isActive);
   if (body.mfaRequired !== undefined) data.mfaRequired = Boolean(body.mfaRequired);
 
-  // Cost rates are commercially sensitive — close to salary information — so
+  // Cost rates are commercially sensitive - close to salary information - so
   // they are restricted to tenant owners and super admins rather than anyone
   // with settings access.
   if (body.costRate !== undefined) {

@@ -3,7 +3,7 @@
 // ============================================================
 // Public and unauthenticated, so it is written defensively:
 //
-//   * The response never reveals whether an address is a known contact —
+//   * The response never reveals whether an address is a known contact - 
 //     otherwise this becomes a way to enumerate a client's staff.
 //   * Rate limited per company, so it cannot be used to spam someone's inbox.
 //   * The link is only ever emailed, never returned in the response.

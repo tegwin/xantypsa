@@ -58,7 +58,7 @@ export default function AiSettingsPage() {
     setTesting(id);
     try {
       const res: any = await apiPost(`/api/settings/ai-providers/${id}`, {});
-      if (res?.ok) toast.success(`Connected — model replied "${res.reply}"`);
+      if (res?.ok) toast.success(`Connected - model replied "${res.reply}"`);
       else toast.error(res?.error || 'Connection failed');
     } finally {
       setTesting(null);

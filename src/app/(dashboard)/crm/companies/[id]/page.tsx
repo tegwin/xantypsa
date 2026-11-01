@@ -184,7 +184,7 @@ export default function CompanyDetailPage() {
               <p className="text-xs text-slate-500 mt-1">
                 Email from these domains raises a ticket against this company, even when the
                 sender is not yet a contact. One per line. Public mailboxes such as gmail.com
-                are ignored — they would pull in every personal sender.
+                are ignored - they would pull in every personal sender.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -217,7 +217,7 @@ export default function CompanyDetailPage() {
                 onChange={e => setEditForm({ ...editForm, country: e.target.value, state: '' })}
                 className="w-full"
               >
-                <option value="">— Select country —</option>
+                <option value=""> - Select country - </option>
                 {editForm.country && !COUNTRIES.some(c => c.name === editForm.country) && (
                   // Preserve a legacy free-text value so editing never silently drops it.
                   <option value={editForm.country}>{editForm.country}</option>
@@ -236,7 +236,7 @@ export default function CompanyDetailPage() {
                 <label className="block text-sm font-medium text-slate-400 mb-1">{subdivisionLabelFor(editForm.country)}</label>
                 {subdivisionsFor(editForm.country) ? (
                   <select value={editForm.state || ''} onChange={e => setEditForm({ ...editForm, state: e.target.value })} className="w-full">
-                    <option value="">—</option>
+                    <option value=""> - </option>
                     {subdivisionsFor(editForm.country)!.map(s => (
                       <option key={s} value={s}>{s}</option>
                     ))}

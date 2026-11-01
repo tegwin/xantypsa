@@ -17,7 +17,7 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
   const ctx = {
     tenantId: session.user.tenantId,
     userId: session.user.id,
-    // Writes follow the user's own permissions — the AI is never more
+    // Writes follow the user's own permissions - the AI is never more
     // privileged than the person driving it.
     allowWrites:
       session.user.isSuperAdmin ||

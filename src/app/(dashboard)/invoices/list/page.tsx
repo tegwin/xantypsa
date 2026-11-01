@@ -150,7 +150,7 @@ export default function InvoicesPage() {
                 { key: 'invoiceNumber', label: 'Number', render: (r: any) => (
                   <Link href={`/invoices/${r.id}`} className="text-blue-400 hover:text-blue-300 font-mono">{r.invoiceNumber}</Link>
                 )},
-                { key: 'company', label: 'Company', render: (r: any) => <span className="text-white">{r.company?.name || '—'}</span> },
+                { key: 'company', label: 'Company', render: (r: any) => <span className="text-white">{r.company?.name || ' - '}</span> },
                 { key: 'status', label: 'Status', render: (r: any) => (
                   <div className="flex items-center gap-2">
                     <StatusBadge status={r.status} />
@@ -165,7 +165,7 @@ export default function InvoicesPage() {
                 )},
                 { key: 'dueDate', label: 'Due Date', render: (r: any) => (
                   <span className={r.dueDate && new Date(r.dueDate) < new Date() && r.status !== 'paid' ? 'text-red-400' : 'text-slate-400'}>
-                    {r.dueDate ? formatDate(r.dueDate) : '—'}
+                    {r.dueDate ? formatDate(r.dueDate) : ' - '}
                   </span>
                 )},
                 { key: 'createdAt', label: 'Created', render: (r: any) => <span className="text-slate-400 text-sm">{formatDate(r.createdAt)}</span> },

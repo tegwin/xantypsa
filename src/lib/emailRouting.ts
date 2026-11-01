@@ -3,10 +3,10 @@
 // ============================================================
 // Three steps, most specific first:
 //
-//   1. A contact with that exact email address — the strongest signal, and it
+//   1. A contact with that exact email address - the strongest signal, and it
 //      also tells us who to attribute the ticket to.
 //   2. The sender's email domain against Company.emailDomains.
-//   2b. Failing that, against the domain of the company's website — most
+//   2b. Failing that, against the domain of the company's website - most
 //       clients send from the domain they host their site on, so routing works
 //       without maintaining a second list by hand.
 //   3. The catch-all company, so an email is never dropped for not matching.
@@ -51,7 +51,7 @@ export function websiteDomain(website?: string | null): string | null {
 
 /**
  * Public mailbox providers. A sender at gmail.com tells us nothing about which
- * client they are, so these never match a company by domain — otherwise the
+ * client they are, so these never match a company by domain - otherwise the
  * first client who listed gmail.com would collect everyone else's email.
  */
 const GENERIC_DOMAINS = new Set([
@@ -109,7 +109,7 @@ export async function routeIncomingEmail(
 
     // 2b. Nothing explicit, so fall back to the company's website. Most clients
     // send from the same domain they host their site on, and it is already
-    // filled in — this makes routing work without anyone maintaining a second
+    // filled in - this makes routing work without anyone maintaining a second
     // list. An explicit entry above always wins.
     const byWebsite = await prisma.company.findMany({
       where: { tenantId, website: { not: null }, isCatchAll: false },
@@ -135,7 +135,7 @@ export async function routeIncomingEmail(
  *
  * People paste "@acme.com", "https://acme.com/", "Acme.COM" and full email
  * addresses. Store one canonical lowercase host for each so a match cannot be
- * missed on formatting alone, and drop generic mailbox providers — listing
+ * missed on formatting alone, and drop generic mailbox providers - listing
  * gmail.com against a client would hijack every personal sender.
  */
 export function normaliseDomains(input: unknown): string[] {

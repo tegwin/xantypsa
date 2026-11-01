@@ -108,7 +108,7 @@ export default function BillingSettingsPage() {
       </div>
     )},
     { key: 'code', header: 'Code', render: (r: BillingRate) => (
-      <span className="font-mono text-xs text-surface-400">{r.code || '—'}</span>
+      <span className="font-mono text-xs text-surface-400">{r.code || ' - '}</span>
     )},
     { key: 'rate', header: 'Rate/hr', render: (r: BillingRate) => (
       <span className="font-medium text-surface-100">£{r.rate.toFixed(2)}</span>

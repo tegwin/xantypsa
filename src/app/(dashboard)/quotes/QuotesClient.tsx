@@ -21,10 +21,10 @@ export default function QuotesClient({ quotes }: { quotes: Quote[] }) {
   }));
   const columns = [
     { key: "quote", header: "Quote", render: (q: Quote) => (<div><p className="font-medium text-surface-100">{q.title}</p><p className="text-xs text-surface-500">{q.quoteNumber}</p></div>) },
-    { key: "company", header: "Company", render: (q: Quote) => <span className="text-surface-300">{q.company || "—"}</span> },
+    { key: "company", header: "Company", render: (q: Quote) => <span className="text-surface-300">{q.company || " - "}</span> },
     { key: "status", header: "Status", render: (q: Quote) => <Badge variant="status" status={q.status}>{q.status}</Badge> },
     { key: "total", header: "Total", render: (q: Quote) => <span className="font-medium text-surface-100">{formatCurrency(q.total, q.currency)}</span> },
-    { key: "validUntil", header: "Valid Until", render: (q: Quote) => <span className="text-xs text-surface-400">{q.validUntil ? formatDate(q.validUntil) : "—"}</span> },
+    { key: "validUntil", header: "Valid Until", render: (q: Quote) => <span className="text-xs text-surface-400">{q.validUntil ? formatDate(q.validUntil) : " - "}</span> },
     { key: "createdBy", header: "Created By", render: (q: Quote) => <span className="text-surface-400 text-xs">{q.createdBy}</span> },
     { key: "actions", header: "", render: (q: Quote) => (
       <button onClick={(e) => { e.stopPropagation(); router.push(`/quotes/${q.id}`); }}

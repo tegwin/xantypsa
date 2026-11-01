@@ -2,7 +2,7 @@
 // Reference numbers (TKT-00001, INV-00042, …)
 // ============================================================
 // Split out of server-utils.ts, which reaches for next/headers and so cannot be
-// imported outside a Next request — the MCP server runs as a plain Node process
+// imported outside a Next request - the MCP server runs as a plain Node process
 // and needs this too.
 
 import prisma from './prisma';

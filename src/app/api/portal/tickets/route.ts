@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'A title and description are required.' }, { status: 400 });
   }
 
-  // Priority is a client's opinion, so keep it to known values — but let the
+  // Priority is a client's opinion, so keep it to known values - but let the
   // MSP re-triage. It is a request, not an instruction.
   const priority = PRIORITIES.has(body.priority) ? body.priority : 'medium';
 

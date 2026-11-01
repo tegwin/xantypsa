@@ -6,7 +6,7 @@ import { readSettings, minutesRemaining } from '@/lib/graphSubscription';
 /**
  * Health of the mail webhook, for Settings → Email Processing.
  *
- * Returns no secrets — the client secret and the clientState secret stay on the
+ * Returns no secrets - the client secret and the clientState secret stay on the
  * server.
  */
 export const GET = withTenant(async (_req: NextRequest, session: any) => {

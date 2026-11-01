@@ -645,7 +645,7 @@ export function Pagination({ page: _page, currentPage, pages: _pages, totalPages
   return (
     <div className="flex items-center justify-between pt-4">
       <p className="text-sm text-surface-400">
-        {total ? `Showing ${start}–${end} of ${total}` : `Page ${page} of ${pages}`}
+        {total ? `Showing ${start}-${end} of ${total}` : `Page ${page} of ${pages}`}
       </p>
       <div className="flex gap-1">
         <button

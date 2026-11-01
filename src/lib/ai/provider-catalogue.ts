@@ -56,7 +56,7 @@ export const PROVIDERS: ProviderMeta[] = [
     label: 'Self-hosted (Ollama / vLLM / LM Studio)',
     tier: 'secondary',
     description:
-      'Optional fallback for private or offline use. Data never leaves your infrastructure, but smaller models are less reliable at tool calling — keep Anthropic or OpenAI as your default.',
+      'Optional fallback for private or offline use. Data never leaves your infrastructure, but smaller models are less reliable at tool calling - keep Anthropic or OpenAI as your default.',
     requiresApiKey: false,
     requiresBaseUrl: true,
     models: [

@@ -2,13 +2,13 @@
 // The connection the AI's SQL tool reads through
 // ============================================================
 // Model-authored SQL is validated before it runs (assertSafeSelect), but string
-// validation is not a security boundary — a clever query could still slip past
+// validation is not a security boundary - a clever query could still slip past
 // it. The durable control is the database itself: a role with SELECT only, and
 // row-level security that filters every table to one tenant.
 //
 // Set AI_DATABASE_URL to a connection string for the xantypsa_ai role after
 // running sql/ai-role.sql and sql/rls.sql. Use a direct connection (port 5432),
-// not the transaction pooler — the tenant is set with set_config(..., local)
+// not the transaction pooler - the tenant is set with set_config(..., local)
 // inside a transaction, and pooling in transaction mode can move the query to a
 // different session.
 
@@ -28,7 +28,7 @@ function getClient(): { db: PrismaClient; restricted: boolean } {
     if (!warned) {
       warned = true;
       console.warn(
-        '[ai] AI_DATABASE_URL is not set — analytics queries run on the ' +
+        '[ai] AI_DATABASE_URL is not set - analytics queries run on the ' +
           'application connection, so tenant isolation rests on query ' +
           'validation alone. See sql/ai-role.sql to close this.'
       );
@@ -49,7 +49,7 @@ function getClient(): { db: PrismaClient; restricted: boolean } {
  * Run a validated SELECT with the tenant pinned for the life of the query.
  *
  * The tenant reaches Postgres two ways: as $1 for the query's own predicate,
- * and via set_config for the RLS policies. Both are parameterised — no tenant
+ * and via set_config for the RLS policies. Both are parameterised - no tenant
  * id is ever concatenated into SQL.
  */
 export async function runTenantScopedQuery(

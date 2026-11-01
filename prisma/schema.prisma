@@ -290,7 +290,7 @@ model Contact {
   notes       String?
   source      String?  // web, referral, cold-call, etc.
   isActive    Boolean  @default(true)
-  // Portal access is per contact and off by default — being a contact does not
+  // Portal access is per contact and off by default - being a contact does not
   // imply being allowed to see the company's tickets and invoices.
   portalEnabled Boolean  @default(false)
   portalLastLogin DateTime?
@@ -1494,13 +1494,13 @@ model PortalLoginToken {
 }
 
 // ============================================================
-// BILLING — hosted service only
+// BILLING - hosted service only
 // ============================================================
 // Nothing here is used when DEPLOYMENT_MODE=self_hosted. A self-hoster gets
 // every feature with no subscription row and no limits, and should never see
 // billing UI at all.
 
-/// The hosted plan a tenant is on. Flat monthly per MSP, tiered by size —
+/// The hosted plan a tenant is on. Flat monthly per MSP, tiered by size - 
 /// deliberately not per seat, so growing a team never costs more.
 model Plan {
   id          String  @id @default(cuid())
@@ -1543,7 +1543,7 @@ model Subscription {
   /// trialing, active, past_due, paused, cancelled
   status String @default("trialing")
 
-  /// Paddle (merchant of record — it handles VAT and sales tax liability).
+  /// Paddle (merchant of record - it handles VAT and sales tax liability).
   provider           String  @default("paddle")
   providerCustomerId String?
   providerSubscriptionId String? @unique
@@ -1565,7 +1565,7 @@ model Subscription {
 
 /// Every billing webhook received, stored before it is acted on.
 ///
-/// Providers retry, so events must be idempotent — providerEventId is unique
+/// Providers retry, so events must be idempotent - providerEventId is unique
 /// and a replay is recognised rather than double-applied. It is also the only
 /// record of what the provider actually said when a charge is disputed.
 model BillingEvent {
