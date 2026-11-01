@@ -315,13 +315,13 @@ function ConfigureModal({
         {integration.isRmm && record?.isActive && (
           <div className="mt-4 pt-4 border-t border-white/10 flex items-center gap-4">
             <a
-              href={`/settings/integrations/${integration.key}/mapping`}
+              href={`/integrations/${integration.key}/mapping`}
               className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
             >
               Customer Mapping
             </a>
             <a
-              href={`/settings/integrations/${integration.key}/import`}
+              href={`/integrations/${integration.key}/import`}
               className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
             >
               Import Assets
@@ -448,14 +448,14 @@ export default function SettingsIntegrationsPage() {
                       {int.isRmm && status === 'connected' && (
                         <>
                           <a
-                            href={`/settings/integrations/${int.key}/mapping`}
+                            href={`/integrations/${int.key}/mapping`}
                             className="text-sm py-2 px-3 rounded-lg bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-colors"
                             title="Customer Mapping"
                           >
                             Map
                           </a>
                           <a
-                            href={`/settings/integrations/${int.key}/import`}
+                            href={`/integrations/${int.key}/import`}
                             className="text-sm py-2 px-3 rounded-lg bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-colors"
                             title="Import Assets"
                           >
