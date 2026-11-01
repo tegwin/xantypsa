@@ -15,12 +15,13 @@ interface BillingRate {
   roundingMinutes: number;
   oohMultiplier: number;
   isDefault: boolean;
+  isNonBillable: boolean;
   isActive: boolean;
 }
 
 const emptyForm = {
   name: '', code: '', rate: '', costRate: '0', minimumMinutes: '15',
-  roundingMinutes: '15', oohMultiplier: '1.0', isDefault: false,
+  roundingMinutes: '15', oohMultiplier: '1.0', isDefault: false, isNonBillable: false,
 };
 
 export default function BillingSettingsPage() {
@@ -57,6 +58,7 @@ export default function BillingSettingsPage() {
       roundingMinutes: rate.roundingMinutes.toString(),
       oohMultiplier: rate.oohMultiplier.toString(),
       isDefault: rate.isDefault,
+      isNonBillable: rate.isNonBillable ?? false,
     });
     setShowModal(true);
   };
@@ -111,7 +113,9 @@ export default function BillingSettingsPage() {
       <span className="font-mono text-xs text-surface-400">{r.code || '—'}</span>
     )},
     { key: 'rate', header: 'Rate/hr', render: (r: BillingRate) => (
-      <span className="font-medium text-surface-100">£{r.rate.toFixed(2)}</span>
+      r.isNonBillable
+        ? <span className="font-medium text-surface-400">Non-billable</span>
+        : <span className="font-medium text-surface-100">£{r.rate.toFixed(2)}</span>
     )},
     { key: 'costRate', header: 'Cost/hr', render: (r: BillingRate) => (
       <span className="text-surface-400">£{r.costRate.toFixed(2)}</span>
@@ -189,16 +193,32 @@ export default function BillingSettingsPage() {
             <Input label="Rate Name" value={form.name} onChange={update('name')} required placeholder="e.g. Standard, Premium" />
             <Input label="Code" value={form.code} onChange={update('code')} placeholder="e.g. STD, PREM" />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Rate (£/hr)" type="number" step="0.01" value={form.rate} onChange={update('rate')} required placeholder="100.00" />
-            <Input label="Cost Rate (£/hr)" type="number" step="0.01" value={form.costRate} onChange={update('costRate')} placeholder="50.00" />
-          </div>
+          <label className="flex items-start gap-2 text-sm text-surface-300 cursor-pointer">
+            <input type="checkbox" className="mt-1" checked={form.isNonBillable as any}
+              onChange={(e) => setForm(p => ({ ...p, isNonBillable: e.target.checked as any }))} />
+            <span>
+              <span className="block">Non-billable</span>
+              <span className="block text-xs text-surface-400">
+                Always zero. Work logged at this rate is never charged, and never
+                draws down a block of prepaid hours or a managed service contract.
+              </span>
+            </span>
+          </label>
+
+          {!form.isNonBillable && (
+            <div className="grid grid-cols-2 gap-4">
+              <Input label="Rate (£/hr)" type="number" step="0.01" value={form.rate} onChange={update('rate')} required placeholder="100.00" />
+              <Input label="Cost Rate (£/hr)" type="number" step="0.01" value={form.costRate} onChange={update('costRate')} placeholder="50.00" />
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <Input label="Minimum Minutes" type="number" value={form.minimumMinutes} onChange={update('minimumMinutes')} placeholder="15" />
             <Input label="Rounding Increment (mins)" type="number" value={form.roundingMinutes} onChange={update('roundingMinutes')} placeholder="15" />
           </div>
-          <Input label="OOH Multiplier" type="number" step="0.1" value={form.oohMultiplier} onChange={update('oohMultiplier')} placeholder="1.5" />
-          {form.oohMultiplier && parseFloat(form.oohMultiplier) > 1 && form.rate && (
+          {!form.isNonBillable && (
+            <Input label="OOH Multiplier" type="number" step="0.1" value={form.oohMultiplier} onChange={update('oohMultiplier')} placeholder="1.5" />
+          )}
+          {!form.isNonBillable && form.oohMultiplier && parseFloat(form.oohMultiplier) > 1 && form.rate && (
             <p className="text-xs text-amber-400">OOH rate: £{(parseFloat(form.rate || '0') * parseFloat(form.oohMultiplier)).toFixed(2)}/hr</p>
           )}
           <label className="flex items-center gap-2 text-sm text-surface-300 cursor-pointer">

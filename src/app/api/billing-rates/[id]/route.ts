@@ -9,13 +9,22 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
   const rate = await prisma.billingRate.findFirst({ where: { id, tenantId: session.user.tenantId } });
   if (!rate) return errorResponse('Billing rate not found', 404);
 
+  // Whichever way the flag ends up, a non-billable rate is forced to zero so a
+  // stale price can never be charged.
+  const nextNonBillable = body.isNonBillable !== undefined ? !!body.isNonBillable : rate.isNonBillable;
+
   const updated = await prisma.billingRate.update({
     where: { id },
     data: {
       ...(body.name !== undefined && { name: body.name }),
       ...(body.code !== undefined && { code: body.code }),
-      ...(body.rate !== undefined && { rate: parseFloat(body.rate) }),
-      ...(body.costRate !== undefined && { costRate: parseFloat(body.costRate) }),
+      ...(body.isNonBillable !== undefined && { isNonBillable: nextNonBillable }),
+      ...(nextNonBillable
+        ? { rate: 0, costRate: 0 }
+        : {
+            ...(body.rate !== undefined && { rate: parseFloat(body.rate) }),
+            ...(body.costRate !== undefined && { costRate: parseFloat(body.costRate) }),
+          }),
       ...(body.minimumMinutes !== undefined && { minimumMinutes: parseInt(body.minimumMinutes) }),
       ...(body.roundingMinutes !== undefined && { roundingMinutes: parseInt(body.roundingMinutes) }),
       ...(body.oohMultiplier !== undefined && { oohMultiplier: parseFloat(body.oohMultiplier) }),

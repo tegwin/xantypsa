@@ -956,6 +956,10 @@ model BillingRate {
   minimumMinutes  Int      @default(15) // minimum billable time
   roundingMinutes Int      @default(15) // round up to nearest X minutes
   oohMultiplier   Float    @default(1.0) // e.g. 1.5 for time-and-a-half
+  // Work logged at a non-billable rate is never charged: not as time and
+  // materials, and not against a contract either, so it does not draw down a
+  // block of prepaid hours.
+  isNonBillable   Boolean  @default(false)
   isDefault       Boolean  @default(false)
   isActive        Boolean  @default(true)
   sortOrder       Int      @default(0)

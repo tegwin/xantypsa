@@ -69,6 +69,14 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
       billedAmount = (billableMinutes / 60) * actualRate;
     }
 
+    // A non-billable rate is charged to nobody: not time and materials, and
+    // not a contract either.
+    const isNonBillableRate = !!billingRate?.isNonBillable;
+    if (isNonBillableRate) {
+      actualRate = 0;
+      billedAmount = 0;
+    }
+
     const hours = parseFloat((billableMinutes / 60).toFixed(2));
 
     // === CONTRACT-AWARE BILLING ===
@@ -76,7 +84,12 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
     let chargeType = 'tam'; // default: time & materials
     let contractNote = '';
 
-    if (ticket.contractId) {
+    if (isNonBillableRate) {
+      // Deliberately no contract lookup: non-billable work must not consume a
+      // prepaid block or be recorded as covered by a managed service.
+      chargeType = 'non_billable';
+      contractNote = ' [Non-billable: not charged, no contract hours used]';
+    } else if (ticket.contractId) {
       const contract = await prisma.contract.findFirst({
         where: { id: ticket.contractId, status: 'active' },
         include: { exclusions: { select: { billingRateId: true } } },
@@ -127,7 +140,7 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
         date: body.timeDate ? new Date(body.timeDate) : new Date(),
         hours,
         minutes: billableMinutes,
-        billable: body.billable !== false,
+        billable: isNonBillableRate ? false : body.billable !== false,
         billed: false,
         isOOH,
         rate: actualRate || null,

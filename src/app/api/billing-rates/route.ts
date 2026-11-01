@@ -13,15 +13,21 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
 export const POST = withTenant(async (req: NextRequest, session: any) => {
   const body = await req.json();
   if (!body.name) return errorResponse('Rate name is required');
-  if (body.rate === undefined || body.rate === null) return errorResponse('Hourly rate is required');
+  const isNonBillable = !!body.isNonBillable;
+  // A non-billable rate has no price by definition, so the rate is not asked
+  // for and anything sent is ignored.
+  if (!isNonBillable && (body.rate === undefined || body.rate === null)) {
+    return errorResponse('Hourly rate is required');
+  }
 
   const rate = await prisma.billingRate.create({
     data: {
       tenantId: session.user.tenantId,
       name: body.name,
       code: body.code || null,
-      rate: parseFloat(body.rate),
-      costRate: parseFloat(body.costRate || '0'),
+      isNonBillable,
+      rate: isNonBillable ? 0 : parseFloat(body.rate),
+      costRate: isNonBillable ? 0 : parseFloat(body.costRate || '0'),
       minimumMinutes: parseInt(body.minimumMinutes || '15'),
       roundingMinutes: parseInt(body.roundingMinutes || '15'),
       oohMultiplier: parseFloat(body.oohMultiplier || '1.0'),
