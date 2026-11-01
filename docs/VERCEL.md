@@ -7,14 +7,14 @@ There are two separate deployments and they are independent:
 
 | | What it is | Domain |
 |---|---|---|
-| **The app** | Xanty PSA itself — the thing you log into | `app.vibepsa.net` |
-| **The site** | The marketing page in `xantypsa-site/` | `vibepsa.net` |
+| **The app** | Xanty PSA itself - the thing you log into | `app.xanty.net` |
+| **The site** | The marketing page in `xantypsa-site/` | `xanty.net` |
 
 Do the app first; that's the one you asked about.
 
 ---
 
-## Part 1 — The app
+## Part 1 - The app
 
 ### 1. Get the code into GitHub
 
@@ -23,13 +23,13 @@ Vercel deploys from a repository, so the project needs to be in one.
 The repo is initialised on `main` with no commits yet.
 
 **Check the commit identity before your first commit.** Git stamps every commit
-with an author name and email, permanently — GitHub will not let you remove it
+with an author name and email, permanently - GitHub will not let you remove it
 later without rewriting history, and it is visible to anyone who clones. Both
 repos are already set to a project identity rather than a personal one:
 
 ```bash
 git config user.name    # → Xanty PSA
-git config user.email   # → noreply@vibepsa.net
+git config user.email   # → noreply@xanty.net
 ```
 
 This is set **per repository**, so your global identity is untouched for other
@@ -51,7 +51,7 @@ gh repo create xantypsa --private --source=. --push
 ```
 
 > `gh` remembers whichever account you last authenticated. Run `gh auth status`
-> to confirm which one is active before creating the repo — pushing to the wrong
+> to confirm which one is active before creating the repo - pushing to the wrong
 > account is annoying to unpick once Vercel is wired to it.
 
 Start it **private**. Make it public when you're ready to open source it.
@@ -62,17 +62,17 @@ Before making it public, confirm `.env` never got committed:
 git log --all --full-history -- .env
 ```
 
-That must print nothing. (Checked as of writing — the history was empty and
+That must print nothing. (Checked as of writing - the history was empty and
 `.env` is correctly gitignored, so there is nothing to rotate today. Worth
 re-running before you flip the repo to public, in case something slips in
 between now and then.) If it ever does print something, the database password
-and API keys are in the history and must be rotated — deleting the file in a
+and API keys are in the history and must be rotated - deleting the file in a
 later commit does not remove it.
 
 ### 2. Fix the database connection strings
 
 This is the step that catches people out. Vercel runs serverless functions, so
-every request may open a new connection — a direct Postgres connection will
+every request may open a new connection - a direct Postgres connection will
 exhaust the pool. Supabase gives you two URLs and you need both:
 
 | Variable | Which URL | Why |
@@ -87,7 +87,7 @@ In Supabase: **Project Settings → Database → Connection string**. Take the
 
 1. [vercel.com/new](https://vercel.com/new) → import the repository
 2. Framework preset: **Next.js** (detected automatically)
-3. **Don't deploy yet** — add the environment variables first, or the first
+3. **Don't deploy yet** - add the environment variables first, or the first
    build fails and confuses matters
 
 ### 4. Environment variables
@@ -101,11 +101,11 @@ and Development. Values come from your local `.env`.
 | `DIRECT_DATABASE_URL` | Supabase session pooler, port 5432 | yes |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API | yes |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | same page | yes |
-| `SUPABASE_SERVICE_ROLE_KEY` | same page — **secret**, never expose to the browser | yes |
-| `AI_ENCRYPTION_KEY` | `openssl rand -hex 32` — use the **same value as local**, or stored API keys and SMTP passwords won't decrypt | yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | same page - **secret**, never expose to the browser | yes |
+| `AI_ENCRYPTION_KEY` | `openssl rand -hex 32` - use the **same value as local**, or stored API keys and SMTP passwords won't decrypt | yes |
 | `AI_DATABASE_URL` | The restricted role, see [SECURITY-AI.md](SECURITY-AI.md) | recommended |
 
-`NEXTAUTH_URL` and `NEXTAUTH_SECRET` are dead — they're left over from before the
+`NEXTAUTH_URL` and `NEXTAUTH_SECRET` are dead - they're left over from before the
 Supabase Auth migration and can be dropped.
 
 > **`AI_ENCRYPTION_KEY` must match your local value.** It encrypts stored LLM keys
@@ -125,22 +125,22 @@ reset fail until you add them.
 
 **Supabase → Authentication → URL Configuration:**
 
-- **Site URL:** `https://app.vibepsa.net` (or the `.vercel.app` URL for now)
-- **Redirect URLs** — add every one of these:
+- **Site URL:** `https://app.xanty.net` (or the `.vercel.app` URL for now)
+- **Redirect URLs** - add every one of these:
   ```
-  https://app.vibepsa.net/auth/callback
-  https://app.vibepsa.net/auth/confirm
+  https://app.xanty.net/auth/callback
+  https://app.xanty.net/auth/confirm
   http://localhost:3000/auth/callback
   http://localhost:3000/auth/confirm
   ```
 
-Keep the localhost entries — without them, local development breaks.
+Keep the localhost entries - without them, local development breaks.
 
 Now log in.
 
 ### 7. Your own domain
 
-In Vercel: **Settings → Domains → Add** `app.vibepsa.net`. It shows you a DNS
+In Vercel: **Settings → Domains → Add** `app.xanty.net`. It shows you a DNS
 record:
 
 ```
@@ -151,11 +151,11 @@ Add that at your registrar. Certificates issue automatically once DNS resolves,
 usually a few minutes.
 
 Then go back and update the Supabase Site URL and Redirect URLs to the real
-domain — step 6 again, with the final address.
+domain - step 6 again, with the final address.
 
 ---
 
-## Part 2 — The marketing site
+## Part 2 - The marketing site
 
 Separate Vercel project, same account, from `xantypsa-site/`.
 
@@ -168,9 +168,9 @@ gh repo create xantypsa-site --public --source=. --push
 Already initialised on `main` with the same project commit identity.
 
 Import at [vercel.com/new](https://vercel.com/new). **No environment variables**
-— it's a static marketing page with no database and no secrets.
+- it's a static marketing page with no database and no secrets.
 
-Add the domain `vibepsa.net`, plus `www.vibepsa.net` redirecting to it. For an
+Add the domain `xanty.net`, plus `www.xanty.net` redirecting to it. For an
 apex domain the DNS record is an A record rather than a CNAME:
 
 ```
@@ -178,16 +178,16 @@ A       @     76.76.21.21
 CNAME   www   cname.vercel-dns.com
 ```
 
-Vercel shows the exact values — use those over the ones above if they differ.
+Vercel shows the exact values - use those over the ones above if they differ.
 
 ### Before you launch it
 
 `src/lib/site.ts` holds three placeholders:
 
 ```ts
-github:     'https://github.com/xantaradev/vibepsa',  // real repo URL
+github:     'https://github.com/tegwin/xantypsa',  // real repo URL
 demoReady:  false,   // flip to true once the demo exists
-demoUrl:    'https://demo.vibepsa.net',
+demoUrl:    'https://demo.xanty.net',
 ```
 
 While `demoReady` is `false` the demo button renders as "coming soon" rather

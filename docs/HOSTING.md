@@ -4,7 +4,7 @@ One container image, three ways to run it.
 
 | | Who | How |
 |---|---|---|
-| **Docker Compose** | Self-hosters | `docker compose up -d` — brings its own Postgres |
+| **Docker Compose** | Self-hosters | `docker compose up -d` - brings its own Postgres |
 | **Railway** | The paid service | Deploys the Dockerfile, managed Postgres |
 | **Render** | Alternative | `render.yaml`, same image |
 
@@ -19,7 +19,7 @@ Xanty PSA started on Vercel. It works, but a PSA wants things serverless makes
 awkward:
 
 - **Execution limits.** Report generation, bulk imports and long AI turns all
-  fight a 10–60 second ceiling.
+  fight a 10-60 second ceiling.
 - **No background work.** Nothing can run between requests, so anything
   periodic needs an external scheduler.
 - **Cold starts** on a low-traffic tenant make the first request of the morning
@@ -40,7 +40,7 @@ cd xantypsa
 cp .env.docker.example .env
 ```
 
-Edit `.env` — **two** things are required:
+Edit `.env` - **two** things are required:
 
 | | |
 |---|---|
@@ -81,7 +81,7 @@ docker compose exec db pg_dump -U xantypsa xantypsa > backup.sql
 > **Authentication is built in.** Passwords are bcrypt hashes in your own
 > database, sessions are signed cookies, and two-factor is RFC 6238 TOTP
 > implemented on node:crypto. Nothing calls out to anyone. Password reset is the
-> only feature needing configuration — it emails a link, so it wants SMTP under
+> only feature needing configuration - it emails a link, so it wants SMTP under
 > Settings → Email.
 
 ---
@@ -96,14 +96,14 @@ docker compose exec db pg_dump -U xantypsa xantypsa > backup.sql
 4. **Generate a domain** under Settings → Networking, or attach your own.
 
 Set these on the **app** service, not the database service. For `DATABASE_URL`
-use **Variables → New Variable → Add Reference** and pick `DATABASE_URL` —
+use **Variables → New Variable → Add Reference** and pick `DATABASE_URL` -
 Railway inserts the correct service name. Typing `${{Postgres.DATABASE_URL}}`
 by hand only works if your database service is literally called `Postgres`.
 
 ```bash
 DATABASE_URL=${{<your-db-service>.DATABASE_URL}}
 AI_ENCRYPTION_KEY=<openssl rand -hex 32>
-NEXT_PUBLIC_APP_URL=https://app.vibepsa.net
+NEXT_PUBLIC_APP_URL=https://app.xanty.net
 DEPLOYMENT_MODE=hosted
 
 # First deploy only, so there is an account to sign in with:
@@ -112,7 +112,7 @@ SEED_ADMIN_EMAIL=you@yourcompany.com
 SEED_ADMIN_PASSWORD=<something long>
 ```
 
-`${{Postgres.DATABASE_URL}}` is Railway's reference syntax — it resolves to the
+`${{Postgres.DATABASE_URL}}` is Railway's reference syntax - it resolves to the
 database in the same project, over the private network.
 
 `DIRECT_DATABASE_URL` defaults to `DATABASE_URL` when unset, so Railway's single
@@ -131,7 +131,7 @@ unreachable, so a broken deploy is caught rather than served.
 the Next standalone server reads it, and so does the container's own health
 probe. A probe pinned to 3000 reports unhealthy for ever while the app serves
 perfectly well, and the deploy fails at the networking step with
-*"Deployment failed during the network process"* — which reads like a platform
+*"Deployment failed during the network process"* - which reads like a platform
 fault rather than a health check looking at the wrong door.
 
 ---
@@ -139,15 +139,15 @@ fault rather than a health check looking at the wrong door.
 ## A public demo
 
 A third service from the same repo, with **its own Postgres**. Never point a
-demo at the live database — visitors would be editing real customer data.
+demo at the live database - visitors would be editing real customer data.
 
 ```bash
 DATABASE_URL=${{<demo-db-service>.DATABASE_URL}}
 AI_ENCRYPTION_KEY=<a different key from production>
-NEXT_PUBLIC_APP_URL=https://demo.vibepsa.net
+NEXT_PUBLIC_APP_URL=https://demo.xanty.net
 DEMO_MODE=true
 RUN_SEED=true
-SEED_ADMIN_EMAIL=demo@vibepsa.net
+SEED_ADMIN_EMAIL=demo@xanty.net
 SEED_ADMIN_PASSWORD=demo1234demo
 ```
 
@@ -155,7 +155,7 @@ SEED_ADMIN_PASSWORD=demo1234demo
 
 | | |
 |---|---|
-| Deleting | Refused on every route — the guard sits in the shared API wrapper, so no route can miss it |
+| Deleting | Refused on every route - the guard sits in the shared API wrapper, so no route can miss it |
 | New accounts | `/register` returns 403 |
 | Outbound email | Logged and dropped, never sent |
 
@@ -177,7 +177,7 @@ for you.
 creates the web service and database together. Fill in the `sync: false`
 variables in the dashboard.
 
-Render's free tier sleeps after inactivity, which reintroduces cold starts —
+Render's free tier sleeps after inactivity, which reintroduces cold starts -
 use Starter or above for anything real.
 
 ---
@@ -233,7 +233,7 @@ for `starting on port` and compare it with the `PORT` variable.
 
 **Container restart-loops on start**
 Read `docker compose logs app`. Nearly always `DATABASE_URL` unreachable or the
-schema sync failing — the entrypoint refuses to serve on a stale schema.
+schema sync failing - the entrypoint refuses to serve on a stale schema.
 
 **`PrismaClientInitializationError: Query engine not found`**
 Rebuild without cache: `docker compose build --no-cache app`. The engine is
@@ -245,7 +245,7 @@ even if pages render from cache.
 
 **Everyone is signed out after a redeploy**
 `AI_ENCRYPTION_KEY` changed. It signs session cookies, so a new value
-invalidates every session — and makes enrolled TOTP secrets unreadable. Set it
+invalidates every session - and makes enrolled TOTP secrets unreadable. Set it
 once and keep it.
 
 **Emails stop after moving host**
