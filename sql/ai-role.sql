@@ -7,16 +7,16 @@
 -- 2. Run this file, then sql/rls.sql
 -- 3. Put the matching connection string in AI_DATABASE_URL
 
-CREATE ROLE vibepsa_ai LOGIN PASSWORD 'CHANGE_ME';
+CREATE ROLE xantypsa_ai LOGIN PASSWORD 'CHANGE_ME';
 
-GRANT USAGE ON SCHEMA public TO vibepsa_ai;
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO vibepsa_ai;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO vibepsa_ai;
+GRANT USAGE ON SCHEMA public TO xantypsa_ai;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO xantypsa_ai;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO xantypsa_ai;
 
 -- Read-only, belt and braces: RLS already blocks writes for this role because
 -- no INSERT/UPDATE/DELETE policy exists, but revoke the privilege as well.
-REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA public FROM vibepsa_ai;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA public FROM xantypsa_ai;
 
 -- Credentials and sessions are unreadable at the privilege level too, not only
 -- via the absent RLS policy.
-REVOKE ALL ON "users", "accounts", "sessions", "verification_tokens" FROM vibepsa_ai;
+REVOKE ALL ON "users", "accounts", "sessions", "verification_tokens" FROM xantypsa_ai;

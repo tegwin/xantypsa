@@ -13,15 +13,15 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-vibepsa}
+      POSTGRES_USER: ${POSTGRES_USER:-xantypsa}
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}"
-      POSTGRES_DB: ${POSTGRES_DB:-vibepsa}
+      POSTGRES_DB: ${POSTGRES_DB:-xantypsa}
     volumes:
-      - vibepsa-db:/var/lib/postgresql/data
+      - xantypsa-db:/var/lib/postgresql/data
     healthcheck:
       # The app must not start against a database still coming up, or the first
       # schema sync fails and the container restart-loops.
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-vibepsa} -d ${POSTGRES_DB:-vibepsa}']
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-xantypsa} -d ${POSTGRES_DB:-xantypsa}']
       interval: 5s
       timeout: 5s
       retries: 10
@@ -42,8 +42,8 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-vibepsa}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-vibepsa}
-      DIRECT_DATABASE_URL: postgresql://${POSTGRES_USER:-vibepsa}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-vibepsa}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-xantypsa}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-xantypsa}
+      DIRECT_DATABASE_URL: postgresql://${POSTGRES_USER:-xantypsa}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-xantypsa}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
       AI_ENCRYPTION_KEY: "${AI_ENCRYPTION_KEY:?generate one with openssl rand -hex 32}"
       # First-run administrator. Leave the password unset and one is generated
@@ -57,4 +57,4 @@ services:
       - '${PORT:-3000}:3000'
 
 volumes:
-  vibepsa-db:
+  xantypsa-db:

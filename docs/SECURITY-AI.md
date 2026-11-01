@@ -18,7 +18,7 @@ something to rely on by itself — a sufficiently creative query could get past 
 
 ## 2. The database (the actual boundary)
 
-Analytics queries run on a separate PostgreSQL role, `vibepsa_ai`, which:
+Analytics queries run on a separate PostgreSQL role, `xantypsa_ai`, which:
 
 - has `SELECT` and nothing else — `INSERT`, `UPDATE`, `DELETE` and `TRUNCATE`
   are revoked

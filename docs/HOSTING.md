@@ -35,7 +35,7 @@ the freedom to run work in-process.
 ## Self-hosting with Docker
 
 ```bash
-git clone https://github.com/xantaradev/vibepsa.git
+git clone https://github.com/tegwin/xantypsa.git
 cd xantypsa
 cp .env.docker.example .env
 ```

@@ -1,7 +1,7 @@
 {
   "name": "xantypsa",
   "version": "1.0.0",
-  "description": "XantyPSA - Professional Services Automation Platform",
+  "description": "Xanty PSA - Professional Services Automation Platform",
   "private": true,
   "scripts": {
     "dev": "next dev",

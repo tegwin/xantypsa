@@ -17,7 +17,7 @@ Open an issue describing what you do today and what Xanty PSA made you do instea
 You need Node 18+ and a PostgreSQL database.
 
 ```bash
-git clone https://github.com/xantaradev/vibepsa.git
+git clone https://github.com/tegwin/xantypsa.git
 cd xantypsa
 npm install
 cp .env.example .env      # set DATABASE_URL at minimum

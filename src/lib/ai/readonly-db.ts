@@ -6,7 +6,7 @@
 // it. The durable control is the database itself: a role with SELECT only, and
 // row-level security that filters every table to one tenant.
 //
-// Set AI_DATABASE_URL to a connection string for the vibepsa_ai role after
+// Set AI_DATABASE_URL to a connection string for the xantypsa_ai role after
 // running sql/ai-role.sql and sql/rls.sql. Use a direct connection (port 5432),
 // not the transaction pooler — the tenant is set with set_config(..., local)
 // inside a transaction, and pooling in transaction mode can move the query to a
