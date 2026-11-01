@@ -24,9 +24,26 @@ interface CategoryDef {
   integrations: IntegrationDef[];
 }
 
-// Brand colour per integration, used for the monogram tile shown when we do not
-// ship a logo file for that vendor. Dropping public/integrations/<key>.(svg|png)
-// in place is all it takes to switch a card over to the real mark.
+// Vendor mark shipped under public/integrations, by integration key. The file
+// extension varies because the marks come from different places, so the name is
+// spelled out rather than guessed. A key missing here falls back to a monogram
+// tile in the vendor's brand colour, as does a file that fails to load.
+const LOGO_FILES: Record<string, string> = {
+  ninja: 'ninja.png',
+  datto: 'datto.svg',
+  hudu: 'hudu.ico',
+  xero: 'xero.svg',
+  quickbooks: 'quickbooks.svg',
+  stripe: 'stripe.svg',
+  halopsa: 'halopsa.png',
+  autotask: 'autotask.png',
+  connectwise: 'connectwise.png',
+  microsoft365: 'microsoft365.ico',
+  google: 'google.svg',
+  slack: 'slack.svg',
+  teams: 'teams.ico',
+};
+
 const BRAND_COLOURS: Record<string, string> = {
   ninja: '#2a6ebb',
   datto: '#0066a1',
@@ -45,13 +62,13 @@ const BRAND_COLOURS: Record<string, string> = {
 
 function IntegrationLogo({ intKey, name }: { intKey: string; name: string }) {
   const [failed, setFailed] = useState(false);
-  const colour = BRAND_COLOURS[intKey] ?? '#334155';
+  const file = LOGO_FILES[intKey];
 
-  if (failed) {
+  if (!file || failed) {
     return (
       <div
         className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold text-white shrink-0"
-        style={{ backgroundColor: colour }}
+        style={{ backgroundColor: BRAND_COLOURS[intKey] ?? '#334155' }}
         aria-hidden="true"
       >
         {name.charAt(0)}
@@ -61,14 +78,14 @@ function IntegrationLogo({ intKey, name }: { intKey: string; name: string }) {
 
   return (
     // A plain <img> rather than next/image: these are small static marks and we
-    // rely on onError to fall back to the monogram when no file is shipped.
+    // rely on onError to fall back to the monogram.
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={`/integrations/${intKey}.png`}
+      src={`/integrations/${file}`}
       alt=""
       width={36}
       height={36}
-      className="w-9 h-9 rounded-lg object-contain bg-white/5 p-1 shrink-0"
+      className="w-9 h-9 rounded-lg object-contain bg-white/90 p-1 shrink-0"
       onError={() => setFailed(true)}
     />
   );
