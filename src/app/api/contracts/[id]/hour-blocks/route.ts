@@ -60,3 +60,25 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
   await refreshContractTotals(contractId, tenantId);
   return jsonResponse(block, 201);
 }, 'invoices', 'write');
+
+/**
+ * Mark blocks as billed, so the same hours cannot be invoiced twice.
+ */
+export const PATCH = withTenant(async (req: NextRequest, session: any) => {
+  const contractId = contractIdFrom(req);
+  const tenantId = session.user.tenantId;
+  const body = await req.json();
+
+  if (!Array.isArray(body.blockIds) || body.blockIds.length === 0) {
+    return errorResponse('blockIds is required');
+  }
+
+  const result = await prisma.contractHourBlock.updateMany({
+    // Scoped by contract and tenant, so a block id alone cannot reach another
+    // tenant's data.
+    where: { id: { in: body.blockIds }, contractId, tenantId },
+    data: { invoiceId: body.invoiceId || null },
+  });
+
+  return jsonResponse({ updated: result.count });
+}, 'invoices', 'write');

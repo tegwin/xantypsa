@@ -18,8 +18,9 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
     tenantId,
     billable: true,
     billed: false,
-    // Exclude entries covered by contracts (only show T&M and excluded-from-contract entries)
-    chargeType: { not: 'contract' },
+    // Labour on a contract is already paid for, and non-billable work is never
+    // charged. Neither may reach an invoice.
+    chargeType: { notIn: ['contract', 'non_billable'] },
   };
 
   // If billing mode is 'on_close', only show entries from tickets with closed statuses
@@ -77,12 +78,30 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
     include: {
       company: { select: { id: true, name: true } },
       _count: { select: { invoices: true } },
+      // Blocks not yet put on an invoice. These, not the labour, are what a
+      // pre-pay contract bills.
+      hourBlocks: {
+        where: { invoiceId: null },
+        orderBy: { createdAt: 'asc' },
+      },
+      // Labour the block absorbed. It is never charged again, but the customer
+      // should still see the work their hours went on.
+      timeEntries: {
+        where: { chargeType: 'contract', billed: false },
+        select: {
+          id: true, hours: true, date: true, description: true,
+          ticket: { select: { ticketNumber: true, title: true } },
+        },
+        orderBy: { date: 'asc' },
+      },
     },
   });
 
   // Filter to contracts that haven't been invoiced yet (or recurring ones due again)
   const uninvoicedContracts = billableContracts.filter(c => {
-    if (c.type === 'prepay_hours' && c._count.invoices === 0) return true; // Block never invoiced
+    // A pre-pay contract is due whenever it has a block that has not been
+    // billed, which covers the monthly block as well as the opening one.
+    if (c.type === 'prepay_hours') return c.hourBlocks.some(b => b.amount > 0);
     if (c.type === 'fixed_price' && c.billingMode === 'one_off' && c._count.invoices === 0) return true;
     if (c.type === 'managed_service' && c._count.invoices === 0) return true; // First month
     return false;
@@ -130,8 +149,31 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
       name: c.name,
       type: c.type,
       company: c.company,
-      value: c.type === 'prepay_hours' ? c.value : c.type === 'fixed_price' ? c.fixedPrice : c.monthlyFee,
+      value: c.type === 'prepay_hours'
+        ? Math.round(c.hourBlocks.reduce((a, b) => a + b.amount, 0) * 100) / 100
+        : c.type === 'fixed_price' ? c.fixedPrice : c.monthlyFee,
       totalHours: c.totalHours,
+      coveredTime: c.type === 'prepay_hours'
+        ? c.timeEntries.map(t => ({
+            id: t.id,
+            hours: t.hours,
+            date: t.date,
+            description: t.description,
+            ticketNumber: t.ticket?.ticketNumber ?? null,
+            ticketTitle: t.ticket?.title ?? null,
+          }))
+        : [],
+      // Each unbilled block becomes its own invoice line: hours at the rate.
+      hourBlocks: c.hourBlocks
+        .filter(b => b.amount > 0)
+        .map(b => ({
+          id: b.id,
+          source: b.source,
+          hours: b.hours,
+          hourlyRate: b.hourlyRate,
+          amount: b.amount,
+          periodStart: b.periodStart,
+        })),
     })),
   });
 }, 'invoices', 'read');

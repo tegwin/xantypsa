@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useApi, apiPatch, apiPost } from '@/hooks/useApi';
+import { useSession } from '@/components/SessionProvider';
+import Link from 'next/link';
 import { useTicketTimer } from '@/hooks/useTicketTimer';
 import { PageHeader, StatusBadge, LoadingSpinner, Avatar, Badge, Modal, Input, Textarea, Select } from '@/components/ui';
 import { formatDate, formatRelativeTime, formatCurrency } from '@/lib/utils';
@@ -30,6 +32,13 @@ export default function TicketDetailPage() {
   const [noteMode, setNoteMode] = useState<'public' | 'internal'>('public');
   const noteRef = useRef<HTMLTextAreaElement | null>(null);
   const [emailCustomer, setEmailCustomer] = useState(false);
+
+  // A technician can see that a ticket is on a contract without being able to
+  // open the contract itself, which carries rates and margin.
+  const { data: appSession } = useSession();
+  const canViewContracts =
+    !!appSession?.user?.isSuperAdmin ||
+    (appSession?.user?.permissions ?? []).includes('contracts:view');
   // Ticket edit modal
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
@@ -471,23 +480,65 @@ export default function TicketDetailPage() {
                   </label>
                 </div>
 
-                {/* Billing Preview */}
-                {billable && parseInt(timeMinutes) > 0 && preview.rate > 0 && (
-                  <div className="bg-surface-900/50 border border-surface-700/30 rounded-lg p-3 text-xs space-y-1">
-                    <div className="flex justify-between text-surface-400">
-                      <span>Actual time:</span><span>{timeMinutes} mins</span>
+                {/* Billing preview. Work on a pre-pay or managed contract is
+                    already paid for, so showing a charge would be wrong. */}
+                {billable && parseInt(timeMinutes) > 0 && preview.rate > 0 && (() => {
+                  const contract = ticket.contract;
+                  const isPrepay = contract?.type === 'prepay_hours';
+                  const isManaged = contract?.type === 'managed_service';
+                  const remaining = (contract?.totalHours || 0) - (contract?.hoursUsed || 0);
+                  const hoursHere = preview.billableMinutes / 60;
+                  const over = isPrepay ? Math.max(0, hoursHere - Math.max(0, remaining)) : 0;
+                  const covered = hoursHere - over;
+
+                  return (
+                    <div className="bg-surface-900/50 border border-surface-700/30 rounded-lg p-3 text-xs space-y-1">
+                      <div className="flex justify-between text-surface-400">
+                        <span>Actual time:</span><span>{timeMinutes} mins</span>
+                      </div>
+                      <div className="flex justify-between text-surface-300">
+                        <span>Billed time (after min/rounding):</span><span className="font-medium">{preview.billableMinutes} mins</span>
+                      </div>
+
+                      {isPrepay ? (
+                        <>
+                          <div className="flex justify-between text-surface-300">
+                            <span>From the block:</span>
+                            <span>{covered.toFixed(2)}h of {Math.max(0, remaining).toFixed(1)}h left</span>
+                          </div>
+                          <div className="flex justify-between text-white font-semibold border-t border-surface-700/50 pt-1 mt-1">
+                            <span>Charge:</span>
+                            {over > 0 && contract?.overhourRate != null ? (
+                              <span className="text-amber-400">
+                                £{(over * contract.overhourRate).toFixed(2)} for {over.toFixed(2)}h over the block
+                              </span>
+                            ) : over > 0 ? (
+                              <span className="text-amber-400">
+                                Nothing. {over.toFixed(2)}h beyond the block, not chargeable
+                              </span>
+                            ) : (
+                              <span className="text-purple-300">Deducted from pre-pay</span>
+                            )}
+                          </div>
+                        </>
+                      ) : isManaged ? (
+                        <div className="flex justify-between text-white font-semibold border-t border-surface-700/50 pt-1 mt-1">
+                          <span>Charge:</span>
+                          <span className="text-green-400">Covered by the managed service</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex justify-between text-surface-300">
+                            <span>Rate{isOOH ? ' (OOH)' : ''}:</span><span>£{preview.rate.toFixed(2)}/hr</span>
+                          </div>
+                          <div className="flex justify-between text-white font-semibold border-t border-surface-700/50 pt-1 mt-1">
+                            <span>Billed amount:</span><span className="text-green-400">£{preview.total.toFixed(2)}</span>
+                          </div>
+                        </>
+                      )}
                     </div>
-                    <div className="flex justify-between text-surface-300">
-                      <span>Billed time (after min/rounding):</span><span className="font-medium">{preview.billableMinutes} mins</span>
-                    </div>
-                    <div className="flex justify-between text-surface-300">
-                      <span>Rate{isOOH ? ' (OOH)' : ''}:</span><span>£{preview.rate.toFixed(2)}/hr</span>
-                    </div>
-                    <div className="flex justify-between text-white font-semibold border-t border-surface-700/50 pt-1 mt-1">
-                      <span>Billed amount:</span><span className="text-green-400">£{preview.total.toFixed(2)}</span>
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             )}
 
@@ -657,10 +708,14 @@ export default function TicketDetailPage() {
                 </div>
                 <span className="text-[10px] capitalize px-1.5 py-0.5 rounded bg-surface-700 text-surface-300">{ticket.contract.type?.replace(/_/g, ' ')}</span>
               </div>
-              <div className="text-blue-400 font-medium cursor-pointer hover:text-blue-300 text-xs mb-3"
-                onClick={() => router.push(`/contracts/${ticket.contract.id}`)}>
-                {ticket.contract.name} →
-              </div>
+              {canViewContracts ? (
+                <Link href={`/contracts/${ticket.contract.id}`}
+                  className="block text-blue-400 font-medium hover:text-blue-300 text-xs mb-3">
+                  {ticket.contract.name} &rarr;
+                </Link>
+              ) : (
+                <div className="text-white text-xs mb-3">{ticket.contract.name}</div>
+              )}
 
               {/* Prominent hours display for block contracts. Shown for every
                   pre-pay contract, including a monthly one whose first block

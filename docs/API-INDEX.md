@@ -32,7 +32,7 @@ Authentication, error shapes and conventions are in [API.md](API.md).
 | `/api/contacts/bulk` | POST | - |
 | `/api/contacts` | GET, POST | crm |
 | `/api/contracts/[id]/generate-invoice` | POST | contracts |
-| `/api/contracts/[id]/hour-blocks` | GET, POST | invoices |
+| `/api/contracts/[id]/hour-blocks` | GET, POST, PATCH | invoices |
 | `/api/contracts/[id]/instalments/[instalmentId]` | POST, PATCH, DELETE | contracts |
 | `/api/contracts/[id]/instalments` | GET, POST | contracts |
 | `/api/contracts/[id]/items` | GET, PUT | contracts |

@@ -96,3 +96,52 @@ daily scheduled job at it.
 Edit on the contract row opens the same form it was created with, including the
 block settings. Changing them does not touch blocks already raised: it changes
 what happens next month, or at the next top-up.
+
+## On a ticket
+
+A ticket on a pre-pay contract shows the block in the sidebar: hours used, hours
+remaining, and a bar that turns amber then red as it fills. A monthly contract
+whose block has not been raised yet says so rather than showing nothing.
+
+The billing preview on the time entry changes to match the contract, because
+showing a charge for work already paid for would be wrong:
+
+| Contract | Preview says |
+|---|---|
+| Pre-pay, within the block | **Deducted from pre-pay** |
+| Pre-pay, over the block, overage rate set | The charge for the hours over |
+| Pre-pay, over the block, no overage rate | Nothing, and that the hours are not chargeable |
+| Managed service | **Covered by the managed service** |
+| Anything else | The billed amount at the rate |
+
+The contract name links through to the contract itself, but only for someone
+with `contracts:view`. Everyone else sees the name without a link: a technician
+can see which contract a ticket sits on without seeing the rates and margin on
+it.
+
+## Invoicing a block
+
+A pre-pay contract bills its **blocks**, never the labour. The labour is what
+the block already paid for.
+
+Invoicing from Ready for Invoicing produces a line per unbilled block:
+
+| Description | Qty | Unit price | Total |
+|---|---|---|---|
+| Pre-pay hours - March 2026 | 10 | 250.00 | 2,500.00 |
+
+Below it, the work the block absorbed, at zero:
+
+| Description | Qty | Unit price | Total |
+|---|---|---|---|
+| #1042 Mail flow broken - 2h on 14/03/2026 - deducted from pre-pay | 2 | 0.00 | 0.00 |
+
+So the customer sees the hours they bought, what they paid, and exactly what
+the hours went on, without being charged twice.
+
+Blocks are marked billed once invoiced, so the same hours can never go on a
+second invoice. A monthly contract becomes due again the moment next month's
+block is raised.
+
+Labour on a block contract, and anything logged at a non-billable rate, is
+excluded from unbilled time entirely. Neither can reach an invoice as a charge.

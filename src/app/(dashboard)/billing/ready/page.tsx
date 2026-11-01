@@ -133,6 +133,41 @@ export default function ReadyForInvoicingPage() {
     if (!confirm(`Create invoice for ${contract.name} - ${formatCurrency(contract.value || 0)}?`)) return;
     try {
       const typeLabels: Record<string, string> = { prepay_hours: 'Pre-Pay Hours Block', fixed_price: 'Fixed Price', managed_service: 'Monthly Service' };
+
+      // A pre-pay contract bills its blocks: the hours bought, at the rate they
+      // were bought at. The labour logged against it is already paid for by
+      // those hours and is never billed again.
+      const blocks = contract.hourBlocks || [];
+      const lineItems = contract.type === 'prepay_hours' && blocks.length > 0
+        ? blocks.map((b: any) => ({
+            description: `Pre-pay hours${b.source === 'top_up' ? ' top-up' : ''}${
+              b.periodStart ? ` - ${new Date(b.periodStart).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}` : ''
+            }`,
+            quantity: b.hours,
+            unitPrice: b.hourlyRate || 0,
+            taxRate: 20,
+          }))
+        : [{
+            description: `${typeLabels[contract.type] || contract.type} - ${contract.name}${contract.totalHours ? ` (${contract.totalHours}h block)` : ''}`,
+            quantity: 1,
+            unitPrice: contract.value || 0,
+            taxRate: 20,
+          }];
+
+      // The work the block paid for, shown at zero so the customer sees what
+      // their hours went on without being charged for it twice.
+      const covered = contract.type === 'prepay_hours' ? (contract.coveredTime || []) : [];
+      for (const t of covered) {
+        lineItems.push({
+          description: `${t.ticketNumber ? `#${t.ticketNumber} ${t.ticketTitle} - ` : ''}${
+            t.hours
+          }h on ${new Date(t.date).toLocaleDateString('en-GB')} - deducted from pre-pay`,
+          quantity: t.hours,
+          unitPrice: 0,
+          taxRate: 0,
+        });
+      }
+
       const res = await fetch('/api/invoices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -140,16 +175,21 @@ export default function ReadyForInvoicingPage() {
           companyId: contract.company?.id,
           contractId: contract.id,
           title: `${contract.name}`,
-          lineItems: [{
-            description: `${typeLabels[contract.type] || contract.type} - ${contract.name}${contract.totalHours ? ` (${contract.totalHours}h block)` : ''}`,
-            quantity: 1,
-            unitPrice: contract.value || 0,
-            taxRate: 20,
-          }],
+          lineItems,
         }),
       });
       const inv = await res.json();
       if (!res.ok) throw new Error(inv.error || 'Failed');
+
+      // Mark the blocks billed so the same hours are never invoiced twice.
+      if (contract.type === 'prepay_hours' && blocks.length > 0) {
+        await fetch(`/api/contracts/${contract.id}/hour-blocks`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ blockIds: blocks.map((b: any) => b.id), invoiceId: inv.id }),
+        });
+      }
+
       toast.success(`Invoice ${inv.invoiceNumber} created!`);
       fetchData();
     } catch (err: any) {
