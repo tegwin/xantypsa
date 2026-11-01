@@ -11,13 +11,15 @@ A pre-pay contract is sold as a block of hours. Work draws the balance down.
 | **One off** | A single block, billed once. Used up and that is that, unless you top it up |
 | **Monthly** | A fresh block every month, billed every month |
 
-Blocks are bought in whole units, so you can sell two blocks of ten hours at
-250 an hour and the form shows the sum as you type:
+A block is a number of hours at a rate. The form shows the sum as you type:
 
-> 2 x 10h at £250.00/hr = **20h for £5,000.00**
+> 10h at £250.00/hr = **£2,500.00**
 
-Leave the price blank and it is worked out as blocks times hours times rate.
-Type a price and yours is used, so a discounted block is still possible.
+The contract holds 10 hours, and work deducts from those 10 hours. The 2,500 is
+what it is sold for, never a quantity.
+
+Leave the price blank and it is worked out as hours times rate. Type a price and
+yours is used, so a discounted block is still possible.
 
 ### Carry over
 

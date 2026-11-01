@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApi, apiPost, apiPatch } from '@/hooks/useApi';
 import { PageHeader, DataTable, StatusBadge, Modal, Pagination, EmptyState, LoadingSpinner } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const CONTRACT_TYPES = [
   { value: 'time_and_materials', label: 'T&M', color: 'text-slate-400' },
@@ -16,6 +16,7 @@ const CONTRACT_TYPES = [
 
 export default function ContractsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -34,7 +35,7 @@ export default function ContractsPage() {
     fixedPrice: '', billingMode: 'one_off', instalmentCount: '1',
     // prepay_hours
     totalHours: '', overhourRate: '', alertThreshold: '80', value: '',
-    blockMode: 'one_off', blockHourlyRate: '', hoursPerPeriod: '', blockCount: '1',
+    blockMode: 'one_off', blockHourlyRate: '', hoursPerPeriod: '',
     carryOver: false, carryOverMaxHours: '', autoTopUp: false,
     topUpThresholdHours: '', topUpHours: '',
     // managed_service
@@ -127,7 +128,6 @@ export default function ContractsPage() {
       blockMode: r.blockMode || 'one_off',
       blockHourlyRate: r.blockHourlyRate != null ? String(r.blockHourlyRate) : '',
       hoursPerPeriod: r.hoursPerPeriod != null ? String(r.hoursPerPeriod) : '',
-      blockCount: '1',
       carryOver: !!r.carryOver,
       carryOverMaxHours: r.carryOverMaxHours != null ? String(r.carryOverMaxHours) : '',
       autoTopUp: !!r.autoTopUp,
@@ -161,6 +161,15 @@ export default function ContractsPage() {
       if (!editId) router.push(`/contracts/${res.id}`);
     }
   };
+
+  // Arriving from a contract's own page with ?edit=<id> opens the form on it.
+  useEffect(() => {
+    const editParam = searchParams.get('edit');
+    if (!editParam || !data?.items) return;
+    const row = data.items.find((c: any) => c.id === editParam);
+    if (row) openEdit(row);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, data]);
 
   const typeLabel = (t: string) => CONTRACT_TYPES.find(ct => ct.value === t)?.label || t;
   const typeColor = (t: string) => CONTRACT_TYPES.find(ct => ct.value === t)?.color || 'text-slate-400';
@@ -409,15 +418,10 @@ export default function ContractsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-4">
-                <div>
-                  <label className="label">Number of blocks</label>
-                  <input className="input w-full" type="number" min="1" step="1" value={form.blockCount}
-                    onChange={(e) => setForm({ ...form, blockCount: e.target.value })} />
-                </div>
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="label">
-                    {form.blockMode === 'monthly' ? 'Hours per block, per month *' : 'Hours per block *'}
+                    {form.blockMode === 'monthly' ? 'Hours per month *' : 'Hours in the block *'}
                   </label>
                   <input className="input w-full" type="number" step="0.5"
                     value={form.blockMode === 'monthly' ? form.hoursPerPeriod : form.totalHours}
@@ -442,22 +446,19 @@ export default function ContractsPage() {
 
               {/* Show the sum as it is typed, so the figure is never a surprise. */}
               {(() => {
-                const count = parseFloat(form.blockCount) || 0;
-                const per = parseFloat(form.blockMode === 'monthly' ? form.hoursPerPeriod : form.totalHours) || 0;
+                const hours = parseFloat(form.blockMode === 'monthly' ? form.hoursPerPeriod : form.totalHours) || 0;
                 const rate = parseFloat(form.blockHourlyRate) || 0;
-                const hours = count * per;
-                const total = hours * rate;
-                if (!per || !rate) {
+                if (!hours || !rate) {
                   return (
                     <p className="text-xs text-surface-500">
-                      Leave the price blank and it is worked out as blocks x hours x rate.
+                      Leave the price blank and it is worked out as hours x rate.
                     </p>
                   );
                 }
                 return (
                   <p className="text-sm text-purple-300">
-                    {count} x {per}h at £{rate.toFixed(2)}/hr ={' '}
-                    <span className="font-semibold text-white">{hours}h for £{total.toFixed(2)}</span>
+                    {hours}h at £{rate.toFixed(2)}/hr ={' '}
+                    <span className="font-semibold text-white">£{(hours * rate).toFixed(2)}</span>
                     {form.blockMode === 'monthly' ? ' every month' : ''}
                   </p>
                 );

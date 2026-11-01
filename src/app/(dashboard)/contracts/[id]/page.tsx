@@ -256,6 +256,10 @@ export default function ContractDetailPage() {
     <div className="animate-fadeIn">
       <PageHeader title={contract.contractNumber} subtitle={contract.name}>
         <div className="flex gap-2 flex-wrap">
+          {/* The contract form lives on the list page, so editing opens it
+              there rather than keeping a second copy of every field in step. */}
+          <button onClick={() => router.push(`/contracts/list?edit=${contract.id}`)}
+            className="btn-secondary text-sm">Edit</button>
           {contract.status === 'draft' && <button onClick={() => handleStatusChange('active')} className="btn-primary text-sm">Activate</button>}
           {contract.status === 'active' && <button onClick={() => handleStatusChange('suspended')} className="btn-secondary text-sm text-amber-400">Suspend</button>}
           {contract.status === 'suspended' && <button onClick={() => handleStatusChange('active')} className="btn-primary text-sm">Reactivate</button>}
@@ -333,8 +337,20 @@ export default function ContractDetailPage() {
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 text-sm">
-                <div><div className="text-surface-500">Block Price</div><div className="text-white font-medium">{formatCurrency(contract.value)}</div></div>
-                <div><div className="text-surface-500">Effective Rate</div><div className="text-white font-medium">{contract.totalHours ? formatCurrency(contract.value / contract.totalHours) + '/hr' : ' - '}</div></div>
+                <div><div className="text-surface-500">Block Price</div><div className="text-white font-medium">
+                  {formatCurrency(
+                    contract.value || (contract.totalHours || 0) * (contract.blockHourlyRate || 0),
+                  )}
+                </div></div>
+                <div><div className="text-surface-500">Rate</div><div className="text-white font-medium">
+                  {/* The rate the hours were sold at, falling back to what the
+                      block price works out at per hour. */}
+                  {contract.blockHourlyRate
+                    ? formatCurrency(contract.blockHourlyRate) + '/hr'
+                    : contract.totalHours
+                      ? formatCurrency(contract.value / contract.totalHours) + '/hr'
+                      : ' - '}
+                </div></div>
                 <div><div className="text-surface-500">Overage Rate</div><div className="text-white font-medium">{contract.overhourRate ? formatCurrency(contract.overhourRate) + '/hr' : 'No overages'}</div></div>
               </div>
             </div>
