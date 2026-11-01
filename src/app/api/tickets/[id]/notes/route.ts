@@ -206,3 +206,32 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
 
   return jsonResponse(results, 201);
 }, 'service_desk', 'write');
+
+// Flip an existing note between customer-visible and internal. System notes are
+// not editable: they are the audit trail.
+export const PATCH = withTenant(async (req: NextRequest, session: any) => {
+  const parts = req.nextUrl.pathname.split('/');
+  const ticketId = parts[parts.length - 2];
+  const body = await req.json();
+
+  if (!body.noteId) return errorResponse('noteId is required');
+  if (typeof body.isInternal !== 'boolean') return errorResponse('isInternal must be true or false');
+
+  // Match on the ticket's tenant so a note id alone cannot reach another tenant.
+  const note = await prisma.ticketNote.findFirst({
+    where: {
+      id: body.noteId,
+      ticketId,
+      ticket: { tenantId: session.user.tenantId },
+    },
+  });
+  if (!note) return errorResponse('Note not found', 404);
+  if (note.isSystem) return errorResponse('System notes cannot be changed', 400);
+
+  const updated = await prisma.ticketNote.update({
+    where: { id: note.id },
+    data: { isInternal: body.isInternal },
+  });
+
+  return jsonResponse({ note: updated });
+});
