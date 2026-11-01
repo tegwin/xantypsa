@@ -491,30 +491,40 @@ export default function TicketDetailPage() {
               </div>
             )}
 
-            {/* Status Change */}
+            {/* Status Change. A dropdown rather than a row of buttons: the
+                list is as long as the tenant's own status list, which a row
+                cannot hold. */}
             {availableStatuses.length > 0 && (
               <div className="flex items-center gap-2 mb-4">
-                <span className="text-xs text-surface-400">Change status:</span>
-                <div className="flex gap-1.5">
-                  <button onClick={() => setNewStatus('')}
-                    className={`px-2.5 py-1 rounded-md text-xs transition-colors ${!newStatus ? 'bg-surface-600 text-white' : 'bg-surface-800 text-surface-400 hover:bg-surface-700'}`}>
-                    No change
-                  </button>
-                  {availableStatuses.map(s => {
-                    const custom = customStatuses.find(cs => cs.slug === s);
-                    const label = custom?.name || (s.charAt(0).toUpperCase() + s.slice(1));
-                    const color = custom?.color || '#3b82f6';
+                <label htmlFor="ticket-status" className="text-xs text-surface-400 shrink-0">
+                  Change status
+                </label>
+                <select
+                  id="ticket-status"
+                  value={newStatus}
+                  onChange={e => setNewStatus(e.target.value)}
+                  className="bg-surface-800 border border-surface-700 rounded-md px-2.5 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+                >
+                  <option value="">No change</option>
+                  {availableStatuses.map(st => {
+                    const custom = customStatuses.find(cs => cs.slug === st);
                     return (
-                      <button key={s} onClick={() => setNewStatus(s)}
-                        className={`px-2.5 py-1 rounded-md text-xs transition-colors border ${
-                          newStatus === s ? 'font-medium' : 'bg-surface-800 text-surface-400 hover:bg-surface-700 border-transparent'
-                        }`}
-                        style={newStatus === s ? { backgroundColor: color + '30', color, borderColor: color + '50' } : {}}>
-                        {label}
-                      </button>
+                      <option key={st} value={st}>
+                        {custom?.name || st.charAt(0).toUpperCase() + st.slice(1)}
+                      </option>
                     );
                   })}
-                </div>
+                </select>
+                {newStatus && (() => {
+                  const custom = customStatuses.find(cs => cs.slug === newStatus);
+                  const color = custom?.color || '#3b82f6';
+                  return (
+                    <span className="text-xs px-2 py-0.5 rounded"
+                      style={{ backgroundColor: color + '30', color }}>
+                      {custom?.name || newStatus}
+                    </span>
+                  );
+                })()}
               </div>
             )}
 
@@ -652,12 +662,14 @@ export default function TicketDetailPage() {
                 {ticket.contract.name} →
               </div>
 
-              {/* Prominent hours display for block contracts */}
-              {ticket.contract.totalHours != null && (
+              {/* Prominent hours display for block contracts. Shown for every
+                  pre-pay contract, including a monthly one whose first block
+                  has not been raised yet. */}
+              {(ticket.contract.type === 'prepay_hours' || ticket.contract.totalHours != null) && (
                 <div className="bg-surface-800/80 rounded-lg p-3 mb-2">
                   <div className="flex items-baseline justify-between mb-2">
                     <span className="text-lg font-bold text-white">{(ticket.contract.hoursUsed || 0).toFixed(1)}h</span>
-                    <span className="text-surface-400 text-sm">of {ticket.contract.totalHours}h</span>
+                    <span className="text-surface-400 text-sm">of {(ticket.contract.totalHours || 0).toFixed(1)}h used</span>
                   </div>
                   <div className="w-full h-2.5 bg-surface-700 rounded-full overflow-hidden">
                     {(() => {
@@ -669,8 +681,27 @@ export default function TicketDetailPage() {
                     (ticket.contract.totalHours - (ticket.contract.hoursUsed || 0)) <= 0 ? 'text-red-400' :
                     ((ticket.contract.hoursUsed || 0) / ticket.contract.totalHours * 100) > 80 ? 'text-amber-400' : 'text-green-400'
                   }`}>
-                    {(ticket.contract.totalHours - (ticket.contract.hoursUsed || 0)).toFixed(1)}h remaining
+                    {((ticket.contract.totalHours || 0) - (ticket.contract.hoursUsed || 0)).toFixed(1)}h remaining
                   </div>
+
+                  {!ticket.contract.totalHours && (
+                    <p className="text-xs text-surface-500 mt-1.5">
+                      {ticket.contract.blockMode === 'monthly'
+                        ? `No block raised for this month yet${ticket.contract.hoursPerPeriod ? `. ${ticket.contract.hoursPerPeriod}h due` : ''}.`
+                        : 'No hours on this block yet.'}
+                    </p>
+                  )}
+
+                  {ticket.contract.overhourRate != null && (
+                    <p className="text-xs text-surface-500 mt-1">
+                      Over the block: {formatCurrency(ticket.contract.overhourRate)}/hr
+                    </p>
+                  )}
+                  {ticket.contract.overhourRate == null && (ticket.contract.totalHours || 0) > 0 && (
+                    <p className="text-xs text-surface-500 mt-1">
+                      Hours beyond the block are not chargeable.
+                    </p>
+                  )}
                 </div>
               )}
 

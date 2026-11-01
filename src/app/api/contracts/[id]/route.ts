@@ -56,10 +56,26 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
   const data: any = {};
   const fields = ['name', 'status', 'description', 'notes', 'terms', 'billingCycle', 'autoRenew',
     'renewalPeriod', 'fixedPrice', 'billingMode', 'instalmentCount', 'instalmentAmount',
-    'totalHours', 'overhourRate', 'alertThreshold', 'monthlyFee', 'value'];
+    'totalHours', 'overhourRate', 'alertThreshold', 'monthlyFee', 'value',
+    'blockMode', 'blockHourlyRate', 'hoursPerPeriod', 'carryOver',
+    'carryOverMaxHours', 'autoTopUp', 'topUpThresholdHours', 'topUpHours'];
   
   for (const f of fields) {
     if (body[f] !== undefined) data[f] = body[f];
+  }
+
+  // A form sends everything as a string. Coerce the pre-pay fields so Prisma
+  // is not handed "12" where it wants a number.
+  const numeric = ['blockHourlyRate', 'hoursPerPeriod', 'carryOverMaxHours',
+    'topUpThresholdHours', 'topUpHours', 'totalHours', 'overhourRate', 'alertThreshold'];
+  for (const f of numeric) {
+    if (data[f] !== undefined) {
+      data[f] = data[f] === '' || data[f] === null ? null : parseFloat(data[f]);
+      if (Number.isNaN(data[f])) data[f] = null;
+    }
+  }
+  for (const f of ['carryOver', 'autoTopUp']) {
+    if (data[f] !== undefined) data[f] = !!data[f];
   }
   if (body.startDate) data.startDate = new Date(body.startDate);
   if (body.endDate !== undefined) data.endDate = body.endDate ? new Date(body.endDate) : null;

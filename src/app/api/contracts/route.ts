@@ -72,12 +72,34 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
         data.instalmentAmount = data.fixedPrice / data.instalmentCount;
       }
       break;
-    case 'prepay_hours':
-      data.totalHours = parseFloat(body.totalHours) || 0;
-      data.value = parseFloat(body.value) || 0;
+    case 'prepay_hours': {
+      data.blockMode = body.blockMode === 'monthly' ? 'monthly' : 'one_off';
+      data.blockHourlyRate = body.blockHourlyRate ? parseFloat(body.blockHourlyRate) : null;
       data.overhourRate = body.overhourRate ? parseFloat(body.overhourRate) : null;
       data.alertThreshold = body.alertThreshold ? parseFloat(body.alertThreshold) : 80;
+
+      data.carryOver = !!body.carryOver;
+      data.carryOverMaxHours = body.carryOverMaxHours ? parseFloat(body.carryOverMaxHours) : null;
+      data.autoTopUp = !!body.autoTopUp;
+      data.topUpThresholdHours = body.topUpThresholdHours ? parseFloat(body.topUpThresholdHours) : null;
+      data.topUpHours = body.topUpHours ? parseFloat(body.topUpHours) : null;
+
+      const rate = data.blockHourlyRate ?? 0;
+      // Blocks are bought in whole units: 2 blocks of 10 hours is 20 hours.
+      const count = Math.max(1, parseInt(body.blockCount ?? '1') || 1);
+
+      if (data.blockMode === 'monthly') {
+        data.hoursPerPeriod = (parseFloat(body.hoursPerPeriod) || 0) * count;
+        // A monthly contract is worth a period at a time. The opening block is
+        // raised by the scheduled job, not here.
+        data.totalHours = 0;
+        data.value = parseFloat(body.value) || Math.round(data.hoursPerPeriod * rate * 100) / 100;
+      } else {
+        data.totalHours = (parseFloat(body.totalHours) || 0) * count;
+        data.value = parseFloat(body.value) || Math.round(data.totalHours * rate * 100) / 100;
+      }
       break;
+    }
     case 'managed_service':
       data.monthlyFee = parseFloat(body.monthlyFee) || 0;
       data.value = data.monthlyFee;

@@ -75,6 +75,11 @@ DROP POLICY IF EXISTS ai_tenant_isolation ON "contract_exclusions";
 CREATE POLICY ai_tenant_isolation ON "contract_exclusions"
   FOR SELECT USING (EXISTS (SELECT 1 FROM "contracts" AS p WHERE p."id" = "contractId" AND p."tenantId" = current_setting('app.tenant_id', true)));
 
+ALTER TABLE "contract_hour_blocks" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS ai_tenant_isolation ON "contract_hour_blocks";
+CREATE POLICY ai_tenant_isolation ON "contract_hour_blocks"
+  FOR SELECT USING ("tenantId" = current_setting('app.tenant_id', true));
+
 ALTER TABLE "contract_instalments" ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS ai_tenant_isolation ON "contract_instalments";
 -- ContractInstalment is scoped through Contract.

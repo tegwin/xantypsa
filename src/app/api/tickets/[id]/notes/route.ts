@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server';
 import { calculateInternalCost } from '@/lib/costing';
+import { consumeHours, blockBalance } from '@/lib/prepay';
+import { round2 } from '@/lib/billing';
 import { prisma } from '@/lib/prisma';
 import { withTenant, jsonResponse, errorResponse } from '@/lib/api';
 import { sendTicketNotification, sendPublicNoteEmail } from '@/lib/ticketEmail';
@@ -106,19 +108,25 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
           contractId = contract.id;
 
           if (contract.type === 'prepay_hours') {
-            const newHoursUsed = (contract.hoursUsed || 0) + hours;
-            const remaining = (contract.totalHours || 0) - newHoursUsed;
-            
-            // Update hours used on contract
-            await prisma.contract.update({
-              where: { id: contract.id },
-              data: { hoursUsed: newHoursUsed },
-            });
+            // Draw the hours off the blocks, oldest first. Anything the blocks
+            // cannot cover falls to the overhour rate, or is refused when the
+            // contract has none.
+            const { uncovered } = await consumeHours(contract.id, session.user.tenantId, hours);
+            const { remaining } = await blockBalance(contract.id, session.user.tenantId);
 
-            contractNote = ` [Deducted from ${contract.name}: ${remaining.toFixed(1)}h remaining]`;
-            
-            // Zero out billed amount since it's covered by the block
-            billedAmount = 0;
+            if (uncovered > 0) {
+              if (contract.overhourRate != null) {
+                billedAmount = round2(uncovered * contract.overhourRate);
+                chargeType = 'overhour';
+                contractNote = ` [${(hours - uncovered).toFixed(2)}h from ${contract.name}, ${uncovered.toFixed(2)}h over the block at ${contract.overhourRate}/h]`;
+              } else {
+                billedAmount = 0;
+                contractNote = ` [${(hours - uncovered).toFixed(2)}h from ${contract.name}, ${uncovered.toFixed(2)}h beyond the block and not chargeable]`;
+              }
+            } else {
+              billedAmount = 0;
+              contractNote = ` [Deducted from ${contract.name}: ${remaining.toFixed(1)}h remaining]`;
+            }
           } else {
             // managed_service: labour is included, zero out billing
             contractNote = ` [Covered by ${contract.name}]`;

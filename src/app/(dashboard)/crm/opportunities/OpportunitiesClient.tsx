@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader, Button, Badge, SearchInput, Card, Modal, Input, Select, Textarea } from "@/components/ui";
 import { Plus, DollarSign, TrendingUp } from "lucide-react";
@@ -27,6 +27,17 @@ export default function OpportunitiesClient({ opportunities: initial, companies 
   const [saving, setSaving] = useState(false);
   // Stage a deal has been dragged to but the server has not confirmed yet.
   const [pending, setPending] = useState<Record<string, string>>({});
+  const [search, setSearch] = useState("");
+  const [tab, setTab] = useState("active");
+  // The tenant's own pipeline. STAGES below is only the fallback.
+  const [stageDefs, setStageDefs] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch("/api/pipeline-stages")
+      .then(r => r.json())
+      .then(d => setStageDefs((d.items || []).filter((x: any) => x.isActive)))
+      .catch(() => {});
+  }, []);
 
   const stageOf = (d: Opportunity) => pending[d.id] ?? d.stage;
 
@@ -56,8 +67,42 @@ export default function OpportunitiesClient({ opportunities: initial, companies 
     if (opp && stageOf(opp) !== toStage) handleStageChange(oppId, toStage);
   });
 
-  const active = initial.filter(d => !["won","lost"].includes(stageOf(d)));
+  const stageList: { slug: string; name: string; isWon?: boolean; isLost?: boolean }[] =
+    stageDefs.length > 0
+      ? stageDefs.map((s: any) => ({ slug: s.slug, name: s.name, isWon: s.isWon, isLost: s.isLost }))
+      : STAGES.map(s => ({
+          slug: s,
+          name: s.charAt(0).toUpperCase() + s.slice(1),
+          isWon: s === "won",
+          isLost: s === "lost",
+        }));
+
+  const isClosedStage = (slug: string) => {
+    const def = stageList.find(s => s.slug === slug);
+    return !!(def?.isWon || def?.isLost);
+  };
+
+  const matchesSearch = (d: Opportunity) =>
+    !search ||
+    d.title.toLowerCase().includes(search.toLowerCase()) ||
+    (d.company || "").toLowerCase().includes(search.toLowerCase());
+
+  const searched = initial.filter(matchesSearch);
+  const active = searched.filter(d => !isClosedStage(stageOf(d)));
   const totalPipeline = active.reduce((a, d) => a + d.value, 0);
+
+  // Active first, then one tab per stage, the same shape as the ticket list.
+  const tabs = [
+    { key: "active", label: "Active", count: active.length },
+    ...stageList.map(s => ({
+      key: s.slug,
+      label: s.name,
+      count: searched.filter(d => stageOf(d) === s.slug).length,
+    })),
+  ];
+
+  // The board shows every stage on Active, or just the one a tab selects.
+  const visibleStages = tab === "active" ? stageList : stageList.filter(s => s.slug === tab);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault(); setSaving(true);
@@ -112,10 +157,38 @@ export default function OpportunitiesClient({ opportunities: initial, companies 
       <PageHeader title="Opportunities" description={`${active.length} active · ${formatCurrency(totalPipeline)} pipeline`}
         actions={<Button icon={<Plus className="h-4 w-4" />} onClick={() => { resetForm(); setShowModal(true); }}>New Opportunity</Button>} />
 
+      {/* Stage tabs and search, matching the ticket list */}
+      <div>
+        <div className="flex items-center gap-1 overflow-x-auto border-b border-surface-700">
+          {tabs.map(t => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              aria-current={tab === t.key ? "page" : undefined}
+              className={`flex items-center gap-2 px-3 py-2 text-sm whitespace-nowrap border-b-2 transition-colors ${
+                tab === t.key
+                  ? "border-brand-500 text-white"
+                  : "border-transparent text-surface-400 hover:text-surface-200"
+              }`}
+            >
+              {t.label}
+              <span className="text-xs px-1.5 py-0.5 rounded bg-white/10 text-surface-300">{t.count}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-4">
+          <SearchInput value={search} onChange={setSearch} placeholder="Search opportunities" />
+        </div>
+      </div>
+
       {/* Pipeline View */}
-      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4 overflow-x-auto">
-        {STAGES.map(stage => {
-          const stageItems = initial.filter(d => stageOf(d) === stage);
+      <div className={`grid grid-cols-1 gap-4 overflow-x-auto ${
+        visibleStages.length === 1 ? "" : "md:grid-cols-3 xl:grid-cols-6"
+      }`}>
+        {visibleStages.map(stageDef => {
+          const stage = stageDef.slug;
+          const stageItems = searched.filter(d => stageOf(d) === stage);
           const stageTotal = stageItems.reduce((a, d) => a + d.value, 0);
           return (
             <div
@@ -126,7 +199,7 @@ export default function OpportunitiesClient({ opportunities: initial, companies 
               }`}
             >
               <div className="flex items-center justify-between px-1">
-                <h3 className="text-sm font-medium text-surface-300 capitalize">{stage}</h3>
+                <h3 className="text-sm font-medium text-surface-300">{stageDef.name}</h3>
                 <span className="text-xs text-surface-500">{formatCurrency(stageTotal)}</span>
               </div>
               <div className="space-y-2 min-h-[100px]">
@@ -152,7 +225,7 @@ export default function OpportunitiesClient({ opportunities: initial, companies 
                         aria-label={`Stage for ${opp.title}`}
                         className="mt-2 w-full text-xs bg-white/5 border border-white/10 rounded px-1.5 py-1 text-surface-300 capitalize focus:outline-none focus:ring-1 focus:ring-brand-500"
                       >
-                        {STAGES.map(st => <option key={st} value={st}>{st}</option>)}
+                        {stageList.map(st => <option key={st.slug} value={st.slug}>{st.name}</option>)}
                       </select>
                     </Card>
                   </div>
@@ -205,7 +278,7 @@ export default function OpportunitiesClient({ opportunities: initial, companies 
             <Input label="Probability (%)" type="number" min="0" max="100" value={form.probability} onChange={update("probability")} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Select label="Stage" value={form.stage} onChange={update("stage")} options={STAGES.map(s => ({value:s,label:s.charAt(0).toUpperCase()+s.slice(1)}))} />
+            <Select label="Stage" value={form.stage} onChange={update("stage")} options={stageList.map(s => ({ value: s.slug, label: s.name }))} />
             <Select label="Source" value={form.source} onChange={update("source")}
               options={[{ value: "", label: "-- Select source --" }, ...SOURCES.map(s => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1).replace('-', ' ') }))]} />
           </div>

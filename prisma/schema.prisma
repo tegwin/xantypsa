@@ -81,6 +81,7 @@ model Tenant {
   opportunityNotes   OpportunityNote[]
 
   @@map("tenants")
+  contractHourBlocks ContractHourBlock[]
 }
 
 // ============================================================
@@ -609,10 +610,27 @@ model Contract {
   instalmentAmount Float? // Per-instalment amount
 
   // === Pre-Pay Hours fields ===
-  totalHours     Float? // Block of purchased hours
+  // totalHours and hoursUsed are the running totals across every block, kept so
+  // a glance at the contract still answers "how much is left". The detail,
+  // including what each block cost and when it was raised, is in hourBlocks.
+  totalHours     Float? // Hours purchased across all blocks
   hoursUsed      Float  @default(0)
-  overhourRate   Float? // Rate per hour when block is exceeded (null = cannot exceed)
-  alertThreshold Float? // Percentage (e.g. 80) to alert when block is running low
+  overhourRate   Float? // Rate per hour when the block is exceeded (null = cannot exceed)
+  alertThreshold Float? // Percentage (e.g. 80) to alert when the block is running low
+
+  /// "one_off" for a single block, "monthly" for one raised every month.
+  blockMode       String? @default("one_off")
+  /// What an hour in the block is sold at. Hours times rate is what is billed.
+  blockHourlyRate Float?
+  /// Hours raised each period when blockMode is monthly.
+  hoursPerPeriod  Float?
+  /// Whether unused hours roll into the next period, and the most that may.
+  carryOver         Boolean @default(false)
+  carryOverMaxHours Float?
+  /// Raise another block automatically once the balance runs low.
+  autoTopUp           Boolean @default(false)
+  topUpThresholdHours Float?
+  topUpHours          Float?
 
   // === Managed Service fields ===
   monthlyFee Float? // Recurring monthly fee
@@ -626,6 +644,7 @@ model Contract {
   tenant      Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   company     Company              @relation(fields: [companyId], references: [id])
   items       ContractItem[]
+  hourBlocks  ContractHourBlock[]
   tickets     Ticket[]
   invoices    Invoice[]
   exclusions  ContractExclusion[]
@@ -1686,4 +1705,45 @@ model OpportunityNote {
   @@index([tenantId])
   @@index([opportunityId])
   @@map("opportunity_notes")
+}
+
+
+/// One block of prepaid hours.
+///
+/// A contract can have many: the one-off block it was sold with, a block raised
+/// each month, a top-up when the balance ran low, and hours carried over from
+/// the period before. Keeping them apart is what makes carry-over, expiry and
+/// "what did we actually bill them" answerable.
+model ContractHourBlock {
+  id         String   @id @default(cuid())
+  tenantId   String
+  contractId String
+
+  /// How the block came about: one_off, monthly, top_up or carry_over.
+  source     String   @default("one_off")
+  hours      Float
+  hoursUsed  Float    @default(0)
+  /// Rate the hours were sold at, and the resulting charge. A carried over
+  /// block is worth nothing new, so its amount is zero.
+  hourlyRate Float?
+  amount     Float    @default(0)
+
+  /// The period a monthly block belongs to. Null on a one-off block.
+  periodStart DateTime?
+  periodEnd   DateTime?
+
+  /// Set once the block has been put on an invoice, so it is not billed twice.
+  invoiceId  String?
+  /// Carried-over hours point back at the block they came from.
+  carriedFromId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([contractId])
+  @@map("contract_hour_blocks")
 }

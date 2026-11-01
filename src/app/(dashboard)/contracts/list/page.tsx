@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useApi, apiPost } from '@/hooks/useApi';
+import { useApi, apiPost, apiPatch } from '@/hooks/useApi';
 import { PageHeader, DataTable, StatusBadge, Modal, Pagination, EmptyState, LoadingSpinner } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import Link from 'next/link';
@@ -21,6 +21,7 @@ export default function ContractsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const { data, loading, refetch } = useApi<any>(`/api/contracts?page=${page}&search=${search}&status=${statusFilter}&type=${typeFilter}&limit=25`);
   const { data: companiesData } = useApi<any>('/api/companies?limit=500');
   const { data: ratesData } = useApi<any>('/api/billing-rates');
@@ -33,6 +34,9 @@ export default function ContractsPage() {
     fixedPrice: '', billingMode: 'one_off', instalmentCount: '1',
     // prepay_hours
     totalHours: '', overhourRate: '', alertThreshold: '80', value: '',
+    blockMode: 'one_off', blockHourlyRate: '', hoursPerPeriod: '', blockCount: '1',
+    carryOver: false, carryOverMaxHours: '', autoTopUp: false,
+    topUpThresholdHours: '', topUpHours: '',
     // managed_service
     monthlyFee: '',
     // exclusions
@@ -99,6 +103,40 @@ export default function ContractsPage() {
     }));
   };
 
+  // The same modal creates and edits: one form, one set of fields to keep right.
+  const openEdit = (r: any) => {
+    setEditId(r.id);
+    setForm({
+      ...defaultForm,
+      name: r.name || '',
+      companyId: r.companyId || '',
+      type: r.type || 'time_and_materials',
+      status: r.status || 'draft',
+      startDate: r.startDate ? String(r.startDate).slice(0, 10) : '',
+      endDate: r.endDate ? String(r.endDate).slice(0, 10) : '',
+      billingCycle: r.billingCycle || 'monthly',
+      description: r.description || '',
+      fixedPrice: r.fixedPrice != null ? String(r.fixedPrice) : '',
+      billingMode: r.billingMode || 'one_off',
+      instalmentCount: r.instalmentCount != null ? String(r.instalmentCount) : '',
+      monthlyFee: r.monthlyFee != null ? String(r.monthlyFee) : '',
+      totalHours: r.totalHours != null ? String(r.totalHours) : '',
+      overhourRate: r.overhourRate != null ? String(r.overhourRate) : '',
+      alertThreshold: r.alertThreshold != null ? String(r.alertThreshold) : '80',
+      value: r.value != null ? String(r.value) : '',
+      blockMode: r.blockMode || 'one_off',
+      blockHourlyRate: r.blockHourlyRate != null ? String(r.blockHourlyRate) : '',
+      hoursPerPeriod: r.hoursPerPeriod != null ? String(r.hoursPerPeriod) : '',
+      blockCount: '1',
+      carryOver: !!r.carryOver,
+      carryOverMaxHours: r.carryOverMaxHours != null ? String(r.carryOverMaxHours) : '',
+      autoTopUp: !!r.autoTopUp,
+      topUpThresholdHours: r.topUpThresholdHours != null ? String(r.topUpThresholdHours) : '',
+      topUpHours: r.topUpHours != null ? String(r.topUpHours) : '',
+    } as any);
+    setShowCreate(true);
+  };
+
   const handleCreate = async () => {
     const payload: any = { ...form };
     delete payload.excludedRateIds;
@@ -112,12 +150,15 @@ export default function ContractsPage() {
         dueDate: ms.dueDate,
       }));
     }
-    const res = await apiPost('/api/contracts', payload);
+    const res = editId
+      ? await apiPatch(`/api/contracts/${editId}`, payload)
+      : await apiPost('/api/contracts', payload);
     if (res) {
       setShowCreate(false);
       setForm(defaultForm);
+      setEditId(null);
       refetch();
-      router.push(`/contracts/${res.id}`);
+      if (!editId) router.push(`/contracts/${res.id}`);
     }
   };
 
@@ -151,7 +192,7 @@ export default function ContractsPage() {
   return (
     <div className="animate-fadeIn">
       <PageHeader title="Contracts" subtitle="Manage service contracts and billing agreements">
-        <button onClick={() => setShowCreate(true)} className="btn-primary">+ New Contract</button>
+        <button onClick={() => { setEditId(null); setForm(defaultForm); setShowCreate(true); }} className="btn-primary">+ New Contract</button>
       </PageHeader>
 
       <div className="glass rounded-xl p-6">
@@ -188,8 +229,16 @@ export default function ContractsPage() {
                 ) : <span className="text-surface-500"> - </span> },
                 { key: 'endDate', label: 'Expires', render: (r: any) => (
                   <span className={r.endDate && new Date(r.endDate) < new Date() ? 'text-red-400 text-sm' : 'text-surface-400 text-sm'}>
-                    {r.endDate ? formatDate(r.endDate) : '∞'}
+                    {r.endDate ? formatDate(r.endDate) : 'No end date'}
                   </span>
+                )},
+                { key: 'actions', label: '', render: (r: any) => (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); openEdit(r); }}
+                    className="text-xs px-2 py-1 rounded border border-surface-600 text-surface-300 hover:border-surface-500"
+                  >
+                    Edit
+                  </button>
                 )},
               ]}
               data={data.items}
@@ -201,7 +250,8 @@ export default function ContractsPage() {
       </div>
 
       {/* Create Contract Modal */}
-      <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} title="New Contract" size="lg">
+      <Modal isOpen={showCreate} onClose={() => { setShowCreate(false); setEditId(null); }}
+        title={editId ? 'Edit Contract' : 'New Contract'} size="lg">
         <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
           {/* Type selector */}
           <div>
@@ -337,25 +387,145 @@ export default function ContractsPage() {
           {form.type === 'prepay_hours' && (
             <div className="p-4 rounded-lg border border-purple-500/20 bg-purple-500/5 space-y-4">
               <div className="text-sm font-medium text-purple-400">Pre-Pay Hours Settings</div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="label">Total Hours *</label>
-                  <input className="input w-full" type="number" step="0.5" value={form.totalHours} onChange={(e) => setForm({...form, totalHours: e.target.value})} />
-                </div>
-                <div>
-                  <label className="label">Block Price (£)</label>
-                  <input className="input w-full" type="number" step="0.01" value={form.value} onChange={(e) => setForm({...form, value: e.target.value})} />
-                </div>
-                <div>
-                  <label className="label">Overage Rate (£/hr)</label>
-                  <input className="input w-full" type="number" step="0.01" value={form.overhourRate}
-                    onChange={(e) => setForm({...form, overhourRate: e.target.value})} placeholder="Leave blank to prevent overages" />
+
+              <div>
+                <label className="label">Block type</label>
+                <div className="flex gap-2">
+                  {[
+                    { key: 'one_off', label: 'One off', hint: 'A single block, billed once' },
+                    { key: 'monthly', label: 'Monthly', hint: 'A new block every month' },
+                  ].map(opt => (
+                    <button key={opt.key} type="button"
+                      onClick={() => setForm({ ...form, blockMode: opt.key })}
+                      className={`flex-1 text-left px-3 py-2 rounded-lg border transition-colors ${
+                        form.blockMode === opt.key
+                          ? 'border-purple-500 bg-purple-500/10'
+                          : 'border-surface-700 hover:border-surface-600'
+                      }`}>
+                      <span className="block text-sm text-white">{opt.label}</span>
+                      <span className="block text-xs text-surface-400">{opt.hint}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div>
-                <label className="label">Alert at % Used</label>
-                <input className="input w-32" type="number" min="1" max="100" value={form.alertThreshold}
-                  onChange={(e) => setForm({...form, alertThreshold: e.target.value})} />
+
+              <div className="grid grid-cols-4 gap-4">
+                <div>
+                  <label className="label">Number of blocks</label>
+                  <input className="input w-full" type="number" min="1" step="1" value={form.blockCount}
+                    onChange={(e) => setForm({ ...form, blockCount: e.target.value })} />
+                </div>
+                <div>
+                  <label className="label">
+                    {form.blockMode === 'monthly' ? 'Hours per block, per month *' : 'Hours per block *'}
+                  </label>
+                  <input className="input w-full" type="number" step="0.5"
+                    value={form.blockMode === 'monthly' ? form.hoursPerPeriod : form.totalHours}
+                    onChange={(e) => setForm(form.blockMode === 'monthly'
+                      ? { ...form, hoursPerPeriod: e.target.value }
+                      : { ...form, totalHours: e.target.value })} />
+                </div>
+                <div>
+                  <label className="label">Rate per hour (£)</label>
+                  <input className="input w-full" type="number" step="0.01" value={form.blockHourlyRate}
+                    onChange={(e) => setForm({ ...form, blockHourlyRate: e.target.value })} />
+                </div>
+                <div>
+                  <label className="label">
+                    {form.blockMode === 'monthly' ? 'Billed monthly (£)' : 'Block price (£)'}
+                  </label>
+                  <input className="input w-full" type="number" step="0.01" value={form.value}
+                    onChange={(e) => setForm({ ...form, value: e.target.value })}
+                    placeholder="Worked out below" />
+                </div>
+              </div>
+
+              {/* Show the sum as it is typed, so the figure is never a surprise. */}
+              {(() => {
+                const count = parseFloat(form.blockCount) || 0;
+                const per = parseFloat(form.blockMode === 'monthly' ? form.hoursPerPeriod : form.totalHours) || 0;
+                const rate = parseFloat(form.blockHourlyRate) || 0;
+                const hours = count * per;
+                const total = hours * rate;
+                if (!per || !rate) {
+                  return (
+                    <p className="text-xs text-surface-500">
+                      Leave the price blank and it is worked out as blocks x hours x rate.
+                    </p>
+                  );
+                }
+                return (
+                  <p className="text-sm text-purple-300">
+                    {count} x {per}h at £{rate.toFixed(2)}/hr ={' '}
+                    <span className="font-semibold text-white">{hours}h for £{total.toFixed(2)}</span>
+                    {form.blockMode === 'monthly' ? ' every month' : ''}
+                  </p>
+                );
+              })()}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Overage rate (£/hr)</label>
+                  <input className="input w-full" type="number" step="0.01" value={form.overhourRate}
+                    onChange={(e) => setForm({ ...form, overhourRate: e.target.value })}
+                    placeholder="Leave blank to prevent overages" />
+                </div>
+                <div>
+                  <label className="label">Alert at % used</label>
+                  <input className="input w-full" type="number" min="1" max="100" value={form.alertThreshold}
+                    onChange={(e) => setForm({ ...form, alertThreshold: e.target.value })} />
+                </div>
+              </div>
+
+              {/* Carry over only means anything when a new block arrives each month. */}
+              {form.blockMode === 'monthly' && (
+                <div className="space-y-2 pt-2 border-t border-surface-700/50">
+                  <label className="flex items-start gap-2 text-sm text-surface-300 cursor-pointer">
+                    <input type="checkbox" className="mt-1" checked={form.carryOver}
+                      onChange={(e) => setForm({ ...form, carryOver: e.target.checked })} />
+                    <span>
+                      <span className="block">Carry unused hours into the next month</span>
+                      <span className="block text-xs text-surface-400">
+                        Off, and anything unused at the end of the month is lost.
+                      </span>
+                    </span>
+                  </label>
+                  {form.carryOver && (
+                    <div className="pl-6">
+                      <label className="label">Most hours that may carry</label>
+                      <input className="input w-40" type="number" step="0.5" value={form.carryOverMaxHours}
+                        onChange={(e) => setForm({ ...form, carryOverMaxHours: e.target.value })}
+                        placeholder="No limit" />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="space-y-2 pt-2 border-t border-surface-700/50">
+                <label className="flex items-start gap-2 text-sm text-surface-300 cursor-pointer">
+                  <input type="checkbox" className="mt-1" checked={form.autoTopUp}
+                    onChange={(e) => setForm({ ...form, autoTopUp: e.target.checked })} />
+                  <span>
+                    <span className="block">Top the block up automatically</span>
+                    <span className="block text-xs text-surface-400">
+                      Raise another block, chargeable, once the balance runs low.
+                    </span>
+                  </span>
+                </label>
+                {form.autoTopUp && (
+                  <div className="grid grid-cols-2 gap-4 pl-6">
+                    <div>
+                      <label className="label">Top up when below (hours)</label>
+                      <input className="input w-full" type="number" step="0.5" value={form.topUpThresholdHours}
+                        onChange={(e) => setForm({ ...form, topUpThresholdHours: e.target.value })} placeholder="0" />
+                    </div>
+                    <div>
+                      <label className="label">Hours to add</label>
+                      <input className="input w-full" type="number" step="0.5" value={form.topUpHours}
+                        onChange={(e) => setForm({ ...form, topUpHours: e.target.value })} />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

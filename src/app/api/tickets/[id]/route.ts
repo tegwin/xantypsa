@@ -12,7 +12,11 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
       contact: { select: { id: true, firstName: true, lastName: true, email: true } },
       assignedTo: { select: { id: true, name: true, email: true } },
       createdBy: { select: { id: true, name: true } },
-      contract: { select: { id: true, name: true, contractNumber: true, type: true, totalHours: true, hoursUsed: true, monthlyFee: true, fixedPrice: true, value: true } },
+      contract: { select: {
+        id: true, name: true, contractNumber: true, type: true,
+        totalHours: true, hoursUsed: true, monthlyFee: true, fixedPrice: true, value: true,
+        blockMode: true, hoursPerPeriod: true, overhourRate: true, alertThreshold: true,
+      } },
       notes: {
         orderBy: { createdAt: 'desc' },
         include: { user: { select: { id: true, name: true } } },
