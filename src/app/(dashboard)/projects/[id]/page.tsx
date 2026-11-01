@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useApi, apiPatch, apiPost, apiDelete } from '@/hooks/useApi';
+import { useBoardDnd } from '@/components/board/useBoardDnd';
 import {
   PageHeader, StatusBadge, LoadingSpinner, StatCard, Modal, Avatar, Badge, Button,
   DataTable, Tabs, ConfirmDialog,
@@ -87,6 +88,9 @@ export default function ProjectDetailPage() {
   const [editingMilestone, setEditingMilestone] = useState<MilestoneData | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'project' | 'task' | 'milestone'; id: string } | null>(null);
   const [groupByPhase, setGroupByPhase] = useState(false);
+  // Status a task has been dragged to but the server has not confirmed yet.
+  const [pendingTask, setPendingTask] = useState<Record<string, string>>({});
+  const [boardError, setBoardError] = useState<string | null>(null);
 
   // Flatten all tasks (including subtasks)
   const allTasks: TaskData[] = useMemo(() => {
@@ -121,9 +125,28 @@ export default function ProjectDetailPage() {
   };
 
   const handleTaskStatusChange = async (taskId: string, newStatus: string) => {
-    await apiPatch(`/api/projects/${id}/tasks`, { taskId, status: newStatus });
-    refetch();
+    setPendingTask(p => ({ ...p, [taskId]: newStatus }));
+    setBoardError(null);
+    try {
+      await apiPatch(`/api/projects/${id}/tasks`, { taskId, status: newStatus });
+      await refetch();
+    } catch {
+      setBoardError('That task could not be moved. It has been put back.');
+    } finally {
+      setPendingTask(p => {
+        const next = { ...p };
+        delete next[taskId];
+        return next;
+      });
+    }
   };
+
+  const { cardProps, columnProps, draggingId, overColumn } = useBoardDnd(
+    (taskId, toStatus) => {
+      const task = allTasks.find(t => t.id === taskId);
+      if (task && task.status !== toStatus) handleTaskStatusChange(taskId, toStatus);
+    },
+  );
 
   const handleTaskUpdate = async (taskId: string, updates: Record<string, any>) => {
     await apiPatch(`/api/projects/${id}/tasks`, { taskId, ...updates });
@@ -283,10 +306,23 @@ export default function ProjectDetailPage() {
       {/* ============================================================ */}
       {activeView === 'board' && (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 overflow-x-auto">
+          {boardError && (
+            <div className="md:col-span-5 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm text-red-300" role="alert">
+              {boardError}
+            </div>
+          )}
           {STATUS_COLUMNS.map(col => {
-            const colTasks = allTasks.filter(t => t.status === col.key);
+            const colTasks = allTasks.filter(
+              t => (pendingTask[t.id] ?? t.status) === col.key,
+            );
             return (
-              <div key={col.key} className="glass rounded-xl p-3 min-w-[220px]">
+              <div
+                key={col.key}
+                {...columnProps(col.key)}
+                className={`glass rounded-xl p-3 min-w-[220px] transition-shadow ${
+                  overColumn === col.key ? 'ring-2 ring-brand-400' : ''
+                }`}
+              >
                 <div className="flex items-center gap-2 mb-3 px-1">
                   <col.icon className={`h-4 w-4 ${col.color}`} />
                   <span className="text-sm font-medium text-white">{col.label}</span>
@@ -295,8 +331,11 @@ export default function ProjectDetailPage() {
                 <div className="space-y-2">
                   {colTasks.map(task => (
                     <div key={task.id}
+                      {...cardProps(task.id)}
                       onClick={() => setEditingTask(task)}
-                      className="bg-white/5 hover:bg-white/10 rounded-lg p-3 cursor-pointer transition-colors border border-transparent hover:border-white/10">
+                      className={`bg-white/5 hover:bg-white/10 rounded-lg p-3 cursor-grab active:cursor-grabbing transition-colors border border-transparent hover:border-white/10 ${
+                        draggingId === task.id ? 'opacity-40' : ''
+                      }`}>
                       <div className="text-sm text-white mb-2">{task.title}</div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -320,7 +359,7 @@ export default function ProjectDetailPage() {
                       )}
                       {/* Status dropdown */}
                       <select
-                        value={task.status}
+                        value={pendingTask[task.id] ?? task.status}
                         onClick={e => e.stopPropagation()}
                         onChange={e => { e.stopPropagation(); handleTaskStatusChange(task.id, e.target.value); }}
                         className="mt-2 w-full text-xs bg-white/5 border border-white/10 rounded px-1.5 py-1 text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500"

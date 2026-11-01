@@ -17,6 +17,7 @@ import {
   Receipt,
   CreditCard,
   FolderKanban,
+  Plug,
   BarChart3,
   Settings,
   ChevronDown,
@@ -125,6 +126,19 @@ const NAV_ITEMS: NavItem[] = [
     icon: <Clock className="h-4.5 w-4.5" />,
     module: 'time_tracking',
   },
+  // Everything that connects Xanty PSA to something else. Its own section
+  // rather than buried in Settings, because it is day-to-day work.
+  {
+    label: 'Integrations',
+    href: '/integrations',
+    icon: <Plug className="h-4.5 w-4.5" />,
+    children: [
+      { label: 'Webhooks', href: '/webhooks' },
+      { label: 'API Keys', href: '/api-keys' },
+      { label: 'API Docs', href: '/api-docs' },
+      { label: 'Import Data', href: '/import' },
+    ],
+  },
   {
     label: 'Reports',
     href: '/reports',
@@ -162,18 +176,6 @@ const NAV_ITEMS: NavItem[] = [
         children: [
           { label: 'Billing Rates', href: '/settings/billing' },
           { label: 'Quote Templates', href: '/settings/quote-templates' },
-        ],
-      },
-      // Everything that connects Xanty PSA to something else lives under
-      // Integrations rather than as siblings of it.
-      {
-        label: 'Integrations',
-        href: '/settings/integrations',
-        children: [
-          { label: 'Webhooks', href: '/settings/webhooks' },
-          { label: 'API Keys', href: '/settings/api-keys' },
-          { label: 'API Docs', href: '/settings/api-docs' },
-          { label: 'Import Data', href: '/settings/import' },
         ],
       },
       {
@@ -239,7 +241,7 @@ export default function Sidebar() {
           const hasChildren = item.children && item.children.length > 0;
           const isExp = expanded.includes(item.label);
           // Also look a level deeper, so Settings stays highlighted on a page
-          // that only exists inside one of its groups (e.g. /settings/webhooks).
+          // that only exists inside one of its groups (e.g. /webhooks).
           const isItemActive = item.href
             ? isActive(item.href)
             : item.children?.some(

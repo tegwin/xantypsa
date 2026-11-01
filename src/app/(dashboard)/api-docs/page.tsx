@@ -393,7 +393,7 @@ export default function ApiDocsPage() {
         subtitle="Integrate with the Xanty PSA REST API"
         actions={
           <a
-            href="/settings/api-keys"
+            href="/api-keys"
             className="text-sm px-4 py-2 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30 transition-colors"
           >
             Manage API Keys
@@ -416,7 +416,7 @@ export default function ApiDocsPage() {
           <p className="text-slate-400">
             All API requests require authentication via an API key passed in the <code className="text-blue-400">X-API-Key</code> header,
             or via an active session cookie. Create and manage API keys in the{' '}
-            <a href="/settings/api-keys" className="text-blue-400 hover:text-blue-300 underline">
+            <a href="/api-keys" className="text-blue-400 hover:text-blue-300 underline">
               API Keys
             </a>{' '}
             settings page.
@@ -561,7 +561,7 @@ export default function ApiDocsPage() {
         <p className="text-sm text-slate-400 mb-3">
           Xanty PSA can send HTTP POST requests to your endpoints when events occur.
           Configure webhooks in the{' '}
-          <a href="/settings/webhooks" className="text-blue-400 hover:text-blue-300 underline">
+          <a href="/webhooks" className="text-blue-400 hover:text-blue-300 underline">
             Webhooks
           </a>{' '}
           settings page.

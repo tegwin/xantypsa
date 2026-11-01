@@ -32,12 +32,12 @@ export default function ApiKeysPage() {
   const [keyName, setKeyName] = useState('');
   const [revokeKey, setRevokeKey] = useState<ApiKey | null>(null);
 
-  const { data, loading, refetch } = useApi<{ keys: ApiKey[] }>('/api/settings/api-keys');
+  const { data, loading, refetch } = useApi<{ keys: ApiKey[] }>('/api/api-keys');
 
   const keys = data?.keys || [];
 
   const handleCreate = async () => {
-    const res = await apiPost('/api/settings/api-keys', { name: keyName });
+    const res = await apiPost('/api/api-keys', { name: keyName });
     if (res?.key) {
       setNewKeyValue(res.key);
       setShowCreate(false);
@@ -55,7 +55,7 @@ export default function ApiKeysPage() {
 
   const handleRevoke = async () => {
     if (!revokeKey) return;
-    await apiDelete(`/api/settings/api-keys/${revokeKey.id}`);
+    await apiDelete(`/api/api-keys/${revokeKey.id}`);
     setRevokeKey(null);
     refetch();
   };

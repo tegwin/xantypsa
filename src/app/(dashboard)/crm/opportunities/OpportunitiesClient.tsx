@@ -5,6 +5,7 @@ import { PageHeader, Button, Badge, SearchInput, Card, Modal, Input, Select, Tex
 import { Plus, DollarSign, TrendingUp } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import toast from "react-hot-toast";
+import { useBoardDnd } from "@/components/board/useBoardDnd";
 
 interface Opportunity {
   id: string; title: string; value: number; currency: string; stage: string; probability: number;
@@ -24,8 +25,38 @@ export default function OpportunitiesClient({ opportunities: initial, companies 
     prospectName: "", prospectEmail: "", prospectPhone: "",
   });
   const [saving, setSaving] = useState(false);
+  // Stage a deal has been dragged to but the server has not confirmed yet.
+  const [pending, setPending] = useState<Record<string, string>>({});
 
-  const active = initial.filter(d => !["won","lost"].includes(d.stage));
+  const stageOf = (d: Opportunity) => pending[d.id] ?? d.stage;
+
+  async function handleStageChange(oppId: string, newStage: string) {
+    setPending(p => ({ ...p, [oppId]: newStage }));
+    try {
+      const res = await fetch(`/api/opportunities/${oppId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stage: newStage }),
+      });
+      if (!res.ok) throw new Error();
+      router.refresh();
+    } catch {
+      toast.error("That opportunity could not be moved. It has been put back.");
+    } finally {
+      setPending(p => {
+        const next = { ...p };
+        delete next[oppId];
+        return next;
+      });
+    }
+  }
+
+  const { cardProps, columnProps, draggingId, overColumn } = useBoardDnd((oppId, toStage) => {
+    const opp = initial.find(d => d.id === oppId);
+    if (opp && stageOf(opp) !== toStage) handleStageChange(oppId, toStage);
+  });
+
+  const active = initial.filter(d => !["won","lost"].includes(stageOf(d)));
   const totalPipeline = active.reduce((a, d) => a + d.value, 0);
 
   async function handleCreate(e: React.FormEvent) {
@@ -82,26 +113,49 @@ export default function OpportunitiesClient({ opportunities: initial, companies 
         actions={<Button icon={<Plus className="h-4 w-4" />} onClick={() => { resetForm(); setShowModal(true); }}>New Opportunity</Button>} />
 
       {/* Pipeline View */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 overflow-x-auto">
-        {STAGES.filter(s => !["won","lost"].includes(s)).map(stage => {
-          const stageItems = initial.filter(d => d.stage === stage);
+      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4 overflow-x-auto">
+        {STAGES.map(stage => {
+          const stageItems = initial.filter(d => stageOf(d) === stage);
           const stageTotal = stageItems.reduce((a, d) => a + d.value, 0);
           return (
-            <div key={stage} className="space-y-3">
+            <div
+              key={stage}
+              {...columnProps(stage)}
+              className={`space-y-3 rounded-lg p-1 transition-shadow ${
+                overColumn === stage ? "ring-2 ring-brand-400" : ""
+              }`}
+            >
               <div className="flex items-center justify-between px-1">
                 <h3 className="text-sm font-medium text-surface-300 capitalize">{stage}</h3>
                 <span className="text-xs text-surface-500">{formatCurrency(stageTotal)}</span>
               </div>
               <div className="space-y-2 min-h-[100px]">
                 {stageItems.map(opp => (
-                  <Card key={opp.id} hover className="!p-3 cursor-pointer" onClick={() => router.push(`/crm/opportunities/${opp.id}`)}>
-                    <p className="text-sm font-medium text-surface-100 truncate">{opp.title}</p>
-                    <p className="text-xs text-surface-500 mt-0.5">{opp.company || "No company"}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-sm font-semibold text-brand-400">{formatCurrency(opp.value)}</span>
-                      <span className="text-xs text-surface-500">{opp.probability}%</span>
-                    </div>
-                  </Card>
+                  // The drag handlers live on a wrapper so the Card component
+                  // does not need to forward DOM props.
+                  <div
+                    key={opp.id}
+                    {...cardProps(opp.id)}
+                    className={draggingId === opp.id ? "opacity-40" : undefined}
+                  >
+                    <Card hover className="!p-3 cursor-grab active:cursor-grabbing" onClick={() => router.push(`/crm/opportunities/${opp.id}`)}>
+                      <p className="text-sm font-medium text-surface-100 truncate">{opp.title}</p>
+                      <p className="text-xs text-surface-500 mt-0.5">{opp.company || "No company"}</p>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-sm font-semibold text-brand-400">{formatCurrency(opp.value)}</span>
+                        <span className="text-xs text-surface-500">{opp.probability}%</span>
+                      </div>
+                      <select
+                        value={stageOf(opp)}
+                        onClick={e => e.stopPropagation()}
+                        onChange={e => { e.stopPropagation(); handleStageChange(opp.id, e.target.value); }}
+                        aria-label={`Stage for ${opp.title}`}
+                        className="mt-2 w-full text-xs bg-white/5 border border-white/10 rounded px-1.5 py-1 text-surface-300 capitalize focus:outline-none focus:ring-1 focus:ring-brand-500"
+                      >
+                        {STAGES.map(st => <option key={st} value={st}>{st}</option>)}
+                      </select>
+                    </Card>
+                  </div>
                 ))}
                 {stageItems.length === 0 && <div className="border-2 border-dashed border-surface-700/50 rounded-lg p-4 text-center text-xs text-surface-600">Empty</div>}
               </div>

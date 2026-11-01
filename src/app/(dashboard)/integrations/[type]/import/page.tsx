@@ -109,7 +109,7 @@ export default function AssetImportPage() {
         actions={
           <div className="flex items-center gap-3">
             <button
-              onClick={() => router.push('/settings/integrations')}
+              onClick={() => router.push('/integrations')}
               className="text-sm px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-colors"
             >
               Back
