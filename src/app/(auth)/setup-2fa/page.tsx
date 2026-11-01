@@ -76,7 +76,7 @@ export default function SetupTwoFactorPage() {
           <>
             <div>
               <p className="text-sm text-surface-300 mb-2">
-                1. Add this to your authenticator — Microsoft Authenticator, Google
+                1. Add this to your authenticator - Microsoft Authenticator, Google
                 Authenticator, 1Password or similar.
               </p>
               <code className="block break-all rounded-lg bg-white/5 p-3 text-center

@@ -92,7 +92,7 @@ export function currentCode(secretBase32: string, at = Date.now()): string {
  * Check a submitted code.
  *
  * `window` allows one step either side, tolerating clock drift between the
- * phone and the server — without it, a phone a few seconds slow can never log
+ * phone and the server - without it, a phone a few seconds slow can never log
  * in. One step each way is the usual compromise between usability and keeping
  * the window of a stolen code short.
  */

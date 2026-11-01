@@ -1,10 +1,10 @@
 -- =============================================================================
--- XantyPSA — complete database schema (PostgreSQL)
+-- XantyPSA - complete database schema (PostgreSQL)
 -- =============================================================================
 -- Generated from prisma/schema.prisma. Creates all 58 tables, 106 foreign keys
 -- and their indexes on an empty database.
 --
--- Use this when you want to provision the database without Prisma — a fresh
+-- Use this when you want to provision the database without Prisma - a fresh
 -- Supabase project, a local Postgres, or handing the app to someone else.
 --
 --   psql "$DATABASE_URL" -f sql/schema.sql
@@ -21,7 +21,7 @@
 --   npx prisma migrate diff --from-empty \
 --       --to-schema-datamodel prisma/schema.prisma --script > sql/schema.sql
 --
--- This file contains SCHEMA ONLY — no data and no users. Create the first user
+-- This file contains SCHEMA ONLY - no data and no users. Create the first user
 -- via Supabase Auth as described in INSTALL.md step 5.
 -- =============================================================================
 

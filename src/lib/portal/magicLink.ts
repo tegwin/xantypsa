@@ -9,7 +9,7 @@ import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { getSmtpConfig, sendEmail } from '@/lib/email';
 
-/** Short — a sign-in link sitting in an inbox for a week is a liability. */
+/** Short - a sign-in link sitting in an inbox for a week is a liability. */
 const TTL_MINUTES = 20;
 
 function hash(token: string): string {
@@ -101,7 +101,7 @@ export async function sendLoginEmail(
       </p>
       <p style="color:#666;font-size:13px;">
         This link works once and expires in ${TTL_MINUTES} minutes.
-        If you did not ask for it, you can ignore this email — nobody can sign in without it.
+        If you did not ask for it, you can ignore this email - nobody can sign in without it.
       </p>
     </div>
   `;

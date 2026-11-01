@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-/** Turn it off — only permitted when the admin has not mandated it. */
+/** Turn it off - only permitted when the admin has not mandated it. */
 export async function DELETE() {
   const session = await getAppSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

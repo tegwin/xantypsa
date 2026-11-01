@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     where: { portalSlug: params.slug.toLowerCase(), portalEnabled: true },
     select: { name: true },
   });
-  return { title: company ? `${company.name} — Support Portal` : 'Support Portal' };
+  return { title: company ? `${company.name} - Support Portal` : 'Support Portal' };
 }
 
 export default async function PortalLoginPage({
@@ -43,7 +43,7 @@ export default async function PortalLoginPage({
     );
   }
 
-  // Already signed in — skip the form.
+  // Already signed in - skip the form.
   const session = await getPortalSession();
   if (session?.company.id === company.id) {
     redirect(`/portal/${params.slug}/tickets`);

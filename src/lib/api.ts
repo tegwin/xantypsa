@@ -49,7 +49,7 @@ export function withTenant(
       }
 
       // Demo instances are shared, so deletions are refused centrally here
-      // rather than route by route — one missed route would let a visitor
+      // rather than route by route - one missed route would let a visitor
       // empty a list for everybody.
       if (isBlockedInDemo(req.method)) {
         return errorResponse(DEMO_BLOCKED_MESSAGE, 403);

@@ -3,8 +3,8 @@
 // ============================================================
 // Exposes XantyPSA to Claude Desktop (or any MCP client) over stdio.
 //
-// The tools are the same ones the in-app AI panel uses — imported from
-// lib/ai/tools rather than redefined — so the two surfaces cannot drift apart.
+// The tools are the same ones the in-app AI panel uses - imported from
+// lib/ai/tools rather than redefined - so the two surfaces cannot drift apart.
 // query_records and create_record work against any model in the schema, so
 // "all endpoints" is covered by four general tools rather than two hundred
 // hand-written ones.
@@ -31,7 +31,7 @@ import {
 // Who this server acts as
 // ------------------------------------------------------------
 // A tenant and a user, resolved once at startup. Everything the client asks for
-// is scoped to them — the MCP client never chooses a tenant, so a prompt cannot
+// is scoped to them - the MCP client never chooses a tenant, so a prompt cannot
 // talk the server into reading someone else's data.
 
 async function resolveIdentity() {
@@ -61,7 +61,7 @@ async function resolveIdentity() {
     tenant = tenants[0];
   } else {
     throw new Error(
-      `This database has ${tenants.length} tenants — set MCP_TENANT to one of: ` +
+      `This database has ${tenants.length} tenants - set MCP_TENANT to one of: ` +
         tenants.map((t) => t.name).join(', ')
     );
   }
@@ -99,9 +99,9 @@ async function main() {
     allowWrites,
   };
 
-  // stderr, never stdout — stdout carries the MCP protocol itself.
+  // stderr, never stdout - stdout carries the MCP protocol itself.
   console.error(
-    `[xantypsa-mcp] ${tenant.name} as ${user.email} — ${allowWrites ? 'read/write' : 'read-only'}`
+    `[xantypsa-mcp] ${tenant.name} as ${user.email} - ${allowWrites ? 'read/write' : 'read-only'}`
   );
 
   const server = new Server(

@@ -65,10 +65,10 @@ export default function ProjectsPage() {
                 { key: 'name', label: 'Project', render: (r: any) => (
                   <Link href={`/projects/${r.id}`} className="text-blue-400 hover:text-blue-300 font-medium">{r.name}</Link>
                 )},
-                { key: 'company', label: 'Company', render: (r: any) => r.company?.name || '—' },
+                { key: 'company', label: 'Company', render: (r: any) => r.company?.name || ' - ' },
                 { key: 'status', label: 'Status', render: (r: any) => <StatusBadge status={r.status} /> },
                 { key: 'billingMethod', label: 'Billing', render: (r: any) => <span className="capitalize text-slate-300 text-xs">{r.billingMethod.replace('_', ' ')}</span> },
-                { key: 'budget', label: 'Budget', render: (r: any) => r.budget ? formatCurrency(r.budget) : '—' },
+                { key: 'budget', label: 'Budget', render: (r: any) => r.budget ? formatCurrency(r.budget) : ' - ' },
                 { key: 'hours', label: 'Hours', render: (r: any) => (
                   <span className={r.estimatedHours && r.actualHours > r.estimatedHours ? 'text-red-400' : 'text-slate-300'}>
                     {r.actualHours || 0}{r.estimatedHours ? `/${r.estimatedHours}` : ''}h
@@ -84,7 +84,7 @@ export default function ProjectsPage() {
                 )},
                 { key: 'endDate', label: 'Deadline', render: (r: any) => (
                   <span className={r.endDate && new Date(r.endDate) < new Date() && r.status !== 'completed' ? 'text-red-400' : 'text-slate-400'}>
-                    {r.endDate ? formatDate(r.endDate) : '—'}
+                    {r.endDate ? formatDate(r.endDate) : ' - '}
                   </span>
                 )},
               ]}

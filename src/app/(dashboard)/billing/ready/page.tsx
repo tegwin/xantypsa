@@ -130,7 +130,7 @@ export default function ReadyForInvoicingPage() {
   };
 
   const invoiceContract = async (contract: any) => {
-    if (!confirm(`Create invoice for ${contract.name} — ${formatCurrency(contract.value || 0)}?`)) return;
+    if (!confirm(`Create invoice for ${contract.name} - ${formatCurrency(contract.value || 0)}?`)) return;
     try {
       const typeLabels: Record<string, string> = { prepay_hours: 'Pre-Pay Hours Block', fixed_price: 'Fixed Price', managed_service: 'Monthly Service' };
       const res = await fetch('/api/invoices', {
@@ -141,7 +141,7 @@ export default function ReadyForInvoicingPage() {
           contractId: contract.id,
           title: `${contract.name}`,
           lineItems: [{
-            description: `${typeLabels[contract.type] || contract.type} — ${contract.name}${contract.totalHours ? ` (${contract.totalHours}h block)` : ''}`,
+            description: `${typeLabels[contract.type] || contract.type} - ${contract.name}${contract.totalHours ? ` (${contract.totalHours}h block)` : ''}`,
             quantity: 1,
             unitPrice: contract.value || 0,
             taxRate: 20,
@@ -267,7 +267,7 @@ export default function ReadyForInvoicingPage() {
                           className={`flex items-center gap-3 px-5 py-2.5 border-b border-surface-700/20 hover:bg-surface-800/30 transition-colors ${isSelected ? 'bg-brand-500/5' : ''}`}>
                           <input type="checkbox" checked={isSelected} onChange={() => toggleEntry(companyId, entry.id)} />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-surface-200 truncate">{entry.description || '—'}</p>
+                            <p className="text-sm text-surface-200 truncate">{entry.description || ' - '}</p>
                             <p className="text-xs text-surface-500">{entry.user.name} · {formatDate(entry.date)}</p>
                           </div>
                           <span className="w-24 text-xs">
@@ -275,10 +275,10 @@ export default function ReadyForInvoicingPage() {
                               <span className="text-brand-400 cursor-pointer hover:underline" onClick={() => router.push(`/service-desk/tickets/${entry.ticket!.id}`)}>
                                 #{entry.ticket.ticketNumber}
                               </span>
-                            ) : '—'}
+                            ) : ' - '}
                           </span>
                           <span className="w-24 text-xs text-surface-400">
-                            {entry.billingRate?.name || '—'}
+                            {entry.billingRate?.name || ' - '}
                             {entry.isOOH && <Moon className="h-3 w-3 text-amber-400 inline ml-1" />}
                           </span>
                           <span className="w-16 text-right text-xs text-surface-300">{entry.minutes}m</span>

@@ -7,7 +7,7 @@
 // components that consumed it needed only an import change.
 //
 // The session is resolved once on the server and passed down, rather than each
-// component fetching it — no request waterfall, and no flash of signed-out UI.
+// component fetching it - no request waterfall, and no flash of signed-out UI.
 
 import { createContext, useContext } from 'react';
 import { useRouter } from 'next/navigation';

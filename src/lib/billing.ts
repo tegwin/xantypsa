@@ -31,7 +31,7 @@ export interface LineItemInput {
 
 /**
  * Totals for a set of line items.
- * `subtotal` is NET (before tax) — a contract's value is always the net figure.
+ * `subtotal` is NET (before tax) - a contract's value is always the net figure.
  */
 export function calculateTotals(items: LineItemInput[]) {
   let subtotal = 0;

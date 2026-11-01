@@ -2,7 +2,7 @@
 // View the portal as a contact
 // ============================================================
 // Staff-only. Mints a portal session for a contact so support can see exactly
-// what the client sees — the usual "it looks wrong on my end" call.
+// what the client sees - the usual "it looks wrong on my end" call.
 //
 // Note this is NOT wrapped in withTenant's portal session: it is authenticated
 // as a *staff* user, and it writes an audit record before granting anything.
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'You do not have permission to preview portals.' }, { status: 403 });
   }
 
-  // An already-impersonated admin must not chain into a portal preview — the
+  // An already-impersonated admin must not chain into a portal preview - the
   // audit trail would name the wrong person.
   if (session.impersonatedBy) {
     return NextResponse.json(

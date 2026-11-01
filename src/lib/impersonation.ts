@@ -8,7 +8,7 @@
 // substitutes that user while keeping the real identity alongside it.
 //
 // That matters because:
-//   * the admin can always be identified in logs — actions are attributable to
+//   * the admin can always be identified in logs - actions are attributable to
 //     a real person, not an anonymous "someone was this user";
 //   * stopping impersonation is deleting a cookie, not re-authenticating;
 //   * no admin API call is needed to mint another user's token, so a bug here
@@ -31,7 +31,7 @@ interface Payload {
   exp: number;
 }
 
-/** Sessions are deliberately short — this is for a support call, not a shift. */
+/** Sessions are deliberately short - this is for a support call, not a shift. */
 const TTL_SECONDS = 60 * 60;
 
 function secret(): string {

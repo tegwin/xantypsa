@@ -25,7 +25,7 @@ export default function ContractsClient({ contracts }: { contracts: Contract[] }
     { key: "value", header: "Value", render: (c: Contract) => <span className="font-medium text-surface-100">{formatCurrency(c.value,c.currency)}<span className="text-surface-500 text-xs">/{c.billingCycle}</span></span> },
     { key: "hours", header: "Hours", render: (c: Contract) => c.hoursIncluded > 0 ? (
       <div className="text-xs"><span className={c.hoursUsed > c.hoursIncluded ? "text-red-400" : "text-surface-300"}>{c.hoursUsed.toFixed(1)}</span><span className="text-surface-500">/{c.hoursIncluded}</span></div>
-    ) : <span className="text-surface-600">—</span> },
+    ) : <span className="text-surface-600"> - </span> },
     { key: "dates", header: "Period", render: (c: Contract) => <span className="text-xs text-surface-400">{formatDate(c.startDate)} → {c.endDate ? formatDate(c.endDate) : "Ongoing"}</span> },
     { key: "actions", header: "", render: (c: Contract) => (
       <button onClick={(e) => { e.stopPropagation(); router.push(`/contracts/${c.id}`); }}

@@ -1,7 +1,7 @@
 # Contributing to Xanty PSA
 
 Xanty PSA is built in the open by an MSP consultancy. The most valuable thing you
-can bring is not necessarily code — it is knowing how MSPs actually work.
+can bring is not necessarily code - it is knowing how MSPs actually work.
 
 ## The most useful contribution
 
@@ -33,9 +33,9 @@ npx tsc --noEmit    # types
 npm run build       # catches things tsc does not
 ```
 
-`npm run build` matters. Several classes of failure — exporting non-route values
+`npm run build` matters. Several classes of failure - exporting non-route values
 from route files, `useSearchParams` without a Suspense boundary, server-only
-modules pulled into client bundles — pass type checking and fail the build.
+modules pulled into client bundles - pass type checking and fail the build.
 
 ## House style
 
@@ -56,7 +56,7 @@ quarter's reported margin.
 
 **The AI SQL tool.** Read [docs/SECURITY-AI.md](docs/SECURITY-AI.md) first. If you
 add a model to the schema, re-run `node scripts/generate-rls.mjs` so it gets a
-row-level security policy — the generator exists precisely so a new table cannot
+row-level security policy - the generator exists precisely so a new table cannot
 ship without one.
 
 **Database changes.** Update `prisma/schema.prisma`, regenerate the RLS policies,
@@ -65,5 +65,5 @@ and keep `sql/schema.sql` in step so a fresh install still works.
 ## Licence
 
 Xanty PSA is [AGPL-3.0](LICENSE). By contributing you agree your work is released
-under the same licence. There is no CLA and no copyright assignment — your
+under the same licence. There is no CLA and no copyright assignment - your
 commits stay yours.

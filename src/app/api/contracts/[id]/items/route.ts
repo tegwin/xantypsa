@@ -25,7 +25,7 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
 /**
  * Replace the contract's products/services and re-derive its value.
  *
- * The contract's value is the NET total of what it bills — a contract is never
+ * The contract's value is the NET total of what it bills - a contract is never
  * invoiced directly, so this is the figure the recurring invoice charges.
  */
 export const PUT = withTenant(async (req: NextRequest, session: any) => {
@@ -42,7 +42,7 @@ export const PUT = withTenant(async (req: NextRequest, session: any) => {
       const quantity = parseFloat(it.quantity) || 1;
       const unitPrice = parseFloat(it.unitPrice) || 0;
       const taxRate = it.taxRate !== undefined && it.taxRate !== '' ? parseFloat(it.taxRate) : 20;
-      // What this line costs us per unit — e.g. the wholesale price of an M365
+      // What this line costs us per unit - e.g. the wholesale price of an M365
       // seat. Feeds profitability alongside engineer time.
       const cost = it.cost !== undefined && it.cost !== '' ? parseFloat(it.cost) || 0 : 0;
       return {

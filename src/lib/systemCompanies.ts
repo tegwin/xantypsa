@@ -1,8 +1,8 @@
 // ============================================================
 // The two companies every install has
 // ============================================================
-//   * The MSP's own company — where internal work is logged.
-//   * A catch-all — where email from an unrecognised sender lands.
+//   * The MSP's own company - where internal work is logged.
+//   * A catch-all - where email from an unrecognised sender lands.
 //
 // Both are marked isSystem and cannot be deleted. Removing the catch-all would
 // mean incoming email from an unknown address had nowhere to go, and the ticket
@@ -14,7 +14,7 @@ export const CATCH_ALL_NAME = 'Unassigned (Catch-All)';
 
 /**
  * Create the system companies for a tenant if they are not already there.
- * Safe to call repeatedly — used by both the seed and new-tenant registration.
+ * Safe to call repeatedly - used by both the seed and new-tenant registration.
  */
 export async function ensureSystemCompanies(
   prisma: PrismaClient,
@@ -29,7 +29,7 @@ export async function ensureSystemCompanies(
 
   if (!own) {
     // Reuse a company already named after the tenant rather than creating a
-    // duplicate — installs that added themselves manually are common.
+    // duplicate - installs that added themselves manually are common.
     const existing = await prisma.company.findFirst({
       where: { tenantId, name: tenantName },
     });

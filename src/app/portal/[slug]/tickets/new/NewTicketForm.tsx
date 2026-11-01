@@ -4,10 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 const PRIORITIES = [
-  { value: 'low', label: 'Low — a nuisance, not urgent' },
-  { value: 'medium', label: 'Medium — affecting my work' },
-  { value: 'high', label: 'High — I cannot work' },
-  { value: 'critical', label: 'Critical — the business is stopped' },
+  { value: 'low', label: 'Low - a nuisance, not urgent' },
+  { value: 'medium', label: 'Medium - affecting my work' },
+  { value: 'high', label: 'High - I cannot work' },
+  { value: 'critical', label: 'Critical - the business is stopped' },
 ];
 
 export default function NewTicketForm({ slug }: { slug: string }) {

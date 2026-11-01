@@ -63,19 +63,19 @@ export default function ContactsClient({ contacts: initial, companies = [] }: { 
       key: "email", header: "Email",
       render: (c: Contact) => c.email ? (
         <span className="flex items-center gap-1.5 text-surface-300"><Mail className="h-3.5 w-3.5" />{c.email}</span>
-      ) : <span className="text-surface-600">—</span>,
+      ) : <span className="text-surface-600"> - </span>,
     },
     {
       key: "phone", header: "Phone",
       render: (c: Contact) => c.phone ? (
         <span className="flex items-center gap-1.5 text-surface-300"><Phone className="h-3.5 w-3.5" />{c.phone}</span>
-      ) : <span className="text-surface-600">—</span>,
+      ) : <span className="text-surface-600"> - </span>,
     },
     {
       key: "company", header: "Company",
       render: (c: Contact) => c.company ? (
         <span className="flex items-center gap-1.5 text-surface-300"><Building2 className="h-3.5 w-3.5" />{c.company}</span>
-      ) : <span className="text-surface-600">—</span>,
+      ) : <span className="text-surface-600"> - </span>,
     },
     {
       key: "status", header: "Status",
@@ -93,7 +93,7 @@ export default function ContactsClient({ contacts: initial, companies = [] }: { 
   const update = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm((p) => ({ ...p, [field]: e.target.value }));
 
   const companyOptions = [
-    { value: "", label: "— No company —" },
+    { value: "", label: "No company" },
     ...companies.map((c) => ({ value: c.id, label: c.name })),
   ];
 

@@ -7,7 +7,7 @@
 // Design mirrors the client portal, which already worked this way:
 //
 //   * The session is a signed cookie naming a user. It is never trusted for
-//     *what* that user may do — every request re-reads them from the database,
+//     *what* that user may do - every request re-reads them from the database,
 //     so deactivating someone logs them out on their next click rather than
 //     whenever their token happens to expire.
 //   * Passwords are bcrypt, which is already a dependency.
@@ -139,7 +139,7 @@ export interface SignInResult {
 /**
  * Verify an email and password.
  *
- * Failures are deliberately indistinguishable — "unknown email" and "wrong
+ * Failures are deliberately indistinguishable - "unknown email" and "wrong
  * password" return the same message, and a missing user still runs a bcrypt
  * comparison so the response time does not reveal whether the account exists.
  */
@@ -237,7 +237,7 @@ export async function consumeResetToken(token: string, newPassword: string) {
   const check = validatePassword(newPassword);
   if (!check.ok) return { ok: false as const, error: check.error! };
 
-  // Claim first — two submissions must not both succeed.
+  // Claim first - two submissions must not both succeed.
   const claimed = await prisma.passwordResetToken.updateMany({
     where: { id: record.id, usedAt: null },
     data: { usedAt: new Date() },

@@ -1,7 +1,7 @@
 // ============================================================
 // Request gate
 // ============================================================
-// Authentication is self-contained — a signed cookie, no external identity
+// Authentication is self-contained - a signed cookie, no external identity
 // service. This runs on the edge for every request and only checks that a
 // plausible session exists; what the user may actually *do* is decided
 // server-side by getAppSession, which re-reads them from the database.
@@ -31,8 +31,8 @@ const PUBLIC_PATHS = [
   '/forgot-password',
   '/reset-password',
   '/verify-2fa',
-  '/api/auth',   // sign in, sign out, reset — necessarily public
-  '/portal',     // client portal — its own signed session, not a staff login
+  '/api/auth',   // sign in, sign out, reset - necessarily public
+  '/portal',     // client portal - its own signed session, not a staff login
   '/api/portal', // portal endpoints authenticate themselves individually
 ];
 
@@ -73,7 +73,7 @@ export async function updateSession(request: NextRequest) {
 
   // Signed in with a password but the account has TOTP enrolled and this
   // session has not passed it. The cookie is signed, so `mfa` cannot be set by
-  // the client — only by the server after a verified code.
+  // the client - only by the server after a verified code.
   if (!session.mfa && !pathname.startsWith('/api/')) {
     const url = request.nextUrl.clone();
     url.pathname = '/verify-2fa';

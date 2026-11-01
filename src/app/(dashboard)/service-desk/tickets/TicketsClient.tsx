@@ -91,7 +91,7 @@ export default function TicketsClient({ tickets: initial, queues, agents, compan
     { key: "assignedTo", header: "Assigned", render: (t: Ticket) => <span className={t.assignedTo === "Unassigned" ? "text-surface-600" : "text-surface-300"}>{t.assignedTo}</span> },
     { key: "queue", header: "Queue", render: (t: Ticket) => (
       <span className="text-surface-400 text-xs flex items-center gap-1">
-        <Layers className="h-3 w-3" />{t.queue || "—"}
+        <Layers className="h-3 w-3" />{t.queue || " - "}
       </span>
     )},
     { key: "time", header: "Time", render: (t: Ticket) => <span className="flex items-center gap-1 text-xs text-surface-400"><Clock className="h-3 w-3" />{Math.floor(t.timeSpent/60)}h {t.timeSpent%60}m</span> },
@@ -141,7 +141,7 @@ export default function TicketsClient({ tickets: initial, queues, agents, compan
         <form onSubmit={handleCreate} className="space-y-4">
           <Select label="Company" value={form.companyId}
             onChange={(e: any) => setForm({...form, companyId: e.target ? e.target.value : e, contractId: ""})}
-            options={[{value:"",label:"— Select company —"}, ...companies.map(c => ({value:c.id,label:c.name}))]} required />
+            options={[{value:"",label:" - Select company - "}, ...companies.map(c => ({value:c.id,label:c.name}))]} required />
           {form.companyId && contractsData?.items?.length > 0 && (
             <Select label="Contract (optional)" value={form.contractId}
               onChange={(e: any) => setForm({...form, contractId: e.target ? e.target.value : e})}

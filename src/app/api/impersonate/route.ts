@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   const session = await getAppSession();
   if (!session) return errorResponse('Unauthorized', 401);
 
-  // Already impersonating — stop first. Prevents hopping between identities
+  // Already impersonating - stop first. Prevents hopping between identities
   // while obscuring who started it.
   if (session.impersonatedBy) {
     return errorResponse('Already impersonating. Stop the current session first.', 400);
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     return errorResponse('User not found in this tenant', 404);
   }
 
-  // Audit before granting — if the write fails, the impersonation does not happen.
+  // Audit before granting - if the write fails, the impersonation does not happen.
   await prisma.auditLog.create({
     data: {
       tenantId,

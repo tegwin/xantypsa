@@ -36,7 +36,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Build-time placeholders. Next evaluates NEXT_PUBLIC_* at build, and the real
-# values are injected at run time by the platform — but the build must not fail
+# values are injected at run time by the platform - but the build must not fail
 # for want of a database it will never contact.
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL="postgresql://unused@127.0.0.1:5432/unused"
@@ -56,7 +56,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 # A default only. Railway, Render and Fly all inject their own PORT, and the
-# Next standalone server reads it — do not assume 3000 anywhere at runtime.
+# Next standalone server reads it - do not assume 3000 anywhere at runtime.
 ENV PORT=3000
 # Bind all interfaces, or the platform's proxy cannot reach the container.
 ENV HOSTNAME=0.0.0.0

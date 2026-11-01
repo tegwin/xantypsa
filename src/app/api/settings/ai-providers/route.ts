@@ -10,7 +10,7 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
 
   const items = await prisma.aiProvider.findMany({
     where: { tenantId },
-    // apiKeyEnc is deliberately excluded — the key never goes to the browser.
+    // apiKeyEnc is deliberately excluded - the key never goes to the browser.
     select: {
       id: true,
       provider: true,

@@ -12,9 +12,9 @@ import { round2 } from './billing';
  * Work out what an hour of this engineer's time costs us.
  *
  * Order of preference:
- *   1. The engineer's own cost rate — most accurate, since a senior engineer
+ *   1. The engineer's own cost rate - most accurate, since a senior engineer
  *      costs more than a junior doing the same task.
- *   2. The billing rate's cost rate — a per-rate-card fallback.
+ *   2. The billing rate's cost rate - a per-rate-card fallback.
  *   3. Zero, which makes the work look free. Surfaced as `hasRate: false` so
  *      reports can flag it rather than quietly overstating profit.
  */
@@ -79,7 +79,7 @@ export interface Profitability {
 /**
  * Profitability for one contract over a period.
  *
- * Worked example — a £400/month contract, one hour logged by an engineer whose
+ * Worked example - a £400/month contract, one hour logged by an engineer whose
  * cost rate is £40, and £100/month of resold M365:
  *
  *   revenue 400 − labour 40 − services 100 = £260 profit (65% margin)

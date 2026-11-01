@@ -77,19 +77,19 @@ export default function TimesheetsPage() {
                     <span className="text-slate-300">{r.user?.name}</span>
                   </div>
                 )},
-                { key: 'description', label: 'Description', render: (r: any) => <span className="text-slate-300">{r.description || '—'}</span> },
+                { key: 'description', label: 'Description', render: (r: any) => <span className="text-slate-300">{r.description || ' - '}</span> },
                 { key: 'ticket', label: 'Ticket', render: (r: any) => r.ticket ? (
                   <div>
                     <span className="font-mono text-xs text-blue-400">#{r.ticket.ticketNumber}</span>
                     {r.ticket.company && <span className="text-xs text-surface-500 ml-1.5">{r.ticket.company.name}</span>}
                   </div>
-                ) : '—' },
-                { key: 'project', label: 'Project', render: (r: any) => r.project?.name || '—' },
+                ) : ' - ' },
+                { key: 'project', label: 'Project', render: (r: any) => r.project?.name || ' - ' },
                 { key: 'hours', label: 'Time', render: (r: any) => (
                   <span className="text-white font-medium">{r.minutes ? `${r.minutes}m` : `${r.hours}h`}</span>
                 )},
                 { key: 'rate', label: 'Rate', render: (r: any) => (
-                  <span className="text-surface-400 text-xs">{r.billingRate?.name || (r.billable ? 'No rate' : '—')}</span>
+                  <span className="text-surface-400 text-xs">{r.billingRate?.name || (r.billable ? 'No rate' : ' - ')}</span>
                 )},
                 { key: 'billable', label: 'Billable', render: (r: any) => (
                   <span className={r.billable ? 'text-green-400' : 'text-slate-500'}>{r.billable ? '✓' : '✗'}</span>
@@ -97,10 +97,10 @@ export default function TimesheetsPage() {
                 { key: 'billed', label: 'Billed', render: (r: any) => (
                   r.billed ? <span className="text-xs bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded">Billed</span>
                   : r.billable ? <span className="text-xs bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded">Unbilled</span>
-                  : <span className="text-surface-500">—</span>
+                  : <span className="text-surface-500"> - </span>
                 )},
                 { key: 'value', label: 'Amount', render: (r: any) => (
-                  <span className="text-surface-300 font-medium">{r.billedAmount ? formatCurrency(r.billedAmount) : '—'}</span>
+                  <span className="text-surface-300 font-medium">{r.billedAmount ? formatCurrency(r.billedAmount) : ' - '}</span>
                 )},
               ]}
               data={data.items}

@@ -23,7 +23,7 @@ let pass = 0;
 let fail = 0;
 const check = (name, ok, detail = '') => {
   ok ? pass++ : fail++;
-  console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? `  — ${detail}` : ''}`);
+  console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ` - ${detail}` : ''}`);
 };
 
 /** Keep cookies between requests, as a browser would. */
@@ -99,7 +99,7 @@ async function main() {
   const inside = await get('/dashboard');
   check('protected page reachable once signed in', inside.status === 200, `HTTP ${inside.status}`);
 
-  // A tampered cookie must not be accepted — this is the whole point of signing.
+  // A tampered cookie must not be accepted - this is the whole point of signing.
   const tampered = jar.replace(/xantypsa_session=[^;]+/, 'xantypsa_session=eyJmYWtlIjoxfQ.bogus');
   const forged = await fetch(`${base}/dashboard`, {
     redirect: 'manual',

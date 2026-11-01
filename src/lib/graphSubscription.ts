@@ -5,8 +5,8 @@
 // /api/webhooks/microsoft-email the moment a message lands, and a ticket is
 // raised from it. There is no polling.
 //
-// Graph subscriptions cannot be permanent — Microsoft caps mail subscriptions
-// at 4230 minutes — so something has to renew them. That happens entirely on
+// Graph subscriptions cannot be permanent - Microsoft caps mail subscriptions
+// at 4230 minutes - so something has to renew them. That happens entirely on
 // events, with no scheduled job:
 //
 //   * Graph posts a `reauthorizationRequired` lifecycle event as expiry nears,
@@ -20,7 +20,7 @@ import { prisma } from './prisma';
 import { getAccessToken, type MicrosoftConfig } from './emailProcessor';
 
 /**
- * Graph caps mail subscriptions at 4230 minutes — just under three days.
+ * Graph caps mail subscriptions at 4230 minutes - just under three days.
  * Asking for more is rejected outright, so sit comfortably below it.
  */
 export const MAX_SUBSCRIPTION_MINUTES = 4230;
@@ -63,7 +63,7 @@ export function webhookUrl(): string {
   if (!base || base.includes('localhost')) {
     throw new Error(
       'A public URL is required for Microsoft webhooks. Set NEXT_PUBLIC_APP_URL to ' +
-        'your deployed domain — Graph cannot reach localhost.'
+        'your deployed domain - Graph cannot reach localhost.'
     );
   }
   return `${base.replace(/\/$/, '')}/api/webhooks/microsoft-email`;
@@ -120,7 +120,7 @@ export async function createSubscription(tenantId: string) {
 
 /**
  * Push an existing subscription's expiry out. Falls back to creating a fresh
- * one if Graph has already forgotten it — the usual case after an outage.
+ * one if Graph has already forgotten it - the usual case after an outage.
  */
 export async function renewSubscription(tenantId: string) {
   const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });

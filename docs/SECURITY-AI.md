@@ -14,19 +14,19 @@ no DML or DDL keywords, filter on `$1` rather than an inlined tenant id, and
 carry a row cap.
 
 This catches mistakes and casual misuse. It is string matching, so it is **not**
-something to rely on by itself — a sufficiently creative query could get past it.
+something to rely on by itself - a sufficiently creative query could get past it.
 
 ## 2. The database (the actual boundary)
 
 Analytics queries run on a separate PostgreSQL role, `xantypsa_ai`, which:
 
-- has `SELECT` and nothing else — `INSERT`, `UPDATE`, `DELETE` and `TRUNCATE`
+- has `SELECT` and nothing else - `INSERT`, `UPDATE`, `DELETE` and `TRUNCATE`
   are revoked
 - cannot read `users`, `accounts`, `sessions` or `verification_tokens` at all
 - sees only rows belonging to the current tenant, enforced by row-level security
 
 The tenant is set per transaction with
-`set_config('app.tenant_id', $1, true)` — parameterised, never string-concatenated,
+`set_config('app.tenant_id', $1, true)` - parameterised, never string-concatenated,
 and scoped to the transaction so a pooled connection can't carry one tenant's
 id into the next query.
 
@@ -47,7 +47,7 @@ node scripts/generate-rls.mjs     # regenerates sql/rls.sql + sql/ai-role.sql
 2. Run `sql/ai-role.sql`, then `sql/rls.sql`
 3. Put the matching connection string in `AI_DATABASE_URL`
 
-Use a **direct** connection (port 5432), not the transaction pooler — the tenant
+Use a **direct** connection (port 5432), not the transaction pooler - the tenant
 is set with a transaction-local setting, and transaction-mode pooling can move
 the query to a different session.
 
@@ -59,7 +59,7 @@ are denied rather than left open.
 ## If `AI_DATABASE_URL` is not set
 
 The SQL tool falls back to the application's own connection and logs a warning
-at startup. Validation still applies, but the database-level boundary does not —
+at startup. Validation still applies, but the database-level boundary does not - 
 tenant isolation then rests on `assertSafeSelect` alone. Don't run that way
 against real customer data.
 
@@ -68,5 +68,5 @@ against real customer data.
 `query_records` and `create_record` go through Prisma on the application
 connection, not the restricted role. They are scoped in code: the tenant filter
 is applied *after* any model-supplied `where` clause, so it cannot be overridden.
-That's a narrower surface than free-form SQL — the model chooses filters, not the
-query — but it is application-level scoping, not database-level.
+That's a narrower surface than free-form SQL - the model chooses filters, not the
+query - but it is application-level scoping, not database-level.

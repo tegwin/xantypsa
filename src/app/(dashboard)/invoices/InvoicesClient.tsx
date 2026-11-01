@@ -27,7 +27,7 @@ export default function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
 
   const columns = [
     { key: "inv", header: "Invoice", render: (i: Invoice) => (<div><p className="font-medium text-surface-100">{i.invoiceNumber}</p>{i.title && <p className="text-xs text-surface-500">{i.title}</p>}</div>) },
-    { key: "company", header: "Company", render: (i: Invoice) => <span className="text-surface-300">{i.company || "—"}</span> },
+    { key: "company", header: "Company", render: (i: Invoice) => <span className="text-surface-300">{i.company || " - "}</span> },
     { key: "status", header: "Status", render: (i: Invoice) => <Badge variant="status" status={i.status}>{i.status}</Badge> },
     { key: "total", header: "Total", render: (i: Invoice) => <span className="font-medium text-surface-100">{formatCurrency(i.total, i.currency)}</span> },
     { key: "due", header: "Amount Due", render: (i: Invoice) => <span className={i.amountDue > 0 ? "font-medium text-amber-400" : "text-green-400"}>{formatCurrency(i.amountDue, i.currency)}</span> },

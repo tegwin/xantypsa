@@ -3,7 +3,7 @@
 // ============================================================
 // Middleware runs on the Edge runtime, which has no node:crypto, no Buffer and
 // no Prisma. lib/auth/local.ts uses all three, so importing it here fails at
-// *runtime* with "The edge runtime does not support Node.js 'crypto' module" —
+// *runtime* with "The edge runtime does not support Node.js 'crypto' module" - 
 // and `next build` does not catch it.
 //
 // This is the same HMAC-SHA256 over the same payload, expressed in Web Crypto,
@@ -54,7 +54,7 @@ async function sign(data: string, secret: string): Promise<string> {
 /**
  * Verify a session cookie and return its payload, or null.
  *
- * Null covers every failure — absent, malformed, wrong signature, expired — so
+ * Null covers every failure - absent, malformed, wrong signature, expired - so
  * a caller cannot accidentally treat "tampered" as "just needs refreshing".
  */
 export async function verifySessionCookie(

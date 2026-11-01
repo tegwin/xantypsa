@@ -434,7 +434,7 @@ export default function TicketDetailPage() {
                   <div>
                     <label className="block text-xs text-surface-400 mb-1">Billing Rate</label>
                     <select value={billingRateId} onChange={(e) => setBillingRateId(e.target.value)} disabled={!billable}>
-                      <option value="">— No rate —</option>
+                      <option value=""> - No rate - </option>
                       {billingRates.map(r => (
                         <option key={r.id} value={r.id}>{r.name} (£{r.rate.toFixed(2)}/hr)</option>
                       ))}
@@ -584,9 +584,9 @@ export default function TicketDetailPage() {
                 })()}
               </div>
               <div className="flex justify-between"><span className="text-surface-400">Priority</span><StatusBadge status={ticket.priority} /></div>
-              <div className="flex justify-between"><span className="text-surface-400">Type</span><span className="text-white capitalize">{ticket.type?.replace('_', ' ') || '—'}</span></div>
-              <div className="flex justify-between"><span className="text-surface-400">Company</span><span className="text-white">{ticket.company?.name || '—'}</span></div>
-              <div className="flex justify-between"><span className="text-surface-400">Contact</span><span className="text-white">{ticket.contact ? `${ticket.contact.firstName} ${ticket.contact.lastName}` : '—'}</span></div>
+              <div className="flex justify-between"><span className="text-surface-400">Type</span><span className="text-white capitalize">{ticket.type?.replace('_', ' ') || ' - '}</span></div>
+              <div className="flex justify-between"><span className="text-surface-400">Company</span><span className="text-white">{ticket.company?.name || ' - '}</span></div>
+              <div className="flex justify-between"><span className="text-surface-400">Contact</span><span className="text-white">{ticket.contact ? `${ticket.contact.firstName} ${ticket.contact.lastName}` : ' - '}</span></div>
               <div className="flex justify-between items-center">
                 <span className="text-surface-400">Assignee</span>
                 <select value={ticket.assignedToId || ''} onChange={async (e) => { await apiPatch(`/api/tickets/${id}`, { assignedToId: e.target.value || null }); refetch(); }}
@@ -595,13 +595,13 @@ export default function TicketDetailPage() {
                   {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                 </select>
               </div>
-              <div className="flex justify-between"><span className="text-surface-400">Category</span><span className="text-white capitalize">{ticket.category || '—'}</span></div>
+              <div className="flex justify-between"><span className="text-surface-400">Category</span><span className="text-white capitalize">{ticket.category || ' - '}</span></div>
               <div className="flex justify-between items-center">
                 <span className="text-surface-400">Contract</span>
                 <ContractSelector ticketId={ticket.id} companyId={ticket.companyId} currentContractId={ticket.contractId} contractName={ticket.contract?.name} onUpdate={refetch} />
               </div>
               <div className="flex justify-between"><span className="text-surface-400">Created</span><span className="text-white">{formatDate(ticket.createdAt)}</span></div>
-              <div className="flex justify-between"><span className="text-surface-400">Created By</span><span className="text-white">{ticket.createdBy?.name || '—'}</span></div>
+              <div className="flex justify-between"><span className="text-surface-400">Created By</span><span className="text-white">{ticket.createdBy?.name || ' - '}</span></div>
               {ticket.resolvedAt && <div className="flex justify-between"><span className="text-surface-400">Resolved</span><span className="text-green-400">{formatDate(ticket.resolvedAt)}</span></div>}
               {ticket.closedAt && <div className="flex justify-between"><span className="text-surface-400">Closed</span><span className="text-green-400">{formatDate(ticket.closedAt)}</span></div>}
             </div>

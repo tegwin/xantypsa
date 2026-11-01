@@ -7,8 +7,8 @@ import { renewSubscription, minutesRemaining, RENEW_WHEN_UNDER_MINUTES } from '@
 /**
  * Keep the subscription alive without a scheduled job.
  *
- * Graph mail subscriptions cannot be permanent — 4230 minutes is Microsoft's
- * hard ceiling — so something must renew them. Rather than a timer, this runs
+ * Graph mail subscriptions cannot be permanent - 4230 minutes is Microsoft's
+ * hard ceiling - so something must renew them. Rather than a timer, this runs
  * off the events Graph already sends us: every notification is a chance to top
  * the expiry back up, and Graph additionally sends an explicit
  * `reauthorizationRequired` lifecycle event when one is close to lapsing.
@@ -19,7 +19,7 @@ async function renewIfExpiringSoon(tenantId: string, expiry?: string) {
   try {
     await renewSubscription(tenantId);
   } catch (err: any) {
-    // Never fail the notification because renewal failed — the email still
+    // Never fail the notification because renewal failed - the email still
     // needs to become a ticket.
     console.error('[ms-email] renewal failed:', err.message);
   }
@@ -47,7 +47,7 @@ async function findTenantBySubscription(subscriptionId: string) {
   if (rows[0]) return rows[0];
 
   // Older rows can hold settings as a JSON *string* rather than an object, and
-  // the path query above cannot see inside those. Fall back to a scan — tenant
+  // the path query above cannot see inside those. Fall back to a scan - tenant
   // counts are small, and missing a notification loses an email.
   const all = await prisma.tenant.findMany({ select: { id: true, settings: true } });
   return (
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
 
       if (changeType !== 'created') continue; // Only process new emails
 
-      // This endpoint is public — Graph cannot authenticate to it. The only
+      // This endpoint is public - Graph cannot authenticate to it. The only
       // proof a notification is genuine is clientState, the random secret we
       // handed Microsoft when subscribing. Look the tenant up *by
       // subscriptionId*, then verify the secret; never trust an id supplied in

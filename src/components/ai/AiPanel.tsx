@@ -127,7 +127,7 @@ export default function AiPanel() {
   }
 
   // Docked as a flex sibling of the main column (not floating), so opening it
-  // shrinks the page rather than covering it. Solid background — a translucent
+  // shrinks the page rather than covering it. Solid background - a translucent
   // one let the table bleed through and made both unreadable.
   return (
     <aside className="w-[400px] shrink-0 h-full bg-surface-900 border-l border-white/10 flex flex-col">

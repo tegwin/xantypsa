@@ -224,7 +224,7 @@ async function main() {
   console.log(`   Email:    ${email}`);
   console.log(`   Password: ${password}`);
   if (generated) {
-    console.log('\n   ⚠  Generated password — shown once. Copy it now, or set');
+    console.log('\n   ⚠  Generated password - shown once. Copy it now, or set');
     console.log('      SEED_ADMIN_PASSWORD to choose your own.\n');
   } else {
     console.log('');

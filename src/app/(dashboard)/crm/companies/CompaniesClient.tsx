@@ -37,7 +37,7 @@ export default function CompaniesClient({ companies: initial }: { companies: Com
       </div>
     )},
     { key: "type", header: "Type", render: (c: Company) => <Badge variant="status" status={c.type}>{c.type}</Badge> },
-    { key: "city", header: "Location", render: (c: Company) => c.city ? <span className="flex items-center gap-1.5 text-surface-300"><MapPin className="h-3.5 w-3.5" />{c.city}</span> : <span className="text-surface-600">—</span> },
+    { key: "city", header: "Location", render: (c: Company) => c.city ? <span className="flex items-center gap-1.5 text-surface-300"><MapPin className="h-3.5 w-3.5" />{c.city}</span> : <span className="text-surface-600"> - </span> },
     { key: "contacts", header: "Contacts", render: (c: Company) => <span className="text-surface-300">{c.contacts}</span> },
     { key: "tickets", header: "Tickets", render: (c: Company) => <span className="text-surface-300">{c.tickets}</span> },
     { key: "contracts", header: "Contracts", render: (c: Company) => <span className="text-surface-300">{c.contracts}</span> },
@@ -74,7 +74,7 @@ export default function CompaniesClient({ companies: initial }: { companies: Com
           <div className="grid grid-cols-2 gap-4">
             <Input label="City" value={form.city} onChange={update("city")} />
             <Select label="Country" value={form.country} onChange={update("country")}
-              placeholder="— Select country —"
+              placeholder=" - Select country - "
               options={COUNTRIES.map(c => ({ value: c.name, label: c.name }))} />
           </div>
         </form>

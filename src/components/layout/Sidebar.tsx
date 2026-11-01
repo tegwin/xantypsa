@@ -37,7 +37,7 @@ import { signOut } from '@/components/SessionProvider';
 
 interface NavChild {
   label: string;
-  /** Omitted for a pure heading — a group that has no page of its own. */
+  /** Omitted for a pure heading - a group that has no page of its own. */
   href?: string;
   /** A third level, for grouping related pages under one heading. */
   children?: { label: string; href: string }[];
@@ -296,7 +296,7 @@ export default function Sidebar() {
                     const hasGroup = !!child.children?.length;
                     const groupHasActiveChild = !!child.children?.some((g) => isActive(g.href));
                     // Open when the user opened it, and always when they are on
-                    // one of its pages — never hide the page you are looking at.
+                    // one of its pages - never hide the page you are looking at.
                     const groupOpen = expandedGroups.includes(groupKey) || groupHasActiveChild;
 
                     return (

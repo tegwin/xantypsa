@@ -94,12 +94,12 @@ export const DELETE = withTenant(async (req: NextRequest, session: any) => {
   const company = await prisma.company.findFirst({ where: { id, tenantId: session.user.tenantId } });
   if (!company) return errorResponse('Company not found', 404);
 
-  // The catch-all and the MSP's own company underpin email routing — deleting
+  // The catch-all and the MSP's own company underpin email routing - deleting
   // either would silently drop incoming mail from unknown senders.
   if (company.isSystem) {
     return errorResponse(
       company.isCatchAll
-        ? 'The catch-all company cannot be deleted — incoming email from unrecognised senders is filed against it.'
+        ? 'The catch-all company cannot be deleted - incoming email from unrecognised senders is filed against it.'
         : 'Your own organisation cannot be deleted. Rename it instead if the name is wrong.',
       400
     );
