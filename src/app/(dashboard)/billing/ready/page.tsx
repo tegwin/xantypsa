@@ -140,9 +140,11 @@ export default function ReadyForInvoicingPage() {
       const blocks = contract.hourBlocks || [];
       const lineItems = contract.type === 'prepay_hours' && blocks.length > 0
         ? blocks.map((b: any) => ({
-            description: `Pre-pay hours${b.source === 'top_up' ? ' top-up' : ''}${
+            // Spell the sum out on the line itself, so the invoice reads the
+            // way the block was sold: 10 hours at £250.00 per hour.
+            description: `Pre-pay block${b.source === 'top_up' ? ' top-up' : ''}${
               b.periodStart ? ` - ${new Date(b.periodStart).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}` : ''
-            }`,
+            } - ${b.hours} hours at ${formatCurrency(b.hourlyRate || 0)} per hour`,
             quantity: b.hours,
             unitPrice: b.hourlyRate || 0,
             taxRate: 20,

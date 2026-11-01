@@ -15,6 +15,11 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
       isRecurring: true,
       nextRecurring: { lte: now },
       status: { not: 'cancelled' },
+      // A one-off block is billed once. If one ever ended up flagged recurring,
+      // it must not keep raising invoices for a block nobody bought.
+      NOT: {
+        contract: { type: 'prepay_hours', blockMode: 'one_off' },
+      },
     },
     include: {
       items: { orderBy: { sortOrder: 'asc' } },

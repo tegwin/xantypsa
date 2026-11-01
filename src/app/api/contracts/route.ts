@@ -187,8 +187,14 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
 
   // Optionally raise the recurring invoice straight away, so the contract has a
   // billing mechanism from the moment it exists and shows in Ready to Bill.
+  //
+  // A one-off block is not a recurring arrangement: it is billed once, when
+  // the block is raised, and again only if another block is added. Only a
+  // monthly block contract recurs.
+  const isOneOffBlock = data.type === 'prepay_hours' && data.blockMode !== 'monthly';
+
   let invoice = null;
-  if (body.createInvoice) {
+  if (body.createInvoice && !isOneOffBlock) {
     invoice = await createRecurringInvoiceForContract({
       tenantId,
       contractId: contract.id,

@@ -133,6 +133,17 @@ contract would overwrite the block price and bill the wrong figure. The server
 refuses to do that regardless of what is sent, so the API cannot be used to get
 around it either.
 
+## One off does not recur
+
+| Block type | Billing |
+|---|---|
+| **One off** | Billed once, from Ready for Invoicing, and again only when another block is added or topped up |
+| **Monthly** | Recurring. A block is raised every month and each one is billed |
+
+A one-off block contract never creates a recurring invoice, the "create the
+recurring invoice now" option is not offered for it, and the recurring job
+skips it. Choosing Monthly is what makes a block arrangement recurring.
+
 ## Invoicing a block
 
 A pre-pay contract bills its **blocks**, never the labour. The labour is what
@@ -142,7 +153,7 @@ Invoicing from Ready for Invoicing produces a line per unbilled block:
 
 | Description | Qty | Unit price | Total |
 |---|---|---|---|
-| Pre-pay hours - March 2026 | 10 | 250.00 | 2,500.00 |
+| Pre-pay block - March 2026 - 10 hours at £250.00 per hour | 10 | 250.00 | 2,500.00 |
 
 Below it, the work the block absorbed, at zero:
 

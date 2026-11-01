@@ -603,11 +603,21 @@ export default function ContractsPage() {
               </div>
             )}
 
-            <label className="flex items-center gap-2 text-sm text-slate-300 pt-1">
-              <input type="checkbox" checked={form.createInvoice}
-                onChange={(e) => setForm({ ...form, createInvoice: e.target.checked })} />
-              Create the recurring invoice now (appears in Ready to Bill immediately)
-            </label>
+            {/* A one-off block is billed once, when the block is raised. There
+                is nothing recurring to set up. */}
+            {!(form.type === 'prepay_hours' && form.blockMode === 'one_off') && (
+              <label className="flex items-center gap-2 text-sm text-slate-300 pt-1">
+                <input type="checkbox" checked={form.createInvoice}
+                  onChange={(e) => setForm({ ...form, createInvoice: e.target.checked })} />
+                Create the recurring invoice now (appears in Ready to Bill immediately)
+              </label>
+            )}
+            {form.type === 'prepay_hours' && form.blockMode === 'one_off' && (
+              <p className="text-xs text-surface-500 pt-1">
+                A one-off block is billed once, from Ready for Invoicing, and again only
+                if you add another block. Choose Monthly above for a recurring arrangement.
+              </p>
+            )}
           </div>
           )}
 
