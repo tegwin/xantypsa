@@ -29,12 +29,14 @@ export default function TicketDetailPage() {
   // The composer then shows the options that belong to that kind of note.
   const [noteMode, setNoteMode] = useState<'public' | 'internal'>('public');
   const noteRef = useRef<HTMLTextAreaElement | null>(null);
+  const [emailCustomer, setEmailCustomer] = useState(false);
   // Ticket edit modal
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
   const [savingEdit, setSavingEdit] = useState(false);
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
   const [contacts, setContacts] = useState<{ id: string; name: string }[]>([]);
+  const [contractOptions, setContractOptions] = useState<{ id: string; name: string }[]>([]);
 
   const [timerSettings, setTimerSettings] = useState({
     timerEnabled: true,
@@ -103,7 +105,7 @@ export default function TicketDetailPage() {
   // in the edit form rather than being fetched once.
   useEffect(() => {
     const companyId = editForm?.companyId;
-    if (!editing || !companyId) { setContacts([]); return; }
+    if (!editing || !companyId) { setContacts([]); setContractOptions([]); return; }
     fetch(`/api/contacts?companyId=${companyId}`)
       .then(r => r.json())
       .then(data => setContacts((data.items || []).map((c: any) => ({
@@ -111,6 +113,11 @@ export default function TicketDetailPage() {
         name: c.name || [c.firstName, c.lastName].filter(Boolean).join(' '),
       }))))
       .catch(() => setContacts([]));
+
+    fetch(`/api/contracts?companyId=${companyId}`)
+      .then(r => r.json())
+      .then(data => setContractOptions((data.items || []).map((c: any) => ({ id: c.id, name: c.name }))))
+      .catch(() => setContractOptions([]));
   }, [editing, editForm?.companyId]);
 
   // Calculate billing preview
@@ -137,7 +144,7 @@ export default function TicketDetailPage() {
     setTogglingNote(noteId);
     try {
       await apiPatch(`/api/tickets/${id}/notes`, { noteId, isInternal: makeInternal });
-      toast.success(makeInternal ? 'Note is now internal' : 'Note is now public');
+      toast.success(makeInternal ? 'Note is now private' : 'Note is now public');
       await refetch();
     } catch (err: any) {
       toast.error(err.message || 'Could not change the note');
@@ -153,16 +160,21 @@ export default function TicketDetailPage() {
     }
     setSubmitting(true);
     try {
-      await apiPost(`/api/tickets/${id}/notes`, {
+      const result: any = await apiPost(`/api/tickets/${id}/notes`, {
         content: noteText,
         isInternal: asInternal,
+        emailCustomer: !asInternal && emailCustomer,
         timeMinutes: showTimeEntry ? timeMinutes : undefined,
         billingRateId: showTimeEntry && billable ? billingRateId : undefined,
         billable: showTimeEntry ? billable : undefined,
         isOOH: showTimeEntry ? isOOH : undefined,
         newStatus: newStatus || undefined,
       });
-      toast.success(noteText.trim() ? (asInternal ? 'Internal note added' : 'Public note added') : 'Updated');
+      toast.success(noteText.trim() ? (asInternal ? 'Private note added' : 'Public note added') : 'Updated');
+      // The note is saved either way; a failed send is reported separately so
+      // it is never mistaken for the note itself failing.
+      if (result?.emailError) toast.error(`Note saved, but not emailed: ${result.emailError}`);
+      else if (result?.emailed) toast.success('Emailed to the customer');
       setNoteText('');
       setTimeMinutes('');
       setNewStatus('');
@@ -244,6 +256,7 @@ export default function TicketDetailPage() {
       category: ticket.category || '',
       companyId: ticket.companyId || '',
       contactId: ticket.contactId || '',
+      contractId: ticket.contractId || '',
       dueDate: ticket.dueDate ? String(ticket.dueDate).slice(0, 10) : '',
     });
     setEditing(true);
@@ -262,6 +275,7 @@ export default function TicketDetailPage() {
         category: editForm.category || null,
         contactId: editForm.contactId || null,
         companyId: editForm.companyId || null,
+        contractId: editForm.contractId || null,
       });
       toast.success('Ticket updated');
       setEditing(false);
@@ -487,6 +501,15 @@ export default function TicketDetailPage() {
               </div>
             )}
 
+            {!isInternalMode && (
+              <label className="flex items-center gap-2 mb-3 text-sm text-surface-300 cursor-pointer">
+                <input type="checkbox" checked={emailCustomer}
+                  onChange={e => setEmailCustomer(e.target.checked)} />
+                <Mail className="h-3.5 w-3.5 text-surface-400" />
+                Also email this note to the customer
+              </label>
+            )}
+
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-xs text-surface-500">
                 {isInternalMode
@@ -518,7 +541,7 @@ export default function TicketDetailPage() {
                             ? 'bg-amber-500/20 text-amber-400'
                             : 'bg-green-500/20 text-green-400'
                         }`}>
-                          {note.isInternal ? 'Internal' : 'Public'}
+                          {note.isInternal ? 'Private' : 'Public'}
                         </span>
                       )}
                       {note.isSystem && <span className="text-xs bg-surface-600/50 text-surface-400 px-1.5 py-0.5 rounded">System</span>}
@@ -532,7 +555,7 @@ export default function TicketDetailPage() {
                         >
                           {togglingNote === note.id
                             ? 'Changing...'
-                            : note.isInternal ? 'Make public' : 'Make internal'}
+                            : note.isInternal ? 'Make public' : 'Make private'}
                         </button>
                       )}
                       <span className="text-xs text-surface-500">{formatRelativeTime(note.createdAt)}</span>
@@ -718,7 +741,7 @@ export default function TicketDetailPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Select label="Company" value={editForm.companyId}
-                onChange={(e: any) => setEditForm({ ...editForm, companyId: e.target.value, contactId: '' })}
+                onChange={(e: any) => setEditForm({ ...editForm, companyId: e.target.value, contactId: '', contractId: '' })}
                 options={[{ value: '', label: 'No company' }, ...companies.map(c => ({ value: c.id, label: c.name }))]} />
 
               <Select label="Contact" value={editForm.contactId}
@@ -742,6 +765,10 @@ export default function TicketDetailPage() {
                   { value: 'problem', label: 'Problem' },
                   { value: 'change', label: 'Change' },
                 ]} />
+
+              <Select label="Contract" value={editForm.contractId}
+                onChange={(e: any) => setEditForm({ ...editForm, contractId: e.target.value })}
+                options={[{ value: '', label: 'No contract' }, ...contractOptions.map(c => ({ value: c.id, label: c.name }))]} />
 
               <Input label="Category" value={editForm.category}
                 onChange={(e: any) => setEditForm({ ...editForm, category: e.target.value })} />

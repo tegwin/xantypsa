@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { calculateInternalCost } from '@/lib/costing';
 import { prisma } from '@/lib/prisma';
 import { withTenant, jsonResponse, errorResponse } from '@/lib/api';
-import { sendTicketNotification } from '@/lib/ticketEmail';
+import { sendTicketNotification, sendPublicNoteEmail } from '@/lib/ticketEmail';
 
 export const POST = withTenant(async (req: NextRequest, session: any) => {
   const parts = req.nextUrl.pathname.split('/');
@@ -18,7 +18,7 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
   });
   if (!ticket) return errorResponse('Ticket not found', 404);
 
-  const results: any = { note: null, timeEntry: null, statusChanged: false };
+  const results: any = { note: null, timeEntry: null, statusChanged: false, emailed: false };
 
   // 1. Create note if content provided
   if (body.content?.trim()) {
@@ -202,6 +202,23 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
     } else {
       sendTicketNotification(session.user.tenantId, ticketId, 'ticket_updated');
     }
+  }
+
+  // Email the note to the customer only when asked, and only for a public one.
+  // A private note must never leave the system.
+  if (body.emailCustomer && body.content?.trim() && !(body.isInternal ?? false)) {
+    const author = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { name: true },
+    });
+    const outcome = await sendPublicNoteEmail(
+      session.user.tenantId,
+      ticketId,
+      body.content,
+      author?.name || 'Support',
+    );
+    results.emailed = outcome.sent;
+    if (!outcome.sent) results.emailError = outcome.reason;
   }
 
   return jsonResponse(results, 201);
