@@ -66,7 +66,9 @@ export const PUT = withTenant(async (req: NextRequest, session: any) => {
     prisma.contract.update({
       where: { id: contractId },
       data: {
-        value: totals.subtotal, // NET, before tax
+        // A pre-pay contract is priced by its blocks, hours times rate, so its
+        // value is left alone. Every other type is priced by its items.
+        ...(contract.type === 'prepay_hours' ? {} : { value: totals.subtotal }), // NET, before tax
         // Keep the type-specific headline in step so the detail page reads right.
         ...(contract.type === 'managed_service' ? { monthlyFee: totals.subtotal } : {}),
         ...(contract.type === 'fixed_price' ? { fixedPrice: totals.subtotal } : {}),

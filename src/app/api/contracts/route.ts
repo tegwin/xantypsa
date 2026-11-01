@@ -130,7 +130,11 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
     });
 
   if (contractItems.length > 0) {
-    data.value = calculateTotals(contractItems).subtotal; // NET, before tax
+    // A pre-pay contract is priced by its blocks: hours times rate. Letting an
+    // item overwrite that would bill the customer the wrong figure.
+    if (body.type !== 'prepay_hours') {
+      data.value = calculateTotals(contractItems).subtotal; // NET, before tax
+    }
     data.items = { create: contractItems };
   }
 

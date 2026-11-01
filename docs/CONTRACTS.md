@@ -119,6 +119,17 @@ with `contracts:view`. Everyone else sees the name without a link: a technician
 can see which contract a ticket sits on without seeing the rates and margin on
 it.
 
+## No products and services
+
+A pre-pay contract has no Products and Services section. It is priced entirely
+by its blocks: hours times rate.
+
+This is not only tidiness. On every other contract type the net total of the
+line items **becomes** the contract value, so a line added to a pre-pay
+contract would overwrite the block price and bill the wrong figure. The server
+refuses to do that regardless of what is sent, so the API cannot be used to get
+around it either.
+
 ## Invoicing a block
 
 A pre-pay contract bills its **blocks**, never the labour. The labour is what

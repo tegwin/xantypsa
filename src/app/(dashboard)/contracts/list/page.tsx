@@ -538,7 +538,11 @@ export default function ContractsPage() {
             </div>
           )}
 
-          {/* Products & Services - these price the contract and the recurring invoice */}
+          {/* Products & Services - these price the contract and the recurring
+              invoice. A pre-pay contract is priced by its blocks instead, so
+              the section is not shown: a line here would override the block
+              price. */}
+          {form.type !== 'prepay_hours' && (
           <div className="p-4 rounded-lg border border-brand-500/20 bg-brand-500/5 space-y-3">
             <div className="flex items-center justify-between">
               <div>
@@ -610,6 +614,7 @@ export default function ContractsPage() {
               Create the recurring invoice now (appears in Ready to Bill immediately)
             </label>
           </div>
+          )}
 
           {/* Billing Rate Exclusions (for prepay and managed) */}
           {(form.type === 'prepay_hours' || form.type === 'managed_service') && ratesData?.items?.length > 0 && (
