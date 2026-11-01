@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { opportunityDependencies, describeDependencies } from '@/lib/inUse';
 import { withTenant, jsonResponse, errorResponse } from '@/lib/api';
 
 export const GET = withTenant(async (req: NextRequest, session: any) => {
@@ -25,6 +26,10 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
   });
 
   if (!opportunity) return errorResponse('Opportunity not found', 404);
+
+  // Nothing that real work points at may be deleted.
+  const blocked = describeDependencies('opportunity', await opportunityDependencies(id, session.user.tenantId));
+  if (blocked) return errorResponse(blocked, 409);
   return jsonResponse(opportunity);
 }, 'crm', 'read');
 

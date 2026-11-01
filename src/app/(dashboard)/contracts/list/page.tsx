@@ -418,10 +418,12 @@ export default function ContractsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div>
+              {/* Hours x hourly rate = price. The price is worked out, never
+                  typed, so the three can never disagree. */}
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="w-40">
                   <label className="label">
-                    {form.blockMode === 'monthly' ? 'Hours per month *' : 'Hours in the block *'}
+                    Hours <span className="text-surface-500 font-normal">(per block)</span> *
                   </label>
                   <input className="input w-full" type="number" step="0.5"
                     value={form.blockMode === 'monthly' ? form.hoursPerPeriod : form.totalHours}
@@ -429,40 +431,32 @@ export default function ContractsPage() {
                       ? { ...form, hoursPerPeriod: e.target.value }
                       : { ...form, totalHours: e.target.value })} />
                 </div>
-                <div>
-                  <label className="label">Rate per hour (£)</label>
+
+                <span className="pb-2 text-surface-500">x</span>
+
+                <div className="w-40">
+                  <label className="label">Hourly rate (£) *</label>
                   <input className="input w-full" type="number" step="0.01" value={form.blockHourlyRate}
                     onChange={(e) => setForm({ ...form, blockHourlyRate: e.target.value })} />
                 </div>
-                <div>
+
+                <span className="pb-2 text-surface-500">=</span>
+
+                <div className="w-44">
                   <label className="label">
-                    {form.blockMode === 'monthly' ? 'Billed monthly (£)' : 'Block price (£)'}
+                    Price <span className="text-surface-500 font-normal">(per block)</span>
                   </label>
-                  <input className="input w-full" type="number" step="0.01" value={form.value}
-                    onChange={(e) => setForm({ ...form, value: e.target.value })}
-                    placeholder="Worked out below" />
+                  <div className="input w-full bg-surface-800/60 text-white flex items-center">
+                    £{(
+                      (parseFloat(form.blockMode === 'monthly' ? form.hoursPerPeriod : form.totalHours) || 0) *
+                      (parseFloat(form.blockHourlyRate) || 0)
+                    ).toFixed(2)}
+                  </div>
                 </div>
               </div>
-
-              {/* Show the sum as it is typed, so the figure is never a surprise. */}
-              {(() => {
-                const hours = parseFloat(form.blockMode === 'monthly' ? form.hoursPerPeriod : form.totalHours) || 0;
-                const rate = parseFloat(form.blockHourlyRate) || 0;
-                if (!hours || !rate) {
-                  return (
-                    <p className="text-xs text-surface-500">
-                      Leave the price blank and it is worked out as hours x rate.
-                    </p>
-                  );
-                }
-                return (
-                  <p className="text-sm text-purple-300">
-                    {hours}h at £{rate.toFixed(2)}/hr ={' '}
-                    <span className="font-semibold text-white">£{(hours * rate).toFixed(2)}</span>
-                    {form.blockMode === 'monthly' ? ' every month' : ''}
-                  </p>
-                );
-              })()}
+              {form.blockMode === 'monthly' && (
+                <p className="text-xs text-surface-500">A block of these hours is raised every month.</p>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>

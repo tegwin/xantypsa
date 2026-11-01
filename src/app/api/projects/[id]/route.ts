@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { projectDependencies, describeDependencies } from '@/lib/inUse';
 import { withTenant, jsonResponse, errorResponse } from '@/lib/api';
 
 export const GET = withTenant(async (req: NextRequest, session: any) => {
@@ -30,6 +31,10 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
     },
   });
   if (!project) return errorResponse('Project not found', 404);
+
+  // Nothing that real work points at may be deleted.
+  const blocked = describeDependencies('project', await projectDependencies(id, session.user.tenantId));
+  if (blocked) return errorResponse(blocked, 409);
 
   const totalHours = project.timeEntries.reduce((s, e) => s + e.hours, 0);
   const billableHours = project.timeEntries.filter(e => e.billable).reduce((s, e) => s + e.hours, 0);

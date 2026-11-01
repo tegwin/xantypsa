@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { contractDependencies, describeDependencies } from '@/lib/inUse';
 import { withTenant, jsonResponse, errorResponse } from '@/lib/api';
 
 function extractId(req: NextRequest): string {
@@ -36,6 +37,10 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
     },
   });
   if (!contract) return errorResponse('Contract not found', 404);
+
+  // Nothing that real work points at may be deleted.
+  const blocked = describeDependencies('contract', await contractDependencies(id, session.user.tenantId));
+  if (blocked) return errorResponse(blocked, 409);
 
   // Calculate hours used from time entries
   const hoursAgg = await prisma.timeEntry.aggregate({
@@ -76,6 +81,17 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
   }
   for (const f of ['carryOver', 'autoTopUp']) {
     if (data[f] !== undefined) data[f] = !!data[f];
+  }
+
+  // A pre-pay contract is priced by hours times rate, always. Recomputing here
+  // means editing the hours or the rate can never leave a stale price behind.
+  if (contract.type === 'prepay_hours') {
+    const rate = data.blockHourlyRate ?? contract.blockHourlyRate ?? 0;
+    const mode = data.blockMode ?? contract.blockMode ?? 'one_off';
+    const hours = mode === 'monthly'
+      ? (data.hoursPerPeriod ?? contract.hoursPerPeriod ?? 0)
+      : (data.totalHours ?? contract.totalHours ?? 0);
+    data.value = Math.round((hours || 0) * (rate || 0) * 100) / 100;
   }
   if (body.startDate) data.startDate = new Date(body.startDate);
   if (body.endDate !== undefined) data.endDate = body.endDate ? new Date(body.endDate) : null;
