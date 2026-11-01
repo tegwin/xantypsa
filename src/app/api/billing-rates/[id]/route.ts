@@ -20,15 +20,17 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
       ...(body.code !== undefined && { code: body.code }),
       ...(body.isNonBillable !== undefined && { isNonBillable: nextNonBillable }),
       ...(nextNonBillable
-        ? { rate: 0, costRate: 0 }
+        ? { rate: 0, costRate: 0, minimumMinutes: 0, roundingMinutes: 0, oohMultiplier: 1.0 }
         : {
             ...(body.rate !== undefined && { rate: parseFloat(body.rate) }),
             ...(body.costRate !== undefined && { costRate: parseFloat(body.costRate) }),
+            ...(body.minimumMinutes !== undefined && { minimumMinutes: parseInt(body.minimumMinutes) }),
+            ...(body.roundingMinutes !== undefined && { roundingMinutes: parseInt(body.roundingMinutes) }),
+            ...(body.oohMultiplier !== undefined && { oohMultiplier: parseFloat(body.oohMultiplier) }),
           }),
-      ...(body.minimumMinutes !== undefined && { minimumMinutes: parseInt(body.minimumMinutes) }),
-      ...(body.roundingMinutes !== undefined && { roundingMinutes: parseInt(body.roundingMinutes) }),
-      ...(body.oohMultiplier !== undefined && { oohMultiplier: parseFloat(body.oohMultiplier) }),
-      ...(body.isDefault !== undefined && { isDefault: body.isDefault }),
+      ...(nextNonBillable
+        ? { isDefault: false }
+        : (body.isDefault !== undefined && { isDefault: body.isDefault })),
       ...(body.isActive !== undefined && { isActive: body.isActive }),
       ...(body.sortOrder !== undefined && { sortOrder: body.sortOrder }),
     },

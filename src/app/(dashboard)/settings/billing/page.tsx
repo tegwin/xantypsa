@@ -118,13 +118,13 @@ export default function BillingSettingsPage() {
         : <span className="font-medium text-surface-100">£{r.rate.toFixed(2)}</span>
     )},
     { key: 'costRate', header: 'Cost/hr', render: (r: BillingRate) => (
-      <span className="text-surface-400">£{r.costRate.toFixed(2)}</span>
+      <span className="text-surface-400">{r.isNonBillable ? '-' : `£${r.costRate.toFixed(2)}`}</span>
     )},
     { key: 'minimum', header: 'Minimum', render: (r: BillingRate) => (
-      <span className="text-surface-300">{r.minimumMinutes} mins</span>
+      <span className="text-surface-300">{r.isNonBillable ? '-' : `${r.minimumMinutes} mins`}</span>
     )},
     { key: 'rounding', header: 'Increment', render: (r: BillingRate) => (
-      <span className="text-surface-300">{r.roundingMinutes} mins</span>
+      <span className="text-surface-300">{r.isNonBillable ? '-' : `${r.roundingMinutes} mins`}</span>
     )},
     { key: 'ooh', header: 'OOH Multiplier', render: (r: BillingRate) => (
       <span className={r.oohMultiplier > 1 ? 'text-amber-400 font-medium' : 'text-surface-400'}>
@@ -211,20 +211,31 @@ export default function BillingSettingsPage() {
               <Input label="Cost Rate (£/hr)" type="number" step="0.01" value={form.costRate} onChange={update('costRate')} placeholder="50.00" />
             </div>
           )}
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Minimum Minutes" type="number" value={form.minimumMinutes} onChange={update('minimumMinutes')} placeholder="15" />
-            <Input label="Rounding Increment (mins)" type="number" value={form.roundingMinutes} onChange={update('roundingMinutes')} placeholder="15" />
-          </div>
+          {/* Minimums and rounding exist to protect a charge. Nothing is charged
+              at a non-billable rate, so the actual time is recorded as worked. */}
+          {!form.isNonBillable && (
+            <div className="grid grid-cols-2 gap-4">
+              <Input label="Minimum Minutes" type="number" value={form.minimumMinutes} onChange={update('minimumMinutes')} placeholder="15" />
+              <Input label="Rounding Increment (mins)" type="number" value={form.roundingMinutes} onChange={update('roundingMinutes')} placeholder="15" />
+            </div>
+          )}
           {!form.isNonBillable && (
             <Input label="OOH Multiplier" type="number" step="0.1" value={form.oohMultiplier} onChange={update('oohMultiplier')} placeholder="1.5" />
           )}
           {!form.isNonBillable && form.oohMultiplier && parseFloat(form.oohMultiplier) > 1 && form.rate && (
             <p className="text-xs text-amber-400">OOH rate: £{(parseFloat(form.rate || '0') * parseFloat(form.oohMultiplier)).toFixed(2)}/hr</p>
           )}
-          <label className="flex items-center gap-2 text-sm text-surface-300 cursor-pointer">
-            <input type="checkbox" checked={form.isDefault as any} onChange={(e) => setForm(p => ({ ...p, isDefault: e.target.checked as any }))} />
-            Set as default billing rate
-          </label>
+          {!form.isNonBillable && (
+            <label className="flex items-center gap-2 text-sm text-surface-300 cursor-pointer">
+              <input type="checkbox" checked={form.isDefault as any} onChange={(e) => setForm(p => ({ ...p, isDefault: e.target.checked as any }))} />
+              Set as default billing rate
+            </label>
+          )}
+          {form.isNonBillable && (
+            <p className="text-xs text-surface-500">
+              A non-billable rate cannot be the default, or every new time entry would be free.
+            </p>
+          )}
         </form>
       </Modal>
     </div>

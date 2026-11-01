@@ -28,10 +28,12 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
       isNonBillable,
       rate: isNonBillable ? 0 : parseFloat(body.rate),
       costRate: isNonBillable ? 0 : parseFloat(body.costRate || '0'),
-      minimumMinutes: parseInt(body.minimumMinutes || '15'),
-      roundingMinutes: parseInt(body.roundingMinutes || '15'),
-      oohMultiplier: parseFloat(body.oohMultiplier || '1.0'),
-      isDefault: body.isDefault || false,
+      // No charge means no minimum and no rounding: record the time as worked.
+      minimumMinutes: isNonBillable ? 0 : parseInt(body.minimumMinutes || '15'),
+      roundingMinutes: isNonBillable ? 0 : parseInt(body.roundingMinutes || '15'),
+      oohMultiplier: isNonBillable ? 1.0 : parseFloat(body.oohMultiplier || '1.0'),
+      // Never the default: that would make every new time entry free.
+      isDefault: isNonBillable ? false : (body.isDefault || false),
       sortOrder: body.sortOrder || 0,
     },
   });
