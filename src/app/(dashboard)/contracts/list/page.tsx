@@ -651,10 +651,17 @@ export default function ContractsPage() {
           </div>
 
           <div className="flex justify-end gap-3 pt-4 sticky bottom-0 bg-surface-900 py-3">
-            <button onClick={() => setShowCreate(false)} className="btn-secondary">Cancel</button>
+            <button onClick={() => { setShowCreate(false); setEditId(null); }} className="btn-secondary">Cancel</button>
             <button onClick={handleCreate}
-              disabled={!form.name || !form.companyId || (form.type === 'fixed_price' && !form.fixedPrice) || (form.type === 'prepay_hours' && !form.totalHours)}
-              className="btn-primary">Create Contract</button>
+              disabled={
+                !form.name || !form.companyId
+                || (form.type === 'fixed_price' && !form.fixedPrice)
+                // A monthly block is sized by its hours per month, not totalHours.
+                || (form.type === 'prepay_hours' && (
+                  form.blockMode === 'monthly' ? !form.hoursPerPeriod : !form.totalHours
+                ))
+              }
+              className="btn-primary">{editId ? 'Save changes' : 'Create Contract'}</button>
           </div>
         </div>
       </Modal>

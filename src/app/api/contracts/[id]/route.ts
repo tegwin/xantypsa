@@ -65,16 +65,29 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
     if (body[f] !== undefined) data[f] = body[f];
   }
 
-  // A form sends everything as a string. Coerce the pre-pay fields so Prisma
-  // is not handed "12" where it wants a number.
-  const numeric = ['blockHourlyRate', 'hoursPerPeriod', 'carryOverMaxHours',
-    'topUpThresholdHours', 'topUpHours', 'totalHours', 'overhourRate', 'alertThreshold'];
-  for (const f of numeric) {
+  // A form sends everything as a string, and an untouched field as "". Prisma
+  // refuses "" for a number, so every numeric field is coerced here and an
+  // empty one becomes null rather than reaching the database.
+  const floats = ['blockHourlyRate', 'hoursPerPeriod', 'carryOverMaxHours',
+    'topUpThresholdHours', 'topUpHours', 'totalHours', 'overhourRate',
+    'alertThreshold', 'fixedPrice', 'instalmentAmount', 'monthlyFee', 'value'];
+  for (const f of floats) {
     if (data[f] !== undefined) {
       data[f] = data[f] === '' || data[f] === null ? null : parseFloat(data[f]);
       if (Number.isNaN(data[f])) data[f] = null;
     }
   }
+
+  const ints = ['instalmentCount', 'renewalPeriod'];
+  for (const f of ints) {
+    if (data[f] !== undefined) {
+      data[f] = data[f] === '' || data[f] === null ? null : parseInt(data[f]);
+      if (Number.isNaN(data[f])) data[f] = null;
+    }
+  }
+
+  // value is not nullable on the model, so an empty one means zero.
+  if (data.value === null) data.value = 0;
   for (const f of ['carryOver', 'autoTopUp']) {
     if (data[f] !== undefined) data[f] = !!data[f];
   }

@@ -58,6 +58,26 @@ export async function createRecurringInvoiceForContract(opts: {
     };
   });
 
+  // A pre-pay contract has no items: it is priced by its block. The line must
+  // read as the block was sold, 10 hours at 250, not a lump of 2,500 at
+  // quantity one.
+  if (lineItems.length === 0 && contract.type === 'prepay_hours') {
+    const hours =
+      (contract.blockMode === 'monthly' ? contract.hoursPerPeriod : contract.totalHours) || 0;
+    const rate = contract.blockHourlyRate || (hours > 0 ? (contract.value || 0) / hours : 0);
+    const net = round2(hours * rate);
+    lineItems.push({
+      description: `${contract.name} - ${hours} hours at ${rate.toFixed(2)} per hour`,
+      quantity: hours,
+      unitPrice: rate,
+      taxRate: 20,
+      discount: 0,
+      total: round2(net * 1.2),
+      sortOrder: 0,
+      productId: undefined,
+    });
+  }
+
   // Contracts with no items still bill their headline value.
   if (lineItems.length === 0) {
     const value = contract.monthlyFee || contract.fixedPrice || contract.value || 0;
@@ -75,6 +95,8 @@ export async function createRecurringInvoiceForContract(opts: {
 
   const { subtotal, taxTotal, total } = calculateTotals(lineItems);
 
+  // A one-off block is billed once. Only a monthly block recurs.
+  const isOneOffBlock = contract.type === 'prepay_hours' && contract.blockMode !== 'monthly';
   const freq = contract.billingCycle || 'monthly';
   // Bill from the contract start if it is in the future, otherwise from today.
   const anchor =
@@ -96,9 +118,11 @@ export async function createRecurringInvoiceForContract(opts: {
       status: 'draft', // draft = awaiting billing, so it lands in Ready to Bill
       dueDate,
       paymentTerms,
-      isRecurring: true,
-      recurringFreq: freq,
-      nextRecurring: addPeriod(anchor, freq),
+      // A one-off block is a single bill: flagging it recurring would raise an
+      // invoice every month for a block nobody bought.
+      isRecurring: !isOneOffBlock,
+      recurringFreq: isOneOffBlock ? null : freq,
+      nextRecurring: isOneOffBlock ? null : addPeriod(anchor, freq),
       subtotal,
       taxTotal,
       total,
