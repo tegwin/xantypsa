@@ -11,6 +11,11 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
   const settings = (tenant?.settings as any) || {};
   return jsonResponse({
     billingMode: settings.serviceDeskBillingMode || 'anytime', // 'anytime' or 'on_close'
+    // Timer defaults to running whenever a ticket is open. Each option below
+    // narrows when it runs; with both off it never pauses itself.
+    timerEnabled: settings.serviceDeskTimerEnabled ?? true,
+    timerOnlyOnTimeEntry: settings.serviceDeskTimerOnlyOnTimeEntry ?? false,
+    timerOnlyOnPublicNotes: settings.serviceDeskTimerOnlyOnPublicNotes ?? false,
   });
 }, 'settings', 'read');
 
@@ -26,11 +31,26 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
   if (body.billingMode !== undefined) {
     settings.serviceDeskBillingMode = body.billingMode;
   }
+  if (body.timerEnabled !== undefined) {
+    settings.serviceDeskTimerEnabled = !!body.timerEnabled;
+  }
+  if (body.timerOnlyOnTimeEntry !== undefined) {
+    settings.serviceDeskTimerOnlyOnTimeEntry = !!body.timerOnlyOnTimeEntry;
+  }
+  if (body.timerOnlyOnPublicNotes !== undefined) {
+    settings.serviceDeskTimerOnlyOnPublicNotes = !!body.timerOnlyOnPublicNotes;
+  }
 
   await prisma.tenant.update({
     where: { id: session.user.tenantId },
     data: { settings },
   });
 
-  return jsonResponse({ success: true, billingMode: settings.serviceDeskBillingMode });
+  return jsonResponse({
+    success: true,
+    billingMode: settings.serviceDeskBillingMode,
+    timerEnabled: settings.serviceDeskTimerEnabled ?? true,
+    timerOnlyOnTimeEntry: settings.serviceDeskTimerOnlyOnTimeEntry ?? false,
+    timerOnlyOnPublicNotes: settings.serviceDeskTimerOnlyOnPublicNotes ?? false,
+  });
 }, 'settings', 'write');
