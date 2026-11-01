@@ -144,6 +144,9 @@ const NAV_ITEMS: NavItem[] = [
     href: '/reports',
     icon: <BarChart3 className="h-4.5 w-4.5" />,
     module: 'reports',
+    children: [
+      { label: 'Profitability', href: '/reports/profitability' },
+    ],
   },
   {
     label: 'Settings',

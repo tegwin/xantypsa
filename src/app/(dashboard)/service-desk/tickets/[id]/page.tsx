@@ -45,6 +45,9 @@ export default function TicketDetailPage() {
   });
   const [showTimeEntry, setShowTimeEntry] = useState(false);
   const [timeMinutes, setTimeMinutes] = useState('');
+  // While true the minutes field tracks the timer. Typing a figure by hand, or
+  // picking a quick value, hands control back to the person.
+  const [minutesFollowTimer, setMinutesFollowTimer] = useState(true);
   const [billingRateId, setBillingRateId] = useState('');
   const [billable, setBillable] = useState(true);
   const [isOOH, setIsOOH] = useState(false);
@@ -120,6 +123,13 @@ export default function TicketDetailPage() {
       .catch(() => setContractOptions([]));
   }, [editing, editForm?.companyId]);
 
+  // Minutes tracks the running clock, so the field is already right when the
+  // note is saved rather than needing the elapsed time pushed into it.
+  useEffect(() => {
+    if (!minutesFollowTimer || !timer.running) return;
+    setTimeMinutes(timer.minutes > 0 ? String(timer.minutes) : '');
+  }, [timer.minutes, timer.running, minutesFollowTimer]);
+
   // Calculate billing preview
   useEffect(() => {
     const mins = parseInt(timeMinutes) || 0;
@@ -177,6 +187,7 @@ export default function TicketDetailPage() {
       else if (result?.emailed) toast.success('Emailed to the customer');
       setNoteText('');
       setTimeMinutes('');
+      setMinutesFollowTimer(true);
       setNewStatus('');
       setShowTimeEntry(false);
       refetch();
@@ -187,7 +198,7 @@ export default function TicketDetailPage() {
     }
   };
 
-  const quickTime = (mins: number) => setTimeMinutes(mins.toString());
+  const quickTime = (mins: number) => { setMinutesFollowTimer(false); setTimeMinutes(mins.toString()); };
 
   if (loading) return <LoadingSpinner />;
   if (!ticket) return <div className="text-surface-400 p-8">Ticket not found</div>;
@@ -405,10 +416,15 @@ export default function TicketDetailPage() {
                     {timerWidget}
                     {timerSettings.timerEnabled && timer.seconds > 0 && (
                       <button
-                        onClick={() => setTimeMinutes(String(timer.minutes))}
-                        className="text-xs px-2 py-1 rounded border border-brand-500/40 text-brand-300 hover:bg-brand-500/10"
+                        onClick={() => { setMinutesFollowTimer(true); setTimeMinutes(String(timer.minutes)); }}
+                        className={`text-xs px-2 py-1 rounded border ${
+                          minutesFollowTimer
+                            ? 'border-brand-500/40 text-brand-300 bg-brand-500/10'
+                            : 'border-surface-600 text-surface-400 hover:border-surface-500'
+                        }`}
+                        title="Keep the minutes field in step with the timer"
                       >
-                        Use {timer.minutes}m
+                        {minutesFollowTimer ? `Tracking ${timer.minutes}m` : `Use ${timer.minutes}m`}
                       </button>
                     )}
                   </div>
@@ -417,7 +433,8 @@ export default function TicketDetailPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-surface-400 mb-1">Minutes</label>
-                    <input type="number" value={timeMinutes} onChange={(e) => setTimeMinutes(e.target.value)}
+                    <input type="number" value={timeMinutes}
+                      onChange={(e) => { setMinutesFollowTimer(false); setTimeMinutes(e.target.value); }}
                       placeholder="0" min="1" />
                     <div className="flex gap-1 mt-1.5">
                       {[15, 30, 45, 60, 90, 120].map(m => (

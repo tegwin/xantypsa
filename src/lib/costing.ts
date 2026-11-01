@@ -132,3 +132,82 @@ export async function contractProfitability(
     incompleteCosting,
   };
 }
+
+export interface TimeAndMaterialsProfitability extends Profitability {
+  /** Average charged rate per hour across the period. */
+  averageRate: number;
+  /** Average burden (engineer cost) per hour across the period. */
+  averageBurden: number;
+}
+
+/**
+ * Profitability of time and materials work, which has no contract to absorb it.
+ *
+ * Revenue is what the time entries were billed at; cost is the burden rate of
+ * the engineer who logged them, snapshotted on the entry at the time.
+ *
+ * Worked example - one hour charged at 140 by an engineer whose burden rate is
+ * 40:
+ *
+ *   revenue 140 - burden 40 = 100 profit (71.4% margin)
+ *
+ * Non-billable work is excluded from revenue but its burden still counts, so
+ * free work shows up as the loss it is rather than disappearing.
+ */
+export async function timeAndMaterialsProfitability(
+  tenantId: string,
+  opts: { from?: Date; to?: Date; companyId?: string } = {}
+): Promise<TimeAndMaterialsProfitability> {
+  const dateFilter =
+    opts.from || opts.to
+      ? { date: { ...(opts.from ? { gte: opts.from } : {}), ...(opts.to ? { lte: opts.to } : {}) } }
+      : {};
+
+  const entries = await prisma.timeEntry.findMany({
+    where: {
+      tenantId,
+      chargeType: { in: ['tam', 'excluded', 'non_billable'] },
+      ...dateFilter,
+      ...(opts.companyId ? { ticket: { companyId: opts.companyId } } : {}),
+    },
+    select: { hours: true, internalCost: true, billedAmount: true },
+  });
+
+  const revenue = round2(entries.reduce((s, t) => s + (t.billedAmount ?? 0), 0));
+  const labourCost = round2(entries.reduce((s, t) => s + (t.internalCost ?? 0), 0));
+  const hours = round2(entries.reduce((s, t) => s + (t.hours ?? 0), 0));
+  const incompleteCosting = entries.some((t) => t.hours > 0 && !t.internalCost);
+
+  const profit = round2(revenue - labourCost);
+
+  return {
+    revenue,
+    labourCost,
+    serviceCost: 0, // T&M carries no recurring resold services
+    totalCost: labourCost,
+    profit,
+    marginPercent: revenue > 0 ? round2((profit / revenue) * 100) : 0,
+    hours,
+    incompleteCosting,
+    averageRate: hours > 0 ? round2(revenue / hours) : 0,
+    averageBurden: hours > 0 ? round2(labourCost / hours) : 0,
+  };
+}
+
+/**
+ * How many hours a contract can absorb before it stops making money.
+ *
+ * A 400/month contract with 100/month of resold services and an engineer
+ * burden of 40/hour breaks even at (400 - 100) / 40 = 7.5 hours.
+ * Returns null when the burden is unknown, rather than implying it is infinite.
+ */
+export function breakEvenHours(
+  revenue: number,
+  serviceCost: number,
+  burdenPerHour: number
+): number | null {
+  if (!burdenPerHour || burdenPerHour <= 0) return null;
+  const headroom = revenue - serviceCost;
+  if (headroom <= 0) return 0;
+  return round2(headroom / burdenPerHour);
+}
