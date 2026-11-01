@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { isClosedStatus } from '@/lib/ticketStatus';
 import { withTenant, jsonResponse, errorResponse } from '@/lib/api';
 
 export const GET = withTenant(async (req: NextRequest, session: any) => {
@@ -51,8 +52,9 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
 
   if (body.status !== undefined && body.status !== ticket.status) {
     data.status = body.status;
+    // Any status flagged as closed closes the ticket, whatever it is called.
     if (body.status === 'resolved') data.resolvedAt = new Date();
-    if (body.status === 'closed') data.closedAt = new Date();
+    if (await isClosedStatus(tenantId, body.status)) data.closedAt = new Date();
     if (!ticket.firstResponse && ['open', 'pending'].includes(body.status)) {
       data.firstResponse = new Date();
     }

@@ -323,9 +323,15 @@ export default function ServiceDeskSettingsPage() {
               ))}
             </div>
           </div>
-          <label className="flex items-center gap-2 text-sm text-surface-300 cursor-pointer">
-            <input type="checkbox" checked={statusForm.isClosed} onChange={e => setStatusForm(p => ({ ...p, isClosed: e.target.checked }))} />
-            Treat as closed (hidden from default ticket views)
+          <label className="flex items-start gap-2 text-sm text-surface-300 cursor-pointer">
+            <input type="checkbox" className="mt-1" checked={statusForm.isClosed} onChange={e => setStatusForm(p => ({ ...p, isClosed: e.target.checked }))} />
+            <span>
+              <span className="block">Treat as closed</span>
+              <span className="block text-xs text-surface-400">
+                The ticket counts as closed and drops out of the default views. You can have as
+                many closed statuses as you need, for example Closed, Cancelled and Duplicate.
+              </span>
+            </span>
           </label>
           <label className="flex items-center gap-2 text-sm text-surface-300 cursor-pointer">
             <input type="checkbox" checked={statusForm.isDefault} onChange={e => setStatusForm(p => ({ ...p, isDefault: e.target.checked }))} />

@@ -8,6 +8,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
+import { closedStatusSlugs } from '@/lib/ticketStatus';
 import { getPortalSession } from '@/lib/portal/session';
 import PortalHeader from '../PortalHeader';
 
@@ -42,8 +43,10 @@ export default async function PortalTicketsPage({ params }: { params: { slug: st
     },
   });
 
-  const open = tickets.filter((t) => !['resolved', 'closed'].includes(t.status));
-  const closed = tickets.filter((t) => ['resolved', 'closed'].includes(t.status));
+  // A tenant can define several closed statuses, so the flag decides, not the name.
+  const closedSlugs = await closedStatusSlugs(session.tenantId);
+  const open = tickets.filter((t) => !closedSlugs.includes(t.status));
+  const closed = tickets.filter((t) => closedSlugs.includes(t.status));
 
   const Row = ({ t }: { t: (typeof tickets)[number] }) => (
     <Link

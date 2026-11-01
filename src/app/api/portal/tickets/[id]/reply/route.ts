@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { closedStatusSlugs } from '@/lib/ticketStatus';
 import { getPortalSession } from '@/lib/portal/session';
 
 export const dynamic = 'force-dynamic';
@@ -23,11 +24,11 @@ export async function POST(req: NextRequest) {
   // found, rather than being edited.
   const ticket = await prisma.ticket.findFirst({
     where: { id: ticketId, tenantId: session.tenantId, companyId: session.company.id },
-    select: { id: true, status: true },
+    select: { id: true, status: true, tenantId: true },
   });
   if (!ticket) return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
 
-  if (['resolved', 'closed'].includes(ticket.status)) {
+  if ((await closedStatusSlugs(ticket.tenantId)).includes(ticket.status)) {
     return NextResponse.json(
       { error: 'This ticket is closed. Please raise a new one.' },
       { status: 400 }

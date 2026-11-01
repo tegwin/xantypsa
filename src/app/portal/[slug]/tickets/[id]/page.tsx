@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect, notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
+import { closedStatusSlugs } from '@/lib/ticketStatus';
 import { getPortalSession } from '@/lib/portal/session';
 import PortalHeader from '../../PortalHeader';
 import ReplyForm from './ReplyForm';
@@ -23,7 +24,7 @@ export default async function PortalTicketPage({
     where: { id: params.id, tenantId: session.tenantId, companyId: session.company.id },
     select: {
       id: true, ticketNumber: true, title: true, description: true,
-      status: true, priority: true, createdAt: true,
+      status: true, priority: true, createdAt: true, tenantId: true,
       notes: {
         // Internal notes are staff-only and must never reach the client.
         where: { isInternal: false },
@@ -38,7 +39,7 @@ export default async function PortalTicketPage({
 
   if (!ticket) notFound();
 
-  const closed = ['resolved', 'closed'].includes(ticket.status);
+  const closed = (await closedStatusSlugs(ticket.tenantId)).includes(ticket.status);
 
   return (
     <>
