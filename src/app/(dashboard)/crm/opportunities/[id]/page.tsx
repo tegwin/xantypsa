@@ -39,6 +39,7 @@ export default function OpportunityDetailPage() {
   const [companies, setCompanies] = useState<any[]>([]);
   const [contacts, setContacts] = useState<any[]>([]);
   const [owners, setOwners] = useState<any[]>([]);
+  const [required, setRequired] = useState<Record<string, boolean>>({});
 
   // Notes panel
   const [noteText, setNoteText] = useState('');
@@ -59,6 +60,8 @@ export default function OpportunityDetailPage() {
       .then(d => setCompanies(d.items || [])).catch(() => {});
     fetch('/api/users').then(r => r.json())
       .then(d => setOwners(d.items || [])).catch(() => {});
+    fetch('/api/settings/crm').then(r => r.json())
+      .then(d => setRequired(d.required || {})).catch(() => {});
   }, []);
 
   // Contacts and tickets both hang off the company on the deal.
@@ -362,7 +365,11 @@ export default function OpportunityDetailPage() {
                     const applicable = kind ? reasons.filter((r: any) => r.type === kind) : [];
                     if (!kind || applicable.length === 0) return <div />;
                     return (
-                      <Select label={kind === 'win' ? 'Win reason' : 'Loss reason'} value={noteReasonId}
+                      <Select label={
+                        (kind === 'win' ? required.winReason : required.lossReason)
+                          ? (kind === 'win' ? 'Win reason *' : 'Loss reason *')
+                          : (kind === 'win' ? 'Win reason' : 'Loss reason')
+                      } value={noteReasonId}
                         onChange={(e: any) => setNoteReasonId(e.target.value)}
                         options={[{ value: '', label: 'Not given' },
                           ...applicable.map((r: any) => ({ value: r.id, label: r.name }))]} />
@@ -561,7 +568,7 @@ export default function OpportunityDetailPage() {
       <Modal open={showWonModal} onClose={() => setShowWonModal(false)} title="Mark as won">
         <div className="space-y-4">
           {reasons.filter((r: any) => r.type === 'win').length > 0 && (
-            <Select label="Win reason" value={closeReasonId}
+            <Select label={required.winReason ? 'Win reason *' : 'Win reason'} value={closeReasonId}
               onChange={(e: any) => setCloseReasonId(e.target.value)}
               options={[{ value: '', label: 'Not given' },
                 ...reasons.filter((r: any) => r.type === 'win').map((r: any) => ({ value: r.id, label: r.name }))]} />
@@ -582,7 +589,8 @@ export default function OpportunityDetailPage() {
 
           <div className="flex justify-end gap-3">
             <Button variant="secondary" onClick={() => setShowWonModal(false)}>Cancel</Button>
-            <Button variant="primary" onClick={handleWon}>Mark as won</Button>
+            <Button variant="primary" onClick={handleWon}
+              disabled={required.winReason && !closeReasonId}>Mark as won</Button>
           </div>
         </div>
       </Modal>
@@ -591,7 +599,7 @@ export default function OpportunityDetailPage() {
         <div className="space-y-4">
           <p className="text-sm text-slate-300">Why was this opportunity lost?</p>
           {reasons.filter((r: any) => r.type === 'loss').length > 0 && (
-            <Select label="Loss reason" value={closeReasonId}
+            <Select label={required.lossReason ? 'Loss reason *' : 'Loss reason'} value={closeReasonId}
               onChange={(e: any) => setCloseReasonId(e.target.value)}
               options={[{ value: '', label: 'Not given' },
                 ...reasons.filter((r: any) => r.type === 'loss').map((r: any) => ({ value: r.id, label: r.name }))]} />
@@ -604,7 +612,8 @@ export default function OpportunityDetailPage() {
           />
           <div className="flex justify-end gap-3">
             <Button variant="secondary" onClick={() => setShowLostModal(false)}>Cancel</Button>
-            <Button variant="danger" onClick={handleLost}>Mark as Lost</Button>
+            <Button variant="danger" onClick={handleLost}
+              disabled={required.lossReason && !closeReasonId}>Mark as Lost</Button>
           </div>
         </div>
       </Modal>

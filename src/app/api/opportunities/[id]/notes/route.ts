@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withTenant, jsonResponse, errorResponse } from '@/lib/api';
+import { getCrmRequired, missingCloseReason } from '@/lib/crmRequired';
 
 function opportunityIdFrom(req: NextRequest) {
   const parts = req.nextUrl.pathname.split('/');
@@ -55,6 +56,16 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
     const stages = await prisma.pipelineStage.findMany({ where: { tenantId } });
     const from = stages.find((s) => s.slug === opportunity.stage);
     const to = stages.find((s) => s.slug === body.stage);
+
+    // Closing from the notes panel must obey the same rules as the Won and
+    // Lost buttons.
+    const outcome = to?.isWon ? 'won' : to?.isLost ? 'lost' : null;
+    const reasonProblem = missingCloseReason(
+      await getCrmRequired(tenantId),
+      outcome as 'won' | 'lost' | null,
+      body.reasonId ?? opportunity.reasonId,
+    );
+    if (reasonProblem) return errorResponse(reasonProblem);
 
     const data: any = { stage: body.stage };
 

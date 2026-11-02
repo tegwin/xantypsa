@@ -31,11 +31,17 @@ export default function OpportunitiesClient({ opportunities: initial, companies 
   const [tab, setTab] = useState("active");
   // The tenant's own pipeline. STAGES below is only the fallback.
   const [stageDefs, setStageDefs] = useState<any[]>([]);
+  // Which fields this tenant insists on, so the form can mark them.
+  const [required, setRequired] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetch("/api/pipeline-stages")
       .then(r => r.json())
       .then(d => setStageDefs((d.items || []).filter((x: any) => x.isActive)))
+      .catch(() => {});
+    fetch("/api/settings/crm")
+      .then(r => r.json())
+      .then(d => setRequired(d.required || {}))
       .catch(() => {});
   }, []);
 
@@ -66,6 +72,9 @@ export default function OpportunitiesClient({ opportunities: initial, companies 
     const opp = initial.find(d => d.id === oppId);
     if (opp && stageOf(opp) !== toStage) handleStageChange(oppId, toStage);
   });
+
+  // A star marks a field this tenant insists on.
+  const star = (field: string, label: string) => (required[field] ? `${label} *` : label);
 
   const stageList: { slug: string; name: string; isWon?: boolean; isLost?: boolean }[] =
     stageDefs.length > 0
@@ -274,15 +283,15 @@ export default function OpportunitiesClient({ opportunities: initial, companies 
           )}
 
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Value" type="number" value={form.value} onChange={update("value")} />
-            <Input label="Probability (%)" type="number" min="0" max="100" value={form.probability} onChange={update("probability")} />
+            <Input label={star('value', 'Value')} type="number" value={form.value} onChange={update("value")} />
+            <Input label={star('probability', 'Probability (%)')} type="number" min="0" max="100" value={form.probability} onChange={update("probability")} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Select label="Stage" value={form.stage} onChange={update("stage")} options={stageList.map(s => ({ value: s.slug, label: s.name }))} />
-            <Select label="Source" value={form.source} onChange={update("source")}
+            <Select label={star('source', 'Source')} value={form.source} onChange={update("source")}
               options={[{ value: "", label: "-- Select source --" }, ...SOURCES.map(s => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1).replace('-', ' ') }))]} />
           </div>
-          <Input label="Expected Close Date" type="date" value={form.expectedClose} onChange={update("expectedClose")} />
+          <Input label={star('expectedClose', 'Expected Close Date')} type="date" value={form.expectedClose} onChange={update("expectedClose")} />
           <Textarea label="Notes" value={form.notes} onChange={update("notes")} placeholder="Any additional notes..." />
         </form>
       </Modal>

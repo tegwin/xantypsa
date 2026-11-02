@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCrmRequired, missingFields, missingCloseReason } from '@/lib/crmRequired';
 import { opportunityDependencies, describeDependencies } from '@/lib/inUse';
 import { withTenant, jsonResponse, errorResponse } from '@/lib/api';
 
@@ -35,6 +36,27 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
 
   const opportunity = await prisma.opportunity.findFirst({ where: { id, tenantId: session.user.tenantId } });
   if (!opportunity) return errorResponse('Opportunity not found', 404);
+
+  // Validate the record as it will be after the change, so clearing a required
+  // field is caught too.
+  const required = await getCrmRequired(session.user.tenantId);
+  const after = { ...opportunity, ...body };
+  const missing = missingFields(required, after);
+  if (missing) return errorResponse(missing);
+
+  // A reason may be required at the moment a deal closes.
+  if (body.stage !== undefined && body.stage !== opportunity.stage) {
+    const stage = await prisma.pipelineStage.findFirst({
+      where: { tenantId: session.user.tenantId, slug: body.stage },
+    });
+    const outcome = stage?.isWon ? 'won' : stage?.isLost ? 'lost' : null;
+    const reasonProblem = missingCloseReason(
+      required,
+      outcome as 'won' | 'lost' | null,
+      body.reasonId ?? opportunity.reasonId,
+    );
+    if (reasonProblem) return errorResponse(reasonProblem);
+  }
 
   const updated = await prisma.opportunity.update({
     where: { id },

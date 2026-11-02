@@ -23,20 +23,34 @@ export default function CrmSettingsPage() {
   const [stageForm, setStageForm] = useState<any>(emptyStage);
   const [saving, setSaving] = useState(false);
 
+  const [required, setRequired] = useState<Record<string, boolean>>({});
   const [reasonName, setReasonName] = useState('');
   const [reasonType, setReasonType] = useState<'win' | 'loss'>('loss');
 
   const load = async () => {
-    const [s, r] = await Promise.all([
+    const [s, r, req] = await Promise.all([
       fetch('/api/pipeline-stages').then(x => x.json()),
       fetch('/api/win-loss-reasons').then(x => x.json()),
+      fetch('/api/settings/crm').then(x => x.json()),
     ]);
     setStages(s.items || []);
     setReasons(r.items || []);
+    setRequired(req.required || {});
     setLoading(false);
   };
 
   useEffect(() => { load(); }, []);
+
+  const saveRequired = async (field: string, value: boolean) => {
+    const next = { ...required, [field]: value };
+    setRequired(next);
+    await fetch('/api/settings/crm', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ required: { [field]: value } }),
+    });
+    toast.success('Saved');
+  };
 
   const openNewStage = () => { setEditStageId(null); setStageForm(emptyStage); setShowStage(true); };
   const openEditStage = (s: Stage) => {
@@ -172,6 +186,60 @@ export default function CrmSettingsPage() {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Required fields */}
+      <div className="glass-panel p-6 mb-6">
+        <div className="mb-4">
+          <h2 className="text-white font-semibold">Required on an opportunity</h2>
+          <p className="text-sm text-surface-400">
+            All optional by default, because a new deal often starts as little more than a
+            name. Tick what your process insists on. Enforced on save, not just in the form,
+            so the API cannot be used to get around it.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {[
+            { key: 'value', label: 'Value', hint: 'Must be more than zero' },
+            { key: 'probability', label: 'Probability' },
+            { key: 'stageSource', label: 'Source', field: 'source' },
+            { key: 'expectedClose', label: 'Expected close date' },
+            { key: 'company', label: 'Company' },
+            { key: 'contact', label: 'Contact' },
+          ].map(f => {
+            const field = (f as any).field || f.key;
+            return (
+              <label key={field} className="flex items-start gap-2 p-2 rounded hover:bg-white/5 cursor-pointer">
+                <input type="checkbox" className="mt-1" checked={!!required[field]}
+                  onChange={e => saveRequired(field, e.target.checked)} />
+                <span>
+                  <span className="block text-sm text-surface-200">{f.label}</span>
+                  {(f as any).hint && <span className="block text-xs text-surface-400">{(f as any).hint}</span>}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-surface-700/50 grid grid-cols-1 md:grid-cols-2 gap-2">
+          <label className="flex items-start gap-2 p-2 rounded hover:bg-white/5 cursor-pointer">
+            <input type="checkbox" className="mt-1" checked={!!required.winReason}
+              onChange={e => saveRequired('winReason', e.target.checked)} />
+            <span>
+              <span className="block text-sm text-surface-200">A reason when marking a deal won</span>
+              <span className="block text-xs text-surface-400">Define win reasons below first.</span>
+            </span>
+          </label>
+          <label className="flex items-start gap-2 p-2 rounded hover:bg-white/5 cursor-pointer">
+            <input type="checkbox" className="mt-1" checked={!!required.lossReason}
+              onChange={e => saveRequired('lossReason', e.target.checked)} />
+            <span>
+              <span className="block text-sm text-surface-200">A reason when marking a deal lost</span>
+              <span className="block text-xs text-surface-400">Define loss reasons below first.</span>
+            </span>
+          </label>
+        </div>
       </div>
 
       {/* Win and loss reasons */}

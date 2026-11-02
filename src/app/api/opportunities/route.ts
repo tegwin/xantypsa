@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCrmRequired, missingFields } from '@/lib/crmRequired';
 import { withTenant, jsonResponse, errorResponse, parseSearchParams } from '@/lib/api';
 
 export const GET = withTenant(async (req: NextRequest, session: any) => {
@@ -33,6 +34,12 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
 export const POST = withTenant(async (req: NextRequest, session: any) => {
   const body = await req.json();
   if (!body.title) return errorResponse('Title is required');
+
+  // Whatever the business has decided it needs, enforced here as well as in
+  // the form so the API cannot be used to get around it.
+  const required = await getCrmRequired(session.user.tenantId);
+  const missing = missingFields(required, body);
+  if (missing) return errorResponse(missing);
 
   const opportunity = await prisma.opportunity.create({
     data: {
