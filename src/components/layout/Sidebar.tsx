@@ -63,13 +63,20 @@ const NAV_ITEMS: NavItem[] = [
     icon: <Users className="h-4.5 w-4.5" />,
     module: 'crm',
     children: [
-      // Contacts and prospects belong to a company, so they sit under it.
+      // Customers and prospects are kept apart, each with their own contacts,
+      // so leads that never convert do not clog up the customer lists.
       {
         label: 'Companies',
         href: '/crm/companies',
         children: [
           { label: 'Contacts', href: '/crm/contacts' },
-          { label: 'Prospects', href: '/crm/prospects' },
+        ],
+      },
+      {
+        label: 'Prospects',
+        href: '/crm/prospects',
+        children: [
+          { label: 'Prospect Contacts', href: '/crm/prospects/contacts' },
         ],
       },
       { label: 'Opportunities', href: '/crm/opportunities' },

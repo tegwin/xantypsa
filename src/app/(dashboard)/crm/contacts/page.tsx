@@ -8,13 +8,21 @@ export default async function ContactsPage() {
 
   const [contacts, companies] = await Promise.all([
     prisma.contact.findMany({
-      where: { tenantId: session.user.tenantId },
+      // Prospect contacts have their own list. Keeping them out of here means
+      // leads that never convert do not clog up the customer contacts.
+      where: {
+        tenantId: session.user.tenantId,
+        OR: [
+          { company: { type: { not: 'prospect' } } },
+          { companyId: null },
+        ],
+      },
       include: { company: { select: { id: true, name: true } } },
       orderBy: { createdAt: 'desc' },
       take: 100,
     }),
     prisma.company.findMany({
-      where: { tenantId: session.user.tenantId, isActive: true },
+      where: { tenantId: session.user.tenantId, isActive: true, type: { not: 'prospect' } },
       orderBy: { name: 'asc' },
       select: { id: true, name: true },
     }),

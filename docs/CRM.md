@@ -5,10 +5,19 @@
 A prospect and a customer are the same record with a different type, so nothing
 is copied or re-keyed when one becomes the other.
 
-- **Companies** lists customers, vendors and partners.
-- **Prospects**, under Companies, lists only companies of type prospect, with
-  their open opportunities and total pipeline value.
-- **Contacts**, also under Companies, lists people across every company.
+Customers and prospects are kept in separate places, each with their own
+contacts, so leads that never convert do not clog up the lists of people you
+actually do business with.
+
+| Area | Holds |
+|---|---|
+| **Companies** | Customers, vendors and partners |
+| **Companies, Contacts** | People at those companies |
+| **Prospects** | Companies still of type prospect, with their open opportunities and pipeline value |
+| **Prospects, Prospect Contacts** | People at those prospects |
+
+A contact belongs to its company, so converting a prospect moves its people
+into the main contact list at the same moment. Nothing is re-keyed.
 
 ### Where a prospect comes from
 
