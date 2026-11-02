@@ -5,6 +5,7 @@ import { useApi, apiPatch, apiPost } from '@/hooks/useApi';
 import { useSession } from '@/components/SessionProvider';
 import Link from 'next/link';
 import { useTicketTimer } from '@/hooks/useTicketTimer';
+import { useReferenceFormat } from '@/hooks/useReferenceFormat';
 import { PageHeader, StatusBadge, LoadingSpinner, Avatar, Badge, Modal, Input, Textarea, Select } from '@/components/ui';
 import { formatDate, formatRelativeTime, formatCurrency } from '@/lib/utils';
 import { useRouter, useParams } from 'next/navigation';
@@ -47,6 +48,7 @@ export default function TicketDetailPage() {
   const [contacts, setContacts] = useState<{ id: string; name: string }[]>([]);
   const [contractOptions, setContractOptions] = useState<{ id: string; name: string }[]>([]);
 
+  const { ref } = useReferenceFormat();
   const [timerSettings, setTimerSettings] = useState({
     timerEnabled: true,
     timerOnlyOnTimeEntry: false,
@@ -325,7 +327,7 @@ export default function TicketDetailPage() {
 
   return (
     <div className="animate-fadeIn">
-      <PageHeader title={`${ticket.ticketNumber}`} subtitle={ticket.title}>
+      <PageHeader title={ticket.title} subtitle={ref('ticket', ticket.ticketNumber)}>
         <button onClick={() => router.push('/service-desk/tickets')} className="btn-secondary">← Back</button>
       </PageHeader>
 

@@ -52,3 +52,37 @@ Nothing in the product compares against a status literally called "closed".
 Edit Ticket in the action bar opens the title, description, company, contact,
 contract, priority, type, category and due date. Changing the company reloads
 the contact and contract lists, since both belong to it.
+
+## References
+
+Every record quotes the same way: a prefix, a separator and a zero-padded
+number.
+
+| Record | Default |
+|---|---|
+| Ticket | `TKT-00042` |
+| Quote | `QTE-00042` |
+| Invoice | `INV-00042` |
+| Contract | `CON-00042` |
+| Project | `PRJ-00042` |
+| Opportunity | `OPP-00042` |
+
+Under Settings, Service Desk, Ticket reference you can set the ticket prefix to
+whatever you use, for example `SON`, giving `SON-00042`. The separator and the
+number of digits are shared across every record type, so the system stays
+uniform rather than each area reading differently.
+
+Changing a prefix changes how everything displays at once. Nothing is
+renumbered: the underlying number never moves.
+
+### Starting the numbering somewhere else
+
+**Start numbering at** lets an MSP carry on the numbering from the PSA it is
+leaving. The next ticket takes whichever is higher: the start you set, or one
+above the highest already used. Existing tickets are never renumbered.
+
+### Where the reference appears
+
+Detail pages read the same way throughout: the record's own name as the
+heading, its reference underneath. A ticket shows its subject with
+`SON-00042` below it, exactly as a quote shows its title with `QTE-00002`.

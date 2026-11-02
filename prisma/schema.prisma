@@ -79,9 +79,9 @@ model Tenant {
   pipelineStages     PipelineStage[]
   winLossReasons     WinLossReason[]
   opportunityNotes   OpportunityNote[]
+  contractHourBlocks ContractHourBlock[]
 
   @@map("tenants")
-  contractHourBlocks ContractHourBlock[]
 }
 
 // ============================================================
@@ -415,25 +415,27 @@ model Site {
 }
 
 model Opportunity {
-  id            String    @id @default(cuid())
-  tenantId      String
-  companyId     String?
-  contactId     String?
-  ownerId       String
-  title         String
-  value         Float     @default(0)
-  currency      String    @default("GBP")
-  stage         String    @default("lead") // lead, qualified, proposal, negotiation, won, lost
-  probability   Int       @default(0) // 0-100
-  source        String?
-  notes         String?
-  expectedClose DateTime?
-  closedAt      DateTime?
-  lostReason    String? // free text, kept for opportunities closed before reasons existed
-  reasonId      String? // the chosen win or loss reason, when the tenant defines any
-  customData    Json      @default("{}")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  tenantId          String
+  /// Per-tenant sequence, shown with the tenant's chosen prefix.
+  opportunityNumber Int?
+  companyId         String?
+  contactId         String?
+  ownerId           String
+  title             String
+  value             Float     @default(0)
+  currency          String    @default("GBP")
+  stage             String    @default("lead") // lead, qualified, proposal, negotiation, won, lost
+  probability       Int       @default(0) // 0-100
+  source            String?
+  notes             String?
+  expectedClose     DateTime?
+  closedAt          DateTime?
+  lostReason        String? // free text, kept for opportunities closed before reasons existed
+  reasonId          String? // the chosen win or loss reason, when the tenant defines any
+  customData        Json      @default("{}")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   company          Company?          @relation(fields: [companyId], references: [id])
@@ -619,14 +621,14 @@ model Contract {
   alertThreshold Float? // Percentage (e.g. 80) to alert when the block is running low
 
   /// "one_off" for a single block, "monthly" for one raised every month.
-  blockMode       String? @default("one_off")
+  blockMode           String? @default("one_off")
   /// What an hour in the block is sold at. Hours times rate is what is billed.
-  blockHourlyRate Float?
+  blockHourlyRate     Float?
   /// Hours raised each period when blockMode is monthly.
-  hoursPerPeriod  Float?
+  hoursPerPeriod      Float?
   /// Whether unused hours roll into the next period, and the most that may.
-  carryOver         Boolean @default(false)
-  carryOverMaxHours Float?
+  carryOver           Boolean @default(false)
+  carryOverMaxHours   Float?
   /// Raise another block automatically once the balance runs low.
   autoTopUp           Boolean @default(false)
   topUpThresholdHours Float?
@@ -877,6 +879,8 @@ model Payment {
 model Project {
   id            String    @id @default(cuid())
   tenantId      String
+  /// Per-tenant sequence, shown with the tenant's chosen prefix.
+  projectNumber Int?
   companyId     String?
   managerId     String
   name          String
@@ -1707,7 +1711,6 @@ model OpportunityNote {
   @@map("opportunity_notes")
 }
 
-
 /// One block of prepaid hours.
 ///
 /// A contract can have many: the one-off block it was sold with, a block raised
@@ -1715,25 +1718,25 @@ model OpportunityNote {
 /// the period before. Keeping them apart is what makes carry-over, expiry and
 /// "what did we actually bill them" answerable.
 model ContractHourBlock {
-  id         String   @id @default(cuid())
+  id         String @id @default(cuid())
   tenantId   String
   contractId String
 
   /// How the block came about: one_off, monthly, top_up or carry_over.
-  source     String   @default("one_off")
+  source     String @default("one_off")
   hours      Float
-  hoursUsed  Float    @default(0)
+  hoursUsed  Float  @default(0)
   /// Rate the hours were sold at, and the resulting charge. A carried over
   /// block is worth nothing new, so its amount is zero.
   hourlyRate Float?
-  amount     Float    @default(0)
+  amount     Float  @default(0)
 
   /// The period a monthly block belongs to. Null on a one-off block.
   periodStart DateTime?
   periodEnd   DateTime?
 
   /// Set once the block has been put on an invoice, so it is not billed twice.
-  invoiceId  String?
+  invoiceId     String?
   /// Carried-over hours point back at the block they came from.
   carriedFromId String?
   /// Free text, for example why a top-up was agreed.

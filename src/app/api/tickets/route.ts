@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withTenant, jsonResponse, errorResponse, parseSearchParams } from '@/lib/api';
 import { getNextNumber } from '@/lib/server-utils';
+import { nextSequenceNumber } from '@/lib/references';
 import { sendTicketNotification } from '@/lib/ticketEmail';
 
 export const GET = withTenant(async (req: NextRequest, session: any) => {
@@ -52,7 +53,14 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
     orderBy: { ticketNumber: 'desc' },
     select: { ticketNumber: true },
   });
-  const ticketNumber = (lastTicket?.ticketNumber || 0) + 1;
+  // Carry on from the highest used, but never below the start the tenant set,
+  // so an MSP can continue the numbering it had in its previous PSA.
+  const tenantForNumbering = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { settings: true },
+  });
+  const startAt = (tenantForNumbering?.settings as any)?.ticketStartNumber;
+  const ticketNumber = nextSequenceNumber(lastTicket?.ticketNumber, startAt);
 
   const ticket = await prisma.ticket.create({
     data: {

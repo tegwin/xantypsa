@@ -323,7 +323,7 @@ export default function ContractDetailPage() {
 
   return (
     <div className="animate-fadeIn">
-      <PageHeader title={contract.contractNumber} subtitle={contract.name}>
+      <PageHeader title={contract.name} subtitle={contract.contractNumber}>
         <div className="flex gap-2 flex-wrap">
           {/* The contract form lives on the list page, so editing opens it
               there rather than keeping a second copy of every field in step. */}

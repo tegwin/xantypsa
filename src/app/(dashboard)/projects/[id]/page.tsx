@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
+import { useReferenceFormat } from '@/hooks/useReferenceFormat';
 import { useApi, apiPatch, apiPost, apiDelete } from '@/hooks/useApi';
 import { useBoardDnd } from '@/components/board/useBoardDnd';
 import {
@@ -79,6 +80,7 @@ const GANTT_STATUS_COLORS: Record<string, string> = {
 export default function ProjectDetailPage() {
   const router = useRouter();
   const { id } = useParams();
+  const { ref } = useReferenceFormat();
   const { data: project, loading, refetch } = useApi<any>(`/api/projects/${id}`);
   const { data: usersData } = useApi<any>('/api/users');
   const [activeView, setActiveView] = useState<ViewTab>('board');
@@ -238,7 +240,10 @@ export default function ProjectDetailPage() {
       {/* ============================================================ */}
       {/* PROJECT HEADER */}
       {/* ============================================================ */}
-      <PageHeader title={project.name} subtitle={project.company?.name || 'Internal Project'}>
+      <PageHeader
+        title={project.name}
+        subtitle={[ref('project', project.projectNumber), project.company?.name || 'Internal project'].filter(Boolean).join(' - ')}
+      >
         <div className="flex gap-2 flex-wrap">
           {project.status === 'planning' && <button onClick={() => updateProjectStatus('active')} className="btn-primary">Start Project</button>}
           {project.status === 'active' && (

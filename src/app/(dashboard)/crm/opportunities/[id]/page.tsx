@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useReferenceFormat } from '@/hooks/useReferenceFormat';
 import { useApi, apiPatch, apiPost, apiDelete } from '@/hooks/useApi';
 import { PageHeader, StatusBadge, LoadingSpinner, Modal, Input, Select, Textarea, Button, Badge } from '@/components/ui';
 import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/utils';
@@ -20,6 +21,7 @@ const SOURCES = ['web', 'referral', 'cold-call', 'email', 'event', 'partner', 'o
 export default function OpportunityDetailPage() {
   const router = useRouter();
   const { id } = useParams();
+  const { ref } = useReferenceFormat();
   const { data: opp, loading, refetch } = useApi<any>(`/api/opportunities/${id}`);
 
   const [editing, setEditing] = useState(false);
@@ -222,7 +224,10 @@ export default function OpportunityDetailPage() {
 
   return (
     <div className="animate-fadeIn">
-      <PageHeader title={editing ? 'Edit Opportunity' : opp.title} subtitle={opp.company?.name || 'No company'}>
+      <PageHeader
+        title={editing ? 'Edit Opportunity' : opp.title}
+        subtitle={[ref('opportunity', opp.opportunityNumber), opp.company?.name].filter(Boolean).join(' - ') || 'No company'}
+      >
         <div className="flex gap-2 flex-wrap">
           {!editing && !['won', 'lost'].includes(opp.stage) && (
             <>

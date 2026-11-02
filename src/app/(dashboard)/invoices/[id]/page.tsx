@@ -83,7 +83,10 @@ export default function InvoiceDetailPage() {
 
   return (
     <div className="animate-fadeIn">
-      <PageHeader title={invoice.invoiceNumber} subtitle={`Invoice for ${invoice.company?.name || 'Unknown'}`}>
+      <PageHeader
+        title={`Invoice for ${invoice.company?.name || 'Unknown'}`}
+        subtitle={invoice.invoiceNumber}
+      >
         <div className="flex gap-2">
           {invoice.status === 'draft' && <button onClick={() => updateStatus('sent')} className="btn-primary">Mark as Sent</button>}
           {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (

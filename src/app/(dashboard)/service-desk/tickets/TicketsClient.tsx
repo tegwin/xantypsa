@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { useReferenceFormat } from '@/hooks/useReferenceFormat';
 import { useRouter } from "next/navigation";
 import { PageHeader, Button, DataTable, Badge, SearchInput, Modal, Input, Select, Textarea, Tabs } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
@@ -22,6 +23,7 @@ export default function TicketsClient({ tickets: initial, queues, agents, compan
   customStatuses?: { slug: string; name: string; isClosed: boolean; color: string }[];
 }) {
   const router = useRouter();
+  const { ref } = useReferenceFormat();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [queueFilter, setQueueFilter] = useState("all");
@@ -77,7 +79,9 @@ export default function TicketsClient({ tickets: initial, queues, agents, compan
   const update = (f: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setForm((p) => ({ ...p, [f]: e.target.value }));
 
   const columns = [
-    { key: "id", header: "#", render: (t: Ticket) => <span className="text-xs font-mono text-surface-500">#{t.ticketNumber}</span>, className: "w-20" },
+    { key: "id", header: "Reference", render: (t: Ticket) => (
+      <span className="text-xs font-mono text-surface-400">{ref('ticket', t.ticketNumber)}</span>
+    ), className: "w-28" },
     { key: "title", header: "Subject", render: (t: Ticket) => (
       <div><p className="font-medium text-surface-100 truncate max-w-xs">{t.title}</p>
         <p className="text-xs text-surface-500">{t.company}{t.contact ? ` · ${t.contact}` : ""}</p></div>

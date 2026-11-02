@@ -27,6 +27,10 @@ export default function ServiceDeskSettingsPage() {
   const [queueForm, setQueueForm] = useState({ name: '', description: '', isDefault: false });
 
   const [saving, setSaving] = useState(false);
+  const [ref, setRef] = useState<any>({
+    prefixes: { ticket: 'TKT' }, padding: 5, separator: '-',
+    ticketStartNumber: null, highestTicketNumber: 0,
+  });
   const [timer, setTimer] = useState({
     timerEnabled: true,
     timerOnlyOnTimeEntry: false,
@@ -36,9 +40,11 @@ export default function ServiceDeskSettingsPage() {
   useEffect(() => {
     Promise.all([
       fetch('/api/settings/service-desk').then(r => r.json()),
+      fetch('/api/settings/references').then(r => r.json()),
       fetch('/api/ticket-statuses').then(r => r.json()),
       fetch('/api/ticket-queues').then(r => r.json()),
-    ]).then(([sdSettings, statusData, queueData]) => {
+    ]).then(([sdSettings, refSettings, statusData, queueData]) => {
+      setRef(refSettings);
       setBillingMode(sdSettings.billingMode || 'anytime');
       setTimer({
         timerEnabled: sdSettings.timerEnabled ?? true,
@@ -60,6 +66,19 @@ export default function ServiceDeskSettingsPage() {
       body: JSON.stringify({ billingMode: mode }),
     });
     toast.success(`Billing mode set to: ${mode === 'anytime' ? 'Bill anytime' : 'Bill on close'}`);
+  };
+
+  // === Ticket reference ===
+  const saveRef = async (patch: any) => {
+    const res = await fetch('/api/settings/references', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    });
+    const data = await res.json();
+    if (!res.ok) { toast.error(data.error || 'Could not save'); return; }
+    setRef((r: any) => ({ ...r, ...data }));
+    toast.success('Ticket reference saved');
   };
 
   // === Timer ===
@@ -187,6 +206,66 @@ export default function ServiceDeskSettingsPage() {
             </div>
             <p className="text-xs text-surface-400">Time entries only become available for invoicing once the ticket is closed.</p>
           </button>
+        </div>
+      </div>
+
+      {/* === TICKET REFERENCE === */}
+      <div className="glass-panel p-6">
+        <div className="mb-4">
+          <h2 className="text-white font-semibold">Ticket reference</h2>
+          <p className="text-sm text-surface-400">
+            How a ticket reads when you quote it. The separator and the number of digits
+            are shared by every record type, so the whole system stays uniform.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <div>
+            <label className="label" htmlFor="ticket-prefix">Prefix</label>
+            <input id="ticket-prefix" className="input w-full" maxLength={8}
+              value={ref.prefixes?.ticket ?? ''}
+              onChange={e => setRef({ ...ref, prefixes: { ...ref.prefixes, ticket: e.target.value.toUpperCase() } })}
+              onBlur={e => saveRef({ prefixes: { ticket: e.target.value.toUpperCase() } })}
+              placeholder="SON" />
+          </div>
+          <div>
+            <label className="label" htmlFor="ticket-separator">Separator</label>
+            <input id="ticket-separator" className="input w-full" maxLength={2} value={ref.separator ?? '-'}
+              onChange={e => setRef({ ...ref, separator: e.target.value })}
+              onBlur={e => saveRef({ separator: e.target.value })} />
+          </div>
+          <div>
+            <label className="label" htmlFor="ticket-padding">Digits</label>
+            <input id="ticket-padding" className="input w-full" type="number" min={0} max={12}
+              value={ref.padding ?? 5}
+              onChange={e => setRef({ ...ref, padding: parseInt(e.target.value) || 0 })}
+              onBlur={e => saveRef({ padding: parseInt(e.target.value) || 0 })} />
+          </div>
+          <div>
+            <span className="label block">Looks like</span>
+            <p className="text-lg font-mono text-white">
+              {(ref.prefixes?.ticket
+                ? `${ref.prefixes.ticket}${ref.separator ?? '-'}`
+                : '') + String(42).padStart(Math.max(0, Math.min(12, ref.padding ?? 5)), '0')}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-surface-700/50">
+          <label className="label" htmlFor="ticket-start">Start numbering at</label>
+          <div className="flex flex-wrap items-center gap-3">
+            <input id="ticket-start" className="input w-40" type="number" min={1}
+              value={ref.ticketStartNumber ?? ''}
+              onChange={e => setRef({ ...ref, ticketStartNumber: e.target.value })}
+              onBlur={e => saveRef({ ticketStartNumber: e.target.value })}
+              placeholder="1" />
+            <p className="text-xs text-surface-400">
+              For carrying on the numbering from a previous PSA. The next ticket takes
+              whichever is higher: this, or one above the highest already used
+              {typeof ref.highestTicketNumber === 'number' ? ` (${ref.highestTicketNumber})` : ''}.
+              Existing tickets are never renumbered.
+            </p>
+          </div>
         </div>
       </div>
 
