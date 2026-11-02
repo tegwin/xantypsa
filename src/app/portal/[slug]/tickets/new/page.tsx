@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { prisma } from '@/lib/prisma';
 import { getPortalAccess } from '@/lib/portal/access';
 import { getPortalSession } from '@/lib/portal/session';
 import PortalHeader from '../../PortalHeader';
@@ -13,6 +14,21 @@ export default async function NewPortalTicketPage({ params }: { params: { slug: 
   }
 
   const access = await getPortalAccess(session.contact.id, session.tenantId);
+  if (!access.canCreateTickets) redirect(`/portal/${params.slug}/home`);
+
+  // Colleagues to raise on behalf of. Only fetched for somebody allowed to,
+  // so the list is never sent to a client who cannot use it.
+  const colleagues = access.canRaiseForOthers
+    ? await prisma.contact.findMany({
+        where: {
+          tenantId: session.tenantId,
+          companyId: session.company.id,
+          isActive: true,
+        },
+        select: { id: true, firstName: true, lastName: true, email: true },
+        orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+      })
+    : [];
 
   return (
     <>
@@ -22,7 +38,14 @@ export default async function NewPortalTicketPage({ params }: { params: { slug: 
         <p className="mt-1 text-sm text-slate-400">
           Tell us what is wrong and the support team will pick it up.
         </p>
-        <NewTicketForm slug={params.slug} />
+        <NewTicketForm
+          slug={params.slug}
+          meId={session.contact.id}
+          colleagues={colleagues.map((c) => ({
+            id: c.id,
+            name: [c.firstName, c.lastName].filter(Boolean).join(' ') || c.email || 'Unnamed',
+          }))}
+        />
       </div>
     </>
   );

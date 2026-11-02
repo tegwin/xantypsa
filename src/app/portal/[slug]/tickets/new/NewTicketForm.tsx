@@ -10,9 +10,23 @@ const PRIORITIES = [
   { value: 'critical', label: 'Critical - the business is stopped' },
 ];
 
-export default function NewTicketForm({ slug }: { slug: string }) {
+export default function NewTicketForm({
+  slug,
+  meId,
+  colleagues = [],
+}: {
+  slug: string;
+  meId?: string;
+  /** Empty unless this person may raise on somebody else's behalf. */
+  colleagues?: { id: string; name: string }[];
+}) {
   const router = useRouter();
-  const [form, setForm] = useState({ title: '', description: '', priority: 'medium' });
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    priority: 'medium',
+    onBehalfOfContactId: '',
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,6 +98,31 @@ export default function NewTicketForm({ slug }: { slug: string }) {
           ))}
         </select>
       </div>
+
+      {/* Only shown to somebody allowed to raise for a colleague, which needs
+          sight of the whole company's tickets so they can follow it afterwards. */}
+      {colleagues.length > 1 && (
+        <div>
+          <label htmlFor="onBehalfOf" className="mb-1.5 block text-sm text-slate-300">
+            Who is this for?
+          </label>
+          <select
+            id="onBehalfOf"
+            value={form.onBehalfOfContactId || meId || ''}
+            onChange={(e) => setForm({ ...form, onBehalfOfContactId: e.target.value })}
+            className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2.5 text-sm text-white"
+          >
+            {colleagues.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.id === meId ? `${c.name} (me)` : c.name}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-slate-500">
+            The ticket is raised against this person, so updates go to them.
+          </p>
+        </div>
+      )}
 
       {error && <p className="text-sm text-red-400">{error}</p>}
 
