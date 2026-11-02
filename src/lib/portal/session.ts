@@ -14,7 +14,17 @@ import crypto from 'crypto';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 
-export const PORTAL_COOKIE = 'xantypsa_portal';
+/**
+ * Deliberately a new name.
+ *
+ * The original cookie was scoped to /portal, so it never reached /api/portal
+ * and every action answered "not signed in". Widening the path left browsers
+ * holding two cookies of the same name at different paths, and the one the
+ * browser picks is not something we control. A new name sidesteps the clash
+ * entirely; the old one is expired explicitly in middleware.
+ */
+export const PORTAL_COOKIE = 'xantypsa_portal_v2';
+export const LEGACY_PORTAL_COOKIE = 'xantypsa_portal';
 
 /** Long enough to be useful, short enough that a shared laptop is not a breach. */
 const TTL_SECONDS = 60 * 60 * 12;

@@ -1,7 +1,8 @@
 import type { NextRequest } from 'next/server';
 import { updateSession } from '@/lib/auth/middleware';
 
-const PORTAL_COOKIE = 'xantypsa_portal';
+const PORTAL_COOKIE = 'xantypsa_portal_v2';
+const LEGACY_PORTAL_COOKIE = 'xantypsa_portal';
 
 export async function middleware(request: NextRequest) {
   // Refreshes the Supabase session cookie and enforces the public allow-list.
@@ -11,19 +12,18 @@ export async function middleware(request: NextRequest) {
   // so they never reach /api/portal and every action answers "not signed in".
   // Re-issuing on any portal page repairs a stale cookie without the client
   // having to sign in again.
-  const portalCookie = request.cookies.get(PORTAL_COOKIE)?.value;
-  if (portalCookie && request.nextUrl.pathname.startsWith('/portal/')) {
-    // Expire the legacy one explicitly. Two cookies of the same name with
-    // different paths both get sent to /portal, and the browser picks one,
-    // which makes the failure look intermittent.
-    res.cookies.set(PORTAL_COOKIE, '', { path: '/portal', maxAge: 0 });
-
-    res.cookies.set(PORTAL_COOKIE, portalCookie, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-    });
+  // Retire the old cookie wherever it is still held. Appended as raw headers
+  // because NextResponse.cookies keys by name, so setting the same name twice
+  // keeps only the last one and the expiry would silently never be sent.
+  if (request.cookies.get(LEGACY_PORTAL_COOKIE)) {
+    for (const path of ['/portal', '/']) {
+      res.headers.append(
+        'set-cookie',
+        `${LEGACY_PORTAL_COOKIE}=; Path=${path}; Max-Age=0; HttpOnly; SameSite=Lax${
+          process.env.NODE_ENV === 'production' ? '; Secure' : ''
+        }`,
+      );
+    }
   }
 
   return res;
