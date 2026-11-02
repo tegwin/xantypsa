@@ -58,23 +58,39 @@ export async function createRecurringInvoiceForContract(opts: {
     };
   });
 
-  // A pre-pay contract has no items: it is priced by its block. The line must
-  // read as the block was sold, 10 hours at 250, not a lump of 2,500 at
-  // quantity one.
+  // A pre-pay contract is billed by its blocks, one line each, and only the
+  // blocks that have not been invoiced yet. Billing the contract's running
+  // total would re-charge every block each time a new one was added.
+  let billedBlockIds: string[] = [];
   if (lineItems.length === 0 && contract.type === 'prepay_hours') {
-    const hours =
-      (contract.blockMode === 'monthly' ? contract.hoursPerPeriod : contract.totalHours) || 0;
-    const rate = contract.blockHourlyRate || (hours > 0 ? (contract.value || 0) / hours : 0);
-    const net = round2(hours * rate);
-    lineItems.push({
-      description: `${contract.name} - ${hours} hours at ${rate.toFixed(2)} per hour`,
-      quantity: hours,
-      unitPrice: rate,
-      taxRate: 20,
-      discount: 0,
-      total: round2(net * 1.2),
-      sortOrder: 0,
-      productId: undefined,
+    const unbilled = await prisma.contractHourBlock.findMany({
+      where: { contractId, tenantId, invoiceId: null, amount: { gt: 0 } },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (unbilled.length === 0) {
+      throw new Error('Every block on this contract has already been invoiced.');
+    }
+
+    billedBlockIds = unbilled.map((b) => b.id);
+    unbilled.forEach((b, i) => {
+      const rate = b.hourlyRate ?? 0;
+      const net = round2(b.hours * rate);
+      const period = b.periodStart
+        ? ` ${b.periodStart.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}`
+        : '';
+      lineItems.push({
+        description:
+          `${contract.name}${period}${b.source === 'top_up' ? ' top-up' : ''}`
+          + ` - ${b.hours} hours at ${rate.toFixed(2)} per hour`,
+        quantity: b.hours,
+        unitPrice: rate,
+        taxRate: 20,
+        discount: 0,
+        total: round2(net * 1.2),
+        sortOrder: i,
+        productId: undefined,
+      });
     });
   }
 
@@ -132,11 +148,23 @@ export async function createRecurringInvoiceForContract(opts: {
     include: { items: true, company: { select: { name: true } } },
   });
 
-  // Keep the contract's headline value in step with what it actually bills (NET).
-  await prisma.contract.update({
-    where: { id: contract.id },
-    data: { value: subtotal },
-  });
+  // Mark the blocks billed, so the same hours can never reach a second invoice.
+  if (billedBlockIds.length > 0) {
+    await prisma.contractHourBlock.updateMany({
+      where: { id: { in: billedBlockIds }, contractId, tenantId },
+      data: { invoiceId: invoice.id },
+    });
+  }
+
+  // Keep the contract's headline value in step with what it actually bills,
+  // NET. A pre-pay contract is worth its blocks, which this invoice only
+  // covers part of, so its value is left alone.
+  if (contract.type !== 'prepay_hours') {
+    await prisma.contract.update({
+      where: { id: contract.id },
+      data: { value: subtotal },
+    });
+  }
 
   return invoice;
 }

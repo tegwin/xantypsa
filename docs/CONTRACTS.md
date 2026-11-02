@@ -185,8 +185,15 @@ Below it, the work the block absorbed, at zero:
 So the customer sees the hours they bought, what they paid, and exactly what
 the hours went on, without being charged twice.
 
-Blocks are marked billed once invoiced, so the same hours can never go on a
-second invoice. A monthly contract becomes due again the moment next month's
+Blocks are marked billed the moment they are invoiced, so the same hours can
+never go on a second invoice. Generating again bills only the blocks added
+since, and refuses outright when every block has already been invoiced:
+
+> Every block on this contract has already been invoiced.
+
+This matters when you top a contract up. Adding 10 hours to a contract whose
+first 10 were already billed produces an invoice for the new 10, not for the
+running total of 20. A monthly contract becomes due again the moment next month's
 block is raised.
 
 Labour on a block contract, and anything logged at a non-billable rate, is

@@ -21,6 +21,8 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
     return jsonResponse(invoice, 201);
   } catch (err: any) {
     if (err.message === 'Contract not found') return errorResponse('Contract not found', 404);
+    // Nothing left to bill is a normal answer, not a fault.
+    if (err.message?.includes('already been invoiced')) return errorResponse(err.message, 409);
     throw err;
   }
 }, 'contracts', 'write');
