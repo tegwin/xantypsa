@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { useApi, apiPost, apiPatch } from '@/hooks/useApi';
 import { PageHeader, Modal, LoadingSpinner } from '@/components/ui';
 import { formatCurrency } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface LineItem {
   id?: string;
@@ -39,8 +39,15 @@ export default function QuoteBuilder({ initialData }: QuoteBuilderProps) {
   const isEdit = !!initialData?.id;
 
   const [title, setTitle] = useState(initialData?.title || '');
-  const [companyId, setCompanyId] = useState(initialData?.companyId || '');
-  const [contactId, setContactId] = useState(initialData?.contactId || '');
+  // Arriving from a contact's page carries the company and contact, so a quote
+  // raised from a person starts on that person.
+  const quoteParams = useSearchParams();
+  const [companyId, setCompanyId] = useState(
+    initialData?.companyId || quoteParams.get('companyId') || '',
+  );
+  const [contactId, setContactId] = useState(
+    initialData?.contactId || quoteParams.get('contactId') || '',
+  );
   const [currency, setCurrency] = useState(initialData?.currency || 'GBP');
   const [validUntil, setValidUntil] = useState(initialData?.validUntil?.split('T')[0] || '');
   const [discount, setDiscount] = useState<number>(initialData?.discount || 0);

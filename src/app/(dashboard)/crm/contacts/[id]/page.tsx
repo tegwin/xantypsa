@@ -290,7 +290,16 @@ export default function ContactDetailPage() {
 
       {activeTab === 'tickets' && (
         <div className="glass rounded-xl p-6">
-          <h3 className="text-white font-semibold mb-4">Tickets ({contact._count?.tickets || 0})</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-white font-semibold">Tickets ({contact._count?.tickets || 0})</h3>
+            {/* Raised against this person, with their company already set. */}
+            <Link
+              href={`/service-desk/tickets?new=1&companyId=${contact.companyId || ''}&contactId=${contact.id}`}
+              className="btn-primary text-sm"
+            >
+              New ticket
+            </Link>
+          </div>
           {contact.tickets?.length > 0 ? (
             <div className="space-y-2">
               {contact.tickets.map((t: any) => (
@@ -316,9 +325,17 @@ export default function ContactDetailPage() {
 
       {activeTab === 'opportunities' && (
         <div className="glass rounded-xl p-6">
-          <h3 className="text-white font-semibold mb-4">
-            Opportunities ({contact._count?.opportunities || 0})
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-white font-semibold">
+              Opportunities ({contact._count?.opportunities || 0})
+            </h3>
+            <Link
+              href={`/crm/opportunities?new=1&companyId=${contact.companyId || ''}&contactId=${contact.id}`}
+              className="btn-primary text-sm"
+            >
+              New opportunity
+            </Link>
+          </div>
           {contact.opportunities?.length > 0 ? (
             <div className="space-y-2">
               {contact.opportunities.map((o: any) => (
@@ -340,7 +357,15 @@ export default function ContactDetailPage() {
 
       {activeTab === 'quotes' && (
         <div className="glass rounded-xl p-6">
-          <h3 className="text-white font-semibold mb-4">Quotes ({contact._count?.quotes || 0})</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-white font-semibold">Quotes ({contact._count?.quotes || 0})</h3>
+            <Link
+              href={`/quotes/builder?companyId=${contact.companyId || ''}&contactId=${contact.id}`}
+              className="btn-primary text-sm"
+            >
+              New quote
+            </Link>
+          </div>
           {contact.quotes?.length > 0 ? (
             <div className="space-y-2">
               {contact.quotes.map((q: any) => (

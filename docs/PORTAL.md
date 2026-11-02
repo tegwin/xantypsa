@@ -15,9 +15,11 @@ there at all. An area somebody cannot reach is absent, not shown and refused.
 | Projects | Progress, tasks and a timeline, read only |
 | Quotes | Their quotations, read only |
 | Invoices | Their invoices, read only |
+| Reports | Prepaid hours remaining, with every block purchased |
 
-Clients who buy blocks of time see **prepaid hours remaining** across the top,
-with a bar per contract.
+Prepaid hours live in **Reports**, reached by clicking Reports rather than
+scattered across the home page. The role needs report access, and the prepaid
+hours report itself is a separate switch on the role.
 
 ### Projects and the timeline
 
@@ -114,3 +116,15 @@ Guard rails:
 - Recorded against your name before any access is granted.
 - Somebody already being impersonated cannot start a portal preview, because the
   audit trail would then name the wrong person.
+
+## Raising a ticket
+
+The portal form asks what the problem is and any detail that helps. It does
+**not** ask for a priority: left to choose, everyone picks the highest one, so
+it carries no information. Tickets arrive at a normal priority for your team to
+triage.
+
+Somebody who can both raise tickets and see the whole company's gets a **who is
+this for** dropdown, so they can raise one for a colleague. The ticket is
+recorded against that person, so updates go to them. The server checks the
+colleague is at the same company rather than trusting the request.

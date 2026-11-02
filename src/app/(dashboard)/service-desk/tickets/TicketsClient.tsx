@@ -1,6 +1,7 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useReferenceFormat } from '@/hooks/useReferenceFormat';
+import { useSearchParams } from 'next/navigation';
 import { useRouter } from "next/navigation";
 import { PageHeader, Button, DataTable, Badge, SearchInput, Modal, Input, Select, Textarea, Tabs } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
@@ -28,9 +29,24 @@ export default function TicketsClient({ tickets: initial, queues, agents, compan
   const [statusFilter, setStatusFilter] = useState("all");
   const [queueFilter, setQueueFilter] = useState("all");
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ title: "", description: "", priority: "medium", type: "incident", queueId: queues[0]?.id || "", companyId: "", contractId: "" });
+  const [form, setForm] = useState({ title: "", description: "", priority: "medium", type: "incident", queueId: queues[0]?.id || "", companyId: "", contactId: "", contractId: "" });
   const [saving, setSaving] = useState(false);
   const { data: contractsData } = useApi<any>(form.companyId ? `/api/contracts?companyId=${form.companyId}&status=active&limit=50` : null);
+  // Contacts belong to the company, so the list follows whichever is chosen.
+  const { data: contactsData } = useApi<any>(form.companyId ? `/api/contacts?companyId=${form.companyId}&limit=200` : null);
+
+  // Arriving from a contact's page with ?new=1 opens the form on that person.
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get('new') !== '1') return;
+    setForm(f => ({
+      ...f,
+      companyId: searchParams.get('companyId') || f.companyId,
+      contactId: searchParams.get('contactId') || f.contactId,
+    }));
+    setShowModal(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Determine which statuses count as "closed"
   const closedSlugs = customStatuses?.length
@@ -72,7 +88,7 @@ export default function TicketsClient({ tickets: initial, queues, agents, compan
     try {
       const res = await fetch("/api/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
       if (!res.ok) throw new Error("Failed"); toast.success("Ticket created"); setShowModal(false);
-      setForm({ title: "", description: "", priority: "medium", type: "incident", queueId: queues[0]?.id || "", companyId: "", contractId: "" }); router.refresh();
+      setForm({ title: "", description: "", priority: "medium", type: "incident", queueId: queues[0]?.id || "", companyId: "", contactId: "", contractId: "" }); router.refresh();
     } catch (err: any) { toast.error(err.message); } finally { setSaving(false); }
   }
 
@@ -143,8 +159,17 @@ export default function TicketsClient({ tickets: initial, queues, agents, compan
       <Modal open={showModal} onClose={() => setShowModal(false)} title="New Ticket" size="lg"
         footer={<><Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button><Button loading={saving} onClick={handleCreate}>Create Ticket</Button></>}>
         <form onSubmit={handleCreate} className="space-y-4">
+          <Select label="Contact" value={form.contactId}
+            onChange={(e: any) => setForm({ ...form, contactId: e.target ? e.target.value : e })}
+            options={[
+              { value: "", label: form.companyId ? "No contact" : "Choose a company first" },
+              ...((contactsData?.items || []).map((c: any) => ({
+                value: c.id,
+                label: [c.firstName, c.lastName].filter(Boolean).join(' ') || c.email || 'Unnamed',
+              }))),
+            ]} />
           <Select label="Company" value={form.companyId}
-            onChange={(e: any) => setForm({...form, companyId: e.target ? e.target.value : e, contractId: ""})}
+            onChange={(e: any) => setForm({...form, companyId: e.target ? e.target.value : e, contractId: "", contactId: ""})}
             options={[{value:"",label:" - Select company - "}, ...companies.map(c => ({value:c.id,label:c.name}))]} required />
           {form.companyId && contractsData?.items?.length > 0 && (
             <Select label="Contract (optional)" value={form.contractId}

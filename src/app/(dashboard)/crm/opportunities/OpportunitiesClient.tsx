@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader, Button, Badge, SearchInput, Card, Modal, Input, Select, Textarea } from "@/components/ui";
 import { Plus, DollarSign, TrendingUp } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -20,7 +20,7 @@ export default function OpportunitiesClient({ opportunities: initial, companies 
   const [showModal, setShowModal] = useState(false);
   const [customerType, setCustomerType] = useState<'existing' | 'prospect'>('existing');
   const [form, setForm] = useState({
-    title: "", value: "0", stage: "lead", probability: "10", companyId: "",
+    title: "", value: "0", stage: "lead", probability: "10", companyId: "", contactId: "",
     source: "", notes: "", expectedClose: "",
     prospectName: "", prospectEmail: "", prospectPhone: "",
   });
@@ -33,6 +33,30 @@ export default function OpportunitiesClient({ opportunities: initial, companies 
   const [stageDefs, setStageDefs] = useState<any[]>([]);
   // Which fields this tenant insists on, so the form can mark them.
   const [required, setRequired] = useState<Record<string, boolean>>({});
+  const [formContacts, setFormContacts] = useState<any[]>([]);
+
+  // Contacts follow the company chosen in the form.
+  useEffect(() => {
+    if (!form.companyId) { setFormContacts([]); return; }
+    fetch(`/api/contacts?companyId=${form.companyId}&limit=200`)
+      .then(r => r.json())
+      .then(d => setFormContacts(d.items || []))
+      .catch(() => setFormContacts([]));
+  }, [form.companyId]);
+
+  // Arriving from a contact's page with ?new=1 opens the form on that person.
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get('new') !== '1') return;
+    setCustomerType('existing');
+    setForm(f => ({
+      ...f,
+      companyId: searchParams.get('companyId') || f.companyId,
+      contactId: searchParams.get('contactId') || f.contactId,
+    }));
+    setShowModal(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   useEffect(() => {
     fetch("/api/pipeline-stages")
@@ -128,6 +152,7 @@ export default function OpportunitiesClient({ opportunities: initial, companies 
 
       if (customerType === 'existing') {
         payload.companyId = form.companyId || null;
+        payload.contactId = form.contactId || null;
       } else {
         // The server turns these into a real prospect company, and a contact
         // on it, so the lead shows up under CRM, Prospects.
@@ -147,7 +172,7 @@ export default function OpportunitiesClient({ opportunities: initial, companies 
   const update = (f: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setForm((p) => ({ ...p, [f]: e.target.value }));
 
   const resetForm = () => {
-    setForm({ title: "", value: "0", stage: "lead", probability: "10", companyId: "", source: "", notes: "", expectedClose: "", prospectName: "", prospectEmail: "", prospectPhone: "" });
+    setForm({ title: "", value: "0", stage: "lead", probability: "10", companyId: "", contactId: "", source: "", notes: "", expectedClose: "", prospectName: "", prospectEmail: "", prospectPhone: "" });
     setCustomerType('existing');
   };
 
@@ -278,6 +303,14 @@ export default function OpportunitiesClient({ opportunities: initial, companies 
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Select label="Stage" value={form.stage} onChange={update("stage")} options={stageList.map(s => ({ value: s.slug, label: s.name }))} />
+            <Select label="Contact" value={form.contactId} onChange={update("contactId")}
+              options={[
+                { value: "", label: form.companyId ? "No contact" : "Choose a company first" },
+                ...formContacts.map((c: any) => ({
+                  value: c.id,
+                  label: [c.firstName, c.lastName].filter(Boolean).join(' ') || c.email || 'Unnamed',
+                })),
+              ]} />
             <Select label={star('source', 'Source')} value={form.source} onChange={update("source")}
               options={[{ value: "", label: "-- Select source --" }, ...SOURCES.map(s => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1).replace('-', ' ') }))]} />
           </div>
