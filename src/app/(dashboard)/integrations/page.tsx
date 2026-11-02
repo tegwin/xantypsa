@@ -91,6 +91,36 @@ function IntegrationLogo({ intKey, name }: { intKey: string; name: string }) {
   );
 }
 
+// Each PSA authenticates differently, so the dialog asks for what that vendor
+// actually needs rather than a generic four boxes that are mostly ignored.
+const PSA_FIELDS: Record<string, { key: string; label: string; secret?: boolean; placeholder?: string }[]> = {
+  halopsa: [
+    { key: 'apiUrl', label: 'Halo URL', placeholder: 'https://yourco.halopsa.com' },
+    { key: 'clientId', label: 'Client ID' },
+    { key: 'clientSecret', label: 'Client secret', secret: true },
+  ],
+  autotask: [
+    { key: 'apiUrl', label: 'API zone URL', placeholder: 'https://webservices16.autotask.net' },
+    { key: 'apiIntegrationCode', label: 'API integration code' },
+    { key: 'userName', label: 'API user name' },
+    { key: 'secret', label: 'API secret', secret: true },
+  ],
+  connectwise: [
+    { key: 'apiUrl', label: 'Site URL', placeholder: 'https://api-eu.myconnectwise.net' },
+    { key: 'companyId', label: 'Company ID' },
+    { key: 'publicKey', label: 'Public key' },
+    { key: 'privateKey', label: 'Private key', secret: true },
+    { key: 'clientId', label: 'Client ID' },
+  ],
+};
+
+const GENERIC_FIELDS = [
+  { key: 'apiKey', label: 'API key', secret: true },
+  { key: 'apiUrl', label: 'API URL', placeholder: 'https://...' },
+  { key: 'clientId', label: 'Client ID (if required)' },
+  { key: 'clientSecret', label: 'Client secret (if required)', secret: true },
+];
+
 const INTEGRATION_CATEGORIES: CategoryDef[] = [
   {
     name: 'RMM Tools',
@@ -164,10 +194,12 @@ function ConfigureModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [apiKey, setApiKey] = useState(record?.config?.apiKey || '');
-  const [apiUrl, setApiUrl] = useState(record?.config?.apiUrl || '');
-  const [clientId, setClientId] = useState(record?.config?.clientId || '');
-  const [clientSecret, setClientSecret] = useState(record?.config?.clientSecret || '');
+  const fields = PSA_FIELDS[integration.key] || GENERIC_FIELDS;
+  const [config, setConfig] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    for (const f of fields) initial[f.key] = record?.config?.[f.key] || '';
+    return initial;
+  });
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
@@ -175,18 +207,19 @@ function ConfigureModal({
   const save = async () => {
     setSaving(true);
     try {
-      await fetch(`/api/integrations/${integration.key}`, {
+      const res = await fetch(`/api/integrations/${integration.key}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: integration.name,
-          config: { apiKey, apiUrl, clientId, clientSecret },
-          isActive: true,
-        }),
+        body: JSON.stringify({ name: integration.name, config, isActive: true }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setTestResult({ ok: false, message: data.error || 'Could not save.' });
+        return;
+      }
       onSaved();
     } catch {
-      // ignore
+      setTestResult({ ok: false, message: 'Could not save.' });
     } finally {
       setSaving(false);
     }
@@ -196,12 +229,22 @@ function ConfigureModal({
     setTesting(true);
     setTestResult(null);
     try {
-      const res = await fetch(`/api/integrations/${integration.key}/devices`);
+      // PSAs have a real test; everything else still falls back to the RMM
+      // device call, which is the only other thing that proves anything.
+      const isPsa = !!PSA_FIELDS[integration.key];
+      const res = isPsa
+        ? await fetch(`/api/integrations/${integration.key}/test`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ config }),
+          })
+        : await fetch(`/api/integrations/${integration.key}/devices`);
+
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        setTestResult({ ok: true, message: 'Connection successful!' });
+        setTestResult({ ok: true, message: data.message || 'Connection successful.' });
       } else {
-        const data = await res.json().catch(() => ({}));
-        setTestResult({ ok: false, message: data.error || 'Connection failed' });
+        setTestResult({ ok: false, message: data.message || data.error || 'Connection failed.' });
       }
     } catch {
       setTestResult({ ok: false, message: 'Network error' });
@@ -229,49 +272,21 @@ function ConfigureModal({
         )}
 
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm text-slate-300 mb-1">API Key</label>
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500/50"
-              placeholder="Enter API key..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-slate-300 mb-1">API URL / Instance URL</label>
-            <input
-              type="text"
-              value={apiUrl}
-              onChange={(e) => setApiUrl(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500/50"
-              placeholder="https://..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-slate-300 mb-1">Client ID (if required)</label>
-            <input
-              type="text"
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500/50"
-              placeholder="Optional"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-slate-300 mb-1">Client Secret (if required)</label>
-            <input
-              type="password"
-              value={clientSecret}
-              onChange={(e) => setClientSecret(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500/50"
-              placeholder="Optional"
-            />
-          </div>
+          {fields.map((f) => (
+            <div key={f.key}>
+              <label htmlFor={`cfg-${f.key}`} className="block text-sm text-slate-300 mb-1">
+                {f.label}
+              </label>
+              <input
+                id={`cfg-${f.key}`}
+                type={f.secret ? 'password' : 'text'}
+                value={config[f.key] || ''}
+                onChange={(e) => setConfig({ ...config, [f.key]: e.target.value })}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500/50"
+                placeholder={f.placeholder || ''}
+              />
+            </div>
+          ))}
         </div>
 
         {testResult && (

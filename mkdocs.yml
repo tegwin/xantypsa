@@ -42,6 +42,7 @@ nav:
   - Building on it:
       - API: API.md
       - API index: API-INDEX.md
+      - Integrations: INTEGRATIONS.md
       - Webhooks: WEBHOOKS.md
       - MCP: MCP.md
       - AI security: SECURITY-AI.md

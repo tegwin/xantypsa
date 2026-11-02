@@ -33,6 +33,7 @@ you self-host and own outright.
 |---|---|
 | [API](API.md) | Conventions, and a reference for each area |
 | [API index](API-INDEX.md) | Every route, generated from the source |
+| [Integrations](INTEGRATIONS.md) | PSA and RMM connections, testing, reading records |
 | [Webhooks](WEBHOOKS.md) | Events, signing, verification |
 | [MCP](MCP.md) | Driving Xanty PSA from an AI assistant |
 | [AI security](SECURITY-AI.md) | The restricted role AI queries run as |

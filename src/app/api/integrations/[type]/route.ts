@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withTenant, jsonResponse, errorResponse } from '@/lib/api';
+import { isPsaType, missingFields } from '@/lib/integrations/psa';
 
 // GET /api/integrations/[type] - Get integration config
 export const GET = withTenant(async (req: NextRequest, session: any) => {
@@ -24,6 +25,16 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
   const segments = url.pathname.split('/').filter(Boolean);
   const type = segments[segments.length - 1] || '';
   const body = await req.json();
+
+  // An integration saved with no credentials used to look connected, which is
+  // worse than not having it: the card says it works and nothing does.
+  if (isPsaType(type)) {
+    const config = { ...(body.config || {}) };
+    const missing = missingFields(type, config);
+    if (missing.length > 0) {
+      return errorResponse(`Fill these in first: ${missing.join(', ')}.`);
+    }
+  }
 
   const existing = await prisma.integration.findFirst({
     where: { tenantId: session.user.tenantId, type },
