@@ -189,6 +189,7 @@ const NAV_ITEMS: NavItem[] = [
       },
       { label: 'Service Desk', href: '/settings/service-desk' },
       { label: 'CRM', href: '/settings/crm' },
+      { label: 'Client Portal', href: '/settings/client-portal' },
       { label: 'Products & Services', href: '/settings/products' },
       {
         label: 'Billing',

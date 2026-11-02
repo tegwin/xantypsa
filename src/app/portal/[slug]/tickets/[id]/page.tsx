@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect, notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { closedStatusSlugs } from '@/lib/ticketStatus';
+import { getPortalAccess, scopeFilter } from '@/lib/portal/access';
 import { getPortalSession } from '@/lib/portal/session';
 import PortalHeader from '../../PortalHeader';
 import ReplyForm from './ReplyForm';
@@ -18,10 +19,18 @@ export default async function PortalTicketPage({
     redirect(`/portal/${params.slug}`);
   }
 
+  const access = await getPortalAccess(session.contact.id, session.tenantId);
+
   // Scoped to the session's company, so an id from another client 404s rather
   // than leaking that it exists.
   const ticket = await prisma.ticket.findFirst({
-    where: { id: params.id, tenantId: session.tenantId, companyId: session.company.id },
+    // Scoped the same way as the list, so a ticket id alone cannot be used to
+    // read a colleague's ticket when the role only allows your own.
+    where: {
+      id: params.id,
+      tenantId: session.tenantId,
+      ...scopeFilter(access.ticketScope, session.company.id, session.contact.id),
+    },
     select: {
       id: true, ticketNumber: true, title: true, description: true,
       status: true, priority: true, createdAt: true, tenantId: true,
@@ -43,7 +52,7 @@ export default async function PortalTicketPage({
 
   return (
     <>
-      <PortalHeader session={session} slug={params.slug} />
+      <PortalHeader session={session} slug={params.slug} access={access} />
 
       <div className="mt-8">
         <Link

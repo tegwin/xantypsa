@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 
 import OverviewTab from './tabs/OverviewTab';
+import PortalTab from './tabs/PortalTab';
 import ContactsTab from './tabs/ContactsTab';
 import SitesTab from './tabs/SitesTab';
 import CrmNotesTab from './tabs/CrmNotesTab';
@@ -86,6 +87,7 @@ export default function CompanyDetailPage() {
     { key: 'activity', label: 'Activity' },
     { key: 'documents', label: 'Documents' },
     { key: 'custom-fields', label: 'Custom Fields' },
+    { key: 'portal', label: 'Portal' },
   ];
 
   const invoiceTotal = company.invoices?.reduce((sum: number, inv: any) => sum + inv.total, 0) || 0;
@@ -126,6 +128,7 @@ export default function CompanyDetailPage() {
 
       {/* Tab Content */}
       {activeTab === 'overview' && <OverviewTab company={company} />}
+      {activeTab === 'portal' && <PortalTab company={company} onRefresh={refetch} />}
       {activeTab === 'contacts' && <ContactsTab company={company} onRefresh={refetch} />}
       {activeTab === 'sites' && <SitesTab company={company} onRefresh={refetch} />}
       {activeTab === 'crm-notes' && <CrmNotesTab company={company} />}

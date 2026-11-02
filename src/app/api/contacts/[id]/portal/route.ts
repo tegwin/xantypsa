@@ -13,7 +13,7 @@ async function loadContact(id: string, tenantId: string) {
     where: { id, tenantId },
     select: {
       id: true, firstName: true, lastName: true, email: true,
-      portalEnabled: true, portalLastLogin: true,
+      portalEnabled: true, portalLastLogin: true, portalRoleId: true,
       company: { select: { id: true, name: true, portalEnabled: true, portalSlug: true } },
     },
   });
@@ -23,7 +23,15 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
   const contact = await loadContact(contactIdFrom(req), session.user.tenantId);
   if (!contact) return errorResponse('Contact not found', 404);
 
+  const roles = await prisma.portalRole.findMany({
+    where: { tenantId: session.user.tenantId, isActive: true },
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    select: { id: true, name: true, isDefault: true },
+  });
+
   return jsonResponse({
+    roles,
+    portalRoleId: contact.portalRoleId,
     portalEnabled: contact.portalEnabled,
     portalLastLogin: contact.portalLastLogin,
     email: contact.email,
@@ -48,8 +56,11 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
 
   const updated = await prisma.contact.update({
     where: { id },
-    data: { ...(body.portalEnabled !== undefined && { portalEnabled: !!body.portalEnabled }) },
-    select: { portalEnabled: true },
+    data: {
+      ...(body.portalEnabled !== undefined && { portalEnabled: !!body.portalEnabled }),
+      ...(body.portalRoleId !== undefined && { portalRoleId: body.portalRoleId || null }),
+    },
+    select: { portalEnabled: true, portalRoleId: true },
   });
 
   return jsonResponse(updated);

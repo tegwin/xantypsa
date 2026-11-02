@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { closedStatusSlugs } from '@/lib/ticketStatus';
+import { getPortalAccess, scopeFilter } from '@/lib/portal/access';
 import { getPortalSession } from '@/lib/portal/session';
 import PortalHeader from '../PortalHeader';
 
@@ -33,8 +34,16 @@ export default async function PortalTicketsPage({ params }: { params: { slug: st
     redirect(`/portal/${params.slug}`);
   }
 
+  const access = await getPortalAccess(session.contact.id, session.tenantId);
+  if (access.ticketScope === 'none') redirect(`/portal/${params.slug}/home`);
+
   const tickets = await prisma.ticket.findMany({
-    where: { tenantId: session.tenantId, companyId: session.company.id },
+    // "own" means the tickets this person is the contact on; "company" means
+    // everything their company has raised.
+    where: {
+      tenantId: session.tenantId,
+      ...scopeFilter(access.ticketScope, session.company.id, session.contact.id),
+    },
     orderBy: { createdAt: 'desc' },
     take: 100,
     select: {
@@ -72,7 +81,7 @@ export default async function PortalTicketsPage({ params }: { params: { slug: st
 
   return (
     <>
-      <PortalHeader session={session} slug={params.slug} />
+      <PortalHeader session={session} slug={params.slug} access={access} />
 
       <div className="mt-8 flex items-center justify-between">
         <h1 className="text-xl font-semibold text-white">Your tickets</h1>

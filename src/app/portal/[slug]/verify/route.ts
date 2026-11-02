@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
   });
   if (!company) return fail('invalid');
 
-  const res = NextResponse.redirect(new URL(`/portal/${slug}/tickets`, req.nextUrl.origin));
+  const res = NextResponse.redirect(new URL(`/portal/${slug}/home`, req.nextUrl.origin));
   res.cookies.set(
     PORTAL_COOKIE,
     encodeSession({

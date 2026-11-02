@@ -44,6 +44,7 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
       ...(body.email !== undefined && { email: body.email }),
       ...(body.phone !== undefined && { phone: body.phone }),
       ...(body.mobile !== undefined && { mobile: body.mobile }),
+      ...(body.customData !== undefined && { customData: body.customData }),
       ...(body.jobTitle !== undefined && { jobTitle: body.jobTitle }),
       ...(body.department !== undefined && { department: body.department }),
       ...(body.companyId !== undefined && { companyId: body.companyId || null }),

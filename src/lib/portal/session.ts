@@ -100,7 +100,10 @@ export async function getPortalSession() {
     select: {
       id: true, firstName: true, lastName: true, email: true, portalEnabled: true,
       company: {
-        select: { id: true, name: true, portalSlug: true, portalEnabled: true, tenantId: true },
+        select: {
+          id: true, name: true, portalSlug: true, portalEnabled: true, tenantId: true,
+          portalLogoUrl: true, portalAccent: true, portalWelcome: true,
+        },
       },
     },
   });

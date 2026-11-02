@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
+import { getPortalAccess } from '@/lib/portal/access';
 import { getPortalSession } from '@/lib/portal/session';
 import { formatCurrency } from '@/lib/utils';
 import PortalHeader from '../PortalHeader';
@@ -11,6 +12,10 @@ export default async function PortalInvoicesPage({ params }: { params: { slug: s
   if (!session || session.company.portalSlug !== params.slug.toLowerCase()) {
     redirect(`/portal/${params.slug}`);
   }
+
+  const access = await getPortalAccess(session.contact.id, session.tenantId);
+  // Invoices are off by default: plenty of contacts should never see them.
+  if (access.invoiceScope === 'none') redirect(`/portal/${params.slug}/home`);
 
   // Drafts are the MSP's working state and must not be visible to the client.
   const invoices = await prisma.invoice.findMany({
@@ -32,7 +37,7 @@ export default async function PortalInvoicesPage({ params }: { params: { slug: s
 
   return (
     <>
-      <PortalHeader session={session} slug={params.slug} />
+      <PortalHeader session={session} slug={params.slug} access={access} />
 
       <div className="mt-8 flex items-baseline justify-between">
         <h1 className="text-xl font-semibold text-white">Invoices</h1>

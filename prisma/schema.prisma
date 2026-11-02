@@ -80,6 +80,7 @@ model Tenant {
   winLossReasons     WinLossReason[]
   opportunityNotes   OpportunityNote[]
   contractHourBlocks ContractHourBlock[]
+  portalRoles        PortalRole[]
 
   @@map("tenants")
 }
@@ -298,6 +299,8 @@ model Contact {
   // Portal access is per contact and off by default - being a contact does not
   // imply being allowed to see the company's tickets and invoices.
   portalEnabled   Boolean   @default(false)
+  /// What this person may see in the portal. Null means the tenant default.
+  portalRoleId    String?
   portalLastLogin DateTime?
   customData      Json      @default("{}")
   createdAt       DateTime  @default(now())
@@ -311,6 +314,7 @@ model Contact {
   opportunities Opportunity[]      @relation("OpportunityContact")
   quotes        Quote[]
   invoices      Invoice[]
+  portalRole    PortalRole?        @relation(fields: [portalRoleId], references: [id])
 
   @@index([tenantId])
   @@map("contacts")
@@ -361,6 +365,11 @@ model Company {
   // company. Clients pick their own.
   portalSlug    String?  @unique
   portalEnabled Boolean  @default(false)
+  /// Branding for this client's portal: their logo, and an accent colour used
+  /// for buttons and tiles. Falls back to the tenant's own branding.
+  portalLogoUrl String?
+  portalAccent  String?
+  portalWelcome String?
   taxId         String? // VAT number etc.
   notes         String?
   slaProfileId  String?
@@ -1751,4 +1760,44 @@ model ContractHourBlock {
   @@index([tenantId])
   @@index([contractId])
   @@map("contract_hour_blocks")
+}
+
+/// What a client contact may see and do in the portal.
+///
+/// Scopes are deliberately coarse: "none", "own" (records where they are the
+/// contact) or "company" (everything their company has). Anything finer is a
+/// permissions system nobody will maintain.
+model PortalRole {
+  id       String @id @default(cuid())
+  tenantId String
+  name     String
+
+  /// "none" | "own" | "company"
+  ticketScope  String @default("own")
+  quoteScope   String @default("none")
+  projectScope String @default("none")
+  invoiceScope String @default("none")
+
+  /// Prepaid hours remaining, for clients who buy blocks.
+  showBlocks Boolean @default(false)
+
+  /// Raising and replying to tickets. Everything else in the portal is read
+  /// only: a client never edits a quote, a project or an invoice.
+  canCreateTickets Boolean @default(true)
+  canReplyTickets  Boolean @default(true)
+
+  /// Given to a contact who has no role of their own.
+  isDefault Boolean @default(false)
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contacts Contact[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("portal_roles")
 }

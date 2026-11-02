@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getPortalSession } from '@/lib/portal/session';
 import { assignReference } from '@/lib/numbering';
+import { getPortalAccess } from '@/lib/portal/access';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +17,12 @@ const PRIORITIES = new Set(['low', 'medium', 'high', 'critical']);
 export async function POST(req: NextRequest) {
   const session = await getPortalSession();
   if (!session) return NextResponse.json({ error: 'Not signed in' }, { status: 401 });
+
+  // Hiding the button is not a control. The role is checked here too.
+  const access = await getPortalAccess(session.contact.id, session.tenantId);
+  if (!access.canCreateTickets) {
+    return NextResponse.json({ error: 'You cannot raise tickets.' }, { status: 403 });
+  }
 
   const body = await req.json().catch(() => ({}));
   const title = String(body.title ?? '').trim().slice(0, 200);
@@ -28,6 +35,31 @@ export async function POST(req: NextRequest) {
   // Priority is a client's opinion, so keep it to known values - but let the
   // MSP re-triage. It is a request, not an instruction.
   const priority = PRIORITIES.has(body.priority) ? body.priority : 'medium';
+
+  // Raising on behalf of a colleague, for somebody who can see the whole
+  // company anyway. The colleague must belong to the same company, checked
+  // here rather than trusted from the request.
+  let onBehalfOfId: string | null = null;
+  if (body.onBehalfOfContactId && body.onBehalfOfContactId !== session.contact.id) {
+    if (!access.canRaiseForOthers) {
+      return NextResponse.json(
+        { error: 'You cannot raise tickets for other people.' },
+        { status: 403 },
+      );
+    }
+    const colleague = await prisma.contact.findFirst({
+      where: {
+        id: body.onBehalfOfContactId,
+        companyId: session.company.id,
+        tenantId: session.tenantId,
+      },
+      select: { id: true },
+    });
+    if (!colleague) {
+      return NextResponse.json({ error: 'That person is not at your company.' }, { status: 400 });
+    }
+    onBehalfOfId = colleague.id;
+  }
 
   // Typed narrowly: spreading a Record<string, any> into Prisma's create data
   // collapses its discriminated union and the whole call stops type-checking.
@@ -43,7 +75,7 @@ export async function POST(req: NextRequest) {
     data: {
       tenantId: session.tenantId,
       companyId: session.company.id,
-      contactId: session.contact.id,
+      contactId: onBehalfOfId ?? session.contact.id,
       ticketNumber,
       title,
       description,

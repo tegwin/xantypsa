@@ -198,6 +198,11 @@ DROP POLICY IF EXISTS ai_tenant_isolation ON "portal_login_tokens";
 CREATE POLICY ai_tenant_isolation ON "portal_login_tokens"
   FOR SELECT USING (EXISTS (SELECT 1 FROM "contacts" AS p WHERE p."id" = "contactId" AND p."tenantId" = current_setting('app.tenant_id', true)));
 
+ALTER TABLE "portal_roles" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS ai_tenant_isolation ON "portal_roles";
+CREATE POLICY ai_tenant_isolation ON "portal_roles"
+  FOR SELECT USING ("tenantId" = current_setting('app.tenant_id', true));
+
 ALTER TABLE "products" ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS ai_tenant_isolation ON "products";
 CREATE POLICY ai_tenant_isolation ON "products"

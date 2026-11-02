@@ -3,6 +3,65 @@
 Your customers get a portal of their own: raise tickets, follow progress, and
 see quotes and invoices.
 
+## What a client sees
+
+The portal opens on a page of tiles, and only the areas their role allows are
+there at all. An area somebody cannot reach is absent, not shown and refused.
+
+| Tile | Shows |
+|---|---|
+| Raise a ticket | Report an issue or ask for something |
+| Tickets | Their own, or the whole company's |
+| Projects | Progress, tasks and a timeline, read only |
+| Quotes | Their quotations, read only |
+| Invoices | Their invoices, read only |
+
+Clients who buy blocks of time see **prepaid hours remaining** across the top,
+with a bar per contract.
+
+### Projects and the timeline
+
+A project shows its description, how many tasks are done, and a Gantt chart
+drawn from the task dates: in progress in the client's accent colour, done in
+green, overdue in red, with a line marking today. Milestones are listed under
+it.
+
+## Contact roles
+
+Set up under Settings, Client Portal. A role decides what a contact sees, with
+one deliberately coarse scope per area:
+
+| Scope | Means |
+|---|---|
+| Nothing | The area does not appear |
+| Their own | Records where they are the contact |
+| The whole company | Everything their company has |
+
+Plus: whether they can raise tickets, whether they can reply, and whether they
+see prepaid hours.
+
+**Raising on a colleague's behalf** is allowed when somebody can both raise
+tickets and see the whole company's: they can follow what they reported
+afterwards, so it makes sense. The colleague must be at the same company,
+checked on the server rather than trusted from the request.
+
+Everything except tickets is read only. A client never edits a quote, a project
+or an invoice.
+
+A contact with no role gets whichever role is marked default. With no default
+either, they see only their own tickets: the narrowest useful access, because
+widening it should be a decision somebody made, never something that happened
+by omission.
+
+Deleting a role that people are on deactivates it instead, since deleting it
+would silently widen or narrow what they can see.
+
+## Branding
+
+Each client's portal carries their own logo, accent colour and welcome
+heading, set on the company's Portal tab, so it looks like theirs rather than
+yours.
+
 ## How people sign in
 
 By emailed link. There is no password.

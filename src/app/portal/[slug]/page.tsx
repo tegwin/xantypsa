@@ -46,7 +46,7 @@ export default async function PortalLoginPage({
   // Already signed in - skip the form.
   const session = await getPortalSession();
   if (session?.company.id === company.id) {
-    redirect(`/portal/${params.slug}/tickets`);
+    redirect(`/portal/${params.slug}/home`);
   }
 
   const ERRORS: Record<string, string> = {

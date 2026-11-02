@@ -76,6 +76,17 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
       ...(body.postcode !== undefined && { postcode: body.postcode }),
       ...(body.country !== undefined && { country: body.country }),
       ...(body.industry !== undefined && { industry: body.industry }),
+      // Portal: whether it is on, its address, and how it is branded.
+      ...(body.portalEnabled !== undefined && { portalEnabled: !!body.portalEnabled }),
+      ...(body.portalSlug !== undefined && {
+        // Lowercase and URL-safe, since it becomes /portal/<slug>.
+        portalSlug: body.portalSlug
+          ? String(body.portalSlug).toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+          : null,
+      }),
+      ...(body.portalLogoUrl !== undefined && { portalLogoUrl: body.portalLogoUrl || null }),
+      ...(body.portalAccent !== undefined && { portalAccent: body.portalAccent || null }),
+      ...(body.portalWelcome !== undefined && { portalWelcome: body.portalWelcome || null }),
       ...(body.size !== undefined && { size: body.size }),
       ...(body.taxId !== undefined && { taxId: body.taxId }),
       ...(body.notes !== undefined && { notes: body.notes }),

@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { closedStatusSlugs } from '@/lib/ticketStatus';
+import { getPortalAccess, scopeFilter } from '@/lib/portal/access';
 import { getPortalSession } from '@/lib/portal/session';
 
 export const dynamic = 'force-dynamic';
@@ -16,6 +17,11 @@ export async function POST(req: NextRequest) {
   const parts = req.nextUrl.pathname.split('/');
   const ticketId = parts[parts.indexOf('tickets') + 1];
 
+  const access = await getPortalAccess(session.contact.id, session.tenantId);
+  if (!access.canReplyTickets || access.ticketScope === 'none') {
+    return NextResponse.json({ error: 'You cannot reply to tickets.' }, { status: 403 });
+  }
+
   const { content } = await req.json().catch(() => ({ content: '' }));
   const text = String(content ?? '').trim().slice(0, 20000);
   if (!text) return NextResponse.json({ error: 'Write something first.' }, { status: 400 });
@@ -23,7 +29,13 @@ export async function POST(req: NextRequest) {
   // Scoped to the session's company: a ticket id from elsewhere simply is not
   // found, rather than being edited.
   const ticket = await prisma.ticket.findFirst({
-    where: { id: ticketId, tenantId: session.tenantId, companyId: session.company.id },
+    // Scoped by the role too: somebody who only sees their own tickets cannot
+    // reply to a colleague's by knowing its id.
+    where: {
+      id: ticketId,
+      tenantId: session.tenantId,
+      ...scopeFilter(access.ticketScope, session.company.id, session.contact.id),
+    },
     select: { id: true, status: true, tenantId: true },
   });
   if (!ticket) return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });

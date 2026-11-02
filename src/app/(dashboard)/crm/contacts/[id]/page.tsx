@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { User, Building2, Mail, Phone, Smartphone, MapPin, Briefcase, Edit, Trash2,
   Send, KeyRound, Eye, Globe } from 'lucide-react';
 import toast from 'react-hot-toast';
+import CustomFieldsTab from './tabs/CustomFieldsTab';
 
 export default function ContactDetailPage() {
   const router = useRouter();
@@ -137,6 +138,7 @@ export default function ContactDetailPage() {
           { key: 'tickets', label: `Tickets (${contact._count?.tickets || 0})` },
           { key: 'opportunities', label: `Opportunities (${contact._count?.opportunities || 0})` },
           { key: 'quotes', label: `Quotes (${contact._count?.quotes || 0})` },
+          { key: 'custom-fields', label: 'Custom Fields' },
           { key: 'portal', label: 'Portal' },
         ].map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
@@ -150,6 +152,10 @@ export default function ContactDetailPage() {
           </button>
         ))}
       </div>
+
+      {activeTab === 'custom-fields' && (
+        <CustomFieldsTab contact={contact} onRefresh={refetch} />
+      )}
 
       {activeTab === 'portal' && (
         <div className="glass rounded-xl p-6 max-w-2xl space-y-5">
@@ -184,6 +190,29 @@ export default function ContactDetailPage() {
               </span>
             </span>
           </label>
+
+          <div>
+            <label className="label" htmlFor="portal-role">What they can see</label>
+            <select id="portal-role" className="input w-full"
+              value={portal?.portalRoleId || ''}
+              onChange={async (e) => {
+                await apiPatch(`/api/contacts/${id}/portal`, { portalRoleId: e.target.value || null });
+                toast.success('Role updated');
+                refetchPortal();
+              }}>
+              <option value="">
+                {portal?.roles?.find((r: any) => r.isDefault)?.name
+                  ? `Default (${portal.roles.find((r: any) => r.isDefault).name})`
+                  : 'Default (their own tickets only)'}
+              </option>
+              {(portal?.roles || []).map((r: any) => (
+                <option key={r.id} value={r.id}>{r.name}</option>
+              ))}
+            </select>
+            <p className="text-xs text-surface-400 mt-1">
+              Roles are set up under Settings, Client Portal.
+            </p>
+          </div>
 
           <div className="rounded-lg border border-surface-700 p-3">
             <div className="flex items-center gap-2 mb-1">
@@ -226,7 +255,7 @@ export default function ContactDetailPage() {
         </div>
       )}
 
-      {activeTab !== 'portal' && (
+      {activeTab !== 'portal' && activeTab !== 'custom-fields' && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
