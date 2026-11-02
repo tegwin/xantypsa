@@ -8,13 +8,21 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
   const contact = await prisma.contact.findFirst({
     where: { id, tenantId: session.user.tenantId },
     include: {
-      company: { select: { id: true, name: true, type: true } },
+      company: { select: { id: true, name: true, type: true, portalEnabled: true, portalSlug: true } },
+      opportunities: {
+        orderBy: { createdAt: 'desc' }, take: 20,
+        select: { id: true, opportunityNumber: true, title: true, stage: true, value: true },
+      },
+      quotes: {
+        orderBy: { createdAt: 'desc' }, take: 20,
+        select: { id: true, quoteNumber: true, title: true, status: true, total: true },
+      },
       tickets: {
         orderBy: { createdAt: 'desc' },
         take: 10,
         select: { id: true, ticketNumber: true, title: true, status: true, priority: true, createdAt: true },
       },
-      _count: { select: { tickets: true } },
+      _count: { select: { tickets: true, opportunities: true, quotes: true } },
     },
   });
   if (!contact) return errorResponse('Contact not found', 404);

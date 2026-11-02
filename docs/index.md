@@ -23,6 +23,7 @@ you self-host and own outright.
 |---|---|
 | [Service desk](SERVICE-DESK.md) | Notes, the timer, statuses, editing tickets |
 | [CRM](CRM.md) | Companies, prospects, the sales pipeline, the funnel |
+| [Client portal](PORTAL.md) | Portal access, sign-in links, impersonating |
 | [Contracts](CONTRACTS.md) | Pre-pay blocks, carry over, automatic top-up |
 | [Profitability](PROFITABILITY.md) | Burden rates, T&M, contracts, break even |
 

@@ -6,7 +6,9 @@ import { PageHeader, StatusBadge, LoadingSpinner, Modal } from '@/components/ui'
 import { formatRelativeTime } from '@/lib/utils';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { User, Building2, Mail, Phone, Smartphone, MapPin, Briefcase, Edit, Trash2 } from 'lucide-react';
+import { User, Building2, Mail, Phone, Smartphone, MapPin, Briefcase, Edit, Trash2,
+  Send, KeyRound, Eye, Globe } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function ContactDetailPage() {
   const router = useRouter();
@@ -16,6 +18,57 @@ export default function ContactDetailPage() {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
   const [showDelete, setShowDelete] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+
+  // Portal access for this person. Sign-in is by emailed link, so there is no
+  // password here to reset: a fresh link is the equivalent.
+  const { data: portal, refetch: refetchPortal } = useApi<any>(`/api/contacts/${id}/portal`);
+  const [sending, setSending] = useState<string | null>(null);
+
+  const setPortalEnabled = async (enabled: boolean) => {
+    try {
+      await apiPatch(`/api/contacts/${id}/portal`, { portalEnabled: enabled });
+      toast.success(enabled ? 'Portal access given' : 'Portal access removed');
+      refetchPortal();
+    } catch (err: any) {
+      toast.error(err.message || 'Could not change portal access');
+    }
+  };
+
+  const sendPortalEmail = async (kind: 'welcome' | 'login') => {
+    setSending(kind);
+    try {
+      const res = await fetch(`/api/contacts/${id}/portal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not send');
+      toast.success(`${kind === 'welcome' ? 'Welcome email' : 'Sign-in link'} sent to ${data.to}`);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSending(null);
+    }
+  };
+
+  // Opens the portal as this person, in a new tab, so staff can see exactly
+  // what the client sees.
+  const impersonate = async () => {
+    try {
+      const res = await fetch('/api/portal/impersonate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contactId: id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not open the portal');
+      window.open(data.url || `/portal/${portal?.company?.portalSlug}`, '_blank');
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
 
   if (loading) return <LoadingSpinner />;
   if (!contact) return <div className="p-8 text-slate-400">Contact not found</div>;
@@ -49,10 +102,27 @@ export default function ContactDetailPage() {
   return (
     <div className="animate-fadeIn">
       <PageHeader title={`${contact.firstName} ${contact.lastName}`} subtitle={contact.jobTitle || contact.company?.name || ''}>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button onClick={startEdit} className="btn-secondary flex items-center gap-1.5">
             <Edit className="w-3.5 h-3.5" /> Edit
           </button>
+          {portal?.portalEnabled && (
+            <>
+              <button onClick={() => sendPortalEmail('welcome')} disabled={sending !== null}
+                className="btn-secondary flex items-center gap-1.5 disabled:opacity-50">
+                <Send className="w-3.5 h-3.5" />
+                {sending === 'welcome' ? 'Sending...' : 'Send Welcome Email'}
+              </button>
+              <button onClick={() => sendPortalEmail('login')} disabled={sending !== null}
+                className="btn-secondary flex items-center gap-1.5 disabled:opacity-50">
+                <KeyRound className="w-3.5 h-3.5" />
+                {sending === 'login' ? 'Sending...' : 'Send Sign-in Link'}
+              </button>
+              <button onClick={impersonate} className="btn-secondary flex items-center gap-1.5">
+                <Eye className="w-3.5 h-3.5" /> Impersonate
+              </button>
+            </>
+          )}
           <button onClick={() => setShowDelete(true)} className="btn-danger flex items-center gap-1.5">
             <Trash2 className="w-3.5 h-3.5" /> Delete
           </button>
@@ -60,6 +130,103 @@ export default function ContactDetailPage() {
         </div>
       </PageHeader>
 
+      {/* Tabs, the same shape as a company's */}
+      <div className="flex gap-1 mb-6 overflow-x-auto border-b border-surface-700">
+        {[
+          { key: 'overview', label: 'Overview' },
+          { key: 'tickets', label: `Tickets (${contact._count?.tickets || 0})` },
+          { key: 'opportunities', label: `Opportunities (${contact._count?.opportunities || 0})` },
+          { key: 'quotes', label: `Quotes (${contact._count?.quotes || 0})` },
+          { key: 'portal', label: 'Portal' },
+        ].map(tab => (
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+            aria-current={activeTab === tab.key ? 'page' : undefined}
+            className={`px-3 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+              activeTab === tab.key
+                ? 'border-brand-500 text-white'
+                : 'border-transparent text-slate-400 hover:text-white'
+            }`}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'portal' && (
+        <div className="glass rounded-xl p-6 max-w-2xl space-y-5">
+          <div>
+            <h3 className="text-white font-semibold">Client portal</h3>
+            <p className="text-sm text-surface-400">
+              What this person can do in your customer portal, and how they get in.
+            </p>
+          </div>
+
+          {!contact.company ? (
+            <p className="text-sm text-amber-400">
+              This contact has no company, and the portal belongs to a company.
+            </p>
+          ) : !portal?.company?.portalEnabled ? (
+            <p className="text-sm text-amber-400">
+              The portal is switched off for {contact.company.name}. Turn it on for the
+              company first, under its own record.
+            </p>
+          ) : null}
+
+          <label className="flex items-start gap-3 p-3 rounded-lg border border-surface-700 cursor-pointer hover:border-surface-600">
+            <input type="checkbox" className="mt-1" checked={!!portal?.portalEnabled}
+              disabled={!contact.email}
+              onChange={e => setPortalEnabled(e.target.checked)} />
+            <span>
+              <span className="block text-sm text-surface-200">This person can sign in to the portal</span>
+              <span className="block text-xs text-surface-400">
+                {contact.email
+                  ? `Invitations and sign-in links go to ${contact.email}.`
+                  : 'Add an email address to this contact first: there is nowhere to send a link.'}
+              </span>
+            </span>
+          </label>
+
+          <div className="rounded-lg border border-surface-700 p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Globe className="h-4 w-4 text-surface-400" />
+              <span className="text-sm text-surface-200">How they sign in</span>
+            </div>
+            <p className="text-xs text-surface-400">
+              By emailed link. There is no password to set or reset: each sign-in sends a
+              single-use link that expires shortly after. Sending a new one retires any
+              link already outstanding.
+            </p>
+            {portal?.portalLastLogin && (
+              <p className="text-xs text-surface-500 mt-2">
+                Last signed in {formatRelativeTime(portal.portalLastLogin)}.
+              </p>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => sendPortalEmail('welcome')}
+              disabled={!portal?.portalEnabled || sending !== null}
+              className="btn-secondary text-sm flex items-center gap-1.5 disabled:opacity-50">
+              <Send className="w-3.5 h-3.5" /> Send welcome email
+            </button>
+            <button onClick={() => sendPortalEmail('login')}
+              disabled={!portal?.portalEnabled || sending !== null}
+              className="btn-secondary text-sm flex items-center gap-1.5 disabled:opacity-50">
+              <KeyRound className="w-3.5 h-3.5" /> Send sign-in link
+            </button>
+            <button onClick={impersonate} disabled={!portal?.portalEnabled}
+              className="btn-secondary text-sm flex items-center gap-1.5 disabled:opacity-50">
+              <Eye className="w-3.5 h-3.5" /> Impersonate
+            </button>
+          </div>
+
+          <p className="text-xs text-surface-500">
+            Impersonating opens the portal as this person in a new tab, and is recorded
+            against your name.
+          </p>
+        </div>
+      )}
+
+      {activeTab !== 'portal' && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
@@ -160,6 +327,7 @@ export default function ContactDetailPage() {
           )}
         </div>
       </div>
+      )}
 
       {/* Edit Modal */}
       {editing && (

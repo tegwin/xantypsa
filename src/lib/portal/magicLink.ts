@@ -110,3 +110,44 @@ export async function sendLoginEmail(
 }
 
 export { TTL_MINUTES as LOGIN_LINK_TTL_MINUTES };
+
+/**
+ * Welcome a contact to the portal.
+ *
+ * Same single-use link as a sign-in email, wrapped in an introduction, for the
+ * first time somebody is given access.
+ */
+export async function sendWelcomeEmail(
+  tenantId: string,
+  toEmail: string,
+  contactName: string,
+  companyName: string,
+  link: string,
+  portalUrl: string,
+) {
+  const config = await getSmtpConfig(tenantId);
+  if (!config) throw new Error('No outbound email is configured, so a welcome email cannot be sent.');
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto;">
+      <p>Hello ${contactName},</p>
+      <p>
+        You now have access to the ${companyName} support portal, where you can raise
+        tickets, follow their progress and see your quotes and invoices.
+      </p>
+      <p style="margin: 28px 0;">
+        <a href="${link}" style="background:#1e6af5;color:#fff;padding:12px 24px;
+           text-decoration:none;border-radius:6px;font-weight:bold;display:inline-block;">
+          Open the portal
+        </a>
+      </p>
+      <p style="color:#666;font-size:13px;">
+        This link works once and expires in ${TTL_MINUTES} minutes. After that, go to
+        <a href="${portalUrl}">${portalUrl}</a> and ask for a new one: there is no password
+        to remember, we email you a link each time.
+      </p>
+    </div>
+  `;
+
+  await sendEmail(config, toEmail, `Your ${companyName} support portal`, html);
+}
