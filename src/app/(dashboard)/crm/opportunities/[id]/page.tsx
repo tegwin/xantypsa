@@ -40,6 +40,24 @@ export default function OpportunityDetailPage() {
   const [contacts, setContacts] = useState<any[]>([]);
   const [owners, setOwners] = useState<any[]>([]);
   const [required, setRequired] = useState<Record<string, boolean>>({});
+  const [converting, setConverting] = useState(false);
+
+  // A prospect and a customer are the same record with a different type, so
+  // converting is a change of type: nothing is copied and nothing is lost.
+  const convertToCustomer = async () => {
+    if (!opp?.companyId) return;
+    if (!confirm(`Convert ${opp.company?.name} to a customer?`)) return;
+    setConverting(true);
+    try {
+      await apiPatch(`/api/companies/${opp.companyId}`, { type: 'customer' });
+      toast.success(`${opp.company?.name} is now a customer`);
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Could not convert');
+    } finally {
+      setConverting(false);
+    }
+  };
 
   // Notes panel
   const [noteText, setNoteText] = useState('');
@@ -488,12 +506,27 @@ export default function OpportunityDetailPage() {
                 </div>
               )}
               {opp.company && (
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Company</span>
-                  <Link href={`/crm/companies/${opp.company.id}`} className="text-brand-400 hover:text-brand-300">
-                    {opp.company.name}
-                  </Link>
-                </div>
+                <>
+                  <div className="flex justify-between">
+                    {/* Labelled for what it is. The same record, listed under
+                        Prospects until it is converted. */}
+                    <span className="text-slate-400">
+                      {opp.company.type === 'prospect' ? 'Prospect' : 'Company'}
+                    </span>
+                    <Link href={`/crm/companies/${opp.company.id}`} className="text-brand-400 hover:text-brand-300">
+                      {opp.company.name}
+                    </Link>
+                  </div>
+                  {opp.company.type === 'prospect' && (
+                    <button
+                      onClick={convertToCustomer}
+                      disabled={converting}
+                      className="w-full mt-1 text-xs px-3 py-2 rounded-lg border border-green-500/40 text-green-300 hover:bg-green-500/10 disabled:opacity-50"
+                    >
+                      {converting ? 'Converting...' : 'Convert to customer'}
+                    </button>
+                  )}
+                </>
               )}
               {opp.contact && (
                 <div className="flex justify-between">

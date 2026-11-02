@@ -25,6 +25,15 @@ existed nowhere, so it never appeared under Prospects.
 A lead whose name matches an existing company is attached to that company
 instead of creating a duplicate.
 
+The deal's sidebar labels it for what it is: **Prospect** while it is one,
+**Company** once converted, with a **Convert to customer** action underneath
+while it is still a prospect. Winning the deal offers the same conversion, and
+only when it has not already been converted.
+
+A prospect and a customer are the same record throughout, with the same
+contacts, tickets, quotes and opportunities. The only difference is its type,
+and therefore which list it appears in.
+
 Converting a prospect is one click on the Prospects list, or a tick box when you
 mark an opportunity as won. Either way its contacts, tickets and opportunities
 carry over untouched.
