@@ -129,21 +129,11 @@ export default function OpportunitiesClient({ opportunities: initial, companies 
       if (customerType === 'existing') {
         payload.companyId = form.companyId || null;
       } else {
-        // Store prospect info in customData
-        payload.customData = {
-          prospectName: form.prospectName,
-          prospectEmail: form.prospectEmail,
-          prospectPhone: form.prospectPhone,
-        };
-        // Also prepend prospect info to notes for visibility
-        const prospectInfo = [
-          form.prospectName && `Prospect: ${form.prospectName}`,
-          form.prospectEmail && `Email: ${form.prospectEmail}`,
-          form.prospectPhone && `Phone: ${form.prospectPhone}`,
-        ].filter(Boolean).join('\n');
-        if (prospectInfo) {
-          payload.notes = prospectInfo + (form.notes ? '\n\n' + form.notes : '');
-        }
+        // The server turns these into a real prospect company, and a contact
+        // on it, so the lead shows up under CRM, Prospects.
+        payload.prospectName = form.prospectName;
+        payload.prospectEmail = form.prospectEmail || null;
+        payload.prospectPhone = form.prospectPhone || null;
       }
 
       const res = await fetch("/api/opportunities", { method: "POST", headers: { "Content-Type": "application/json" },

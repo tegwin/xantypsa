@@ -35,6 +35,44 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
   const body = await req.json();
   if (!body.title) return errorResponse('Title is required');
 
+  // A deal raised against a new lead creates the prospect, so it appears under
+  // CRM, Prospects like any other company. Previously the name was only kept as
+  // text on the opportunity, which meant the lead existed nowhere.
+  if (!body.companyId && body.prospectName) {
+    const existing = await prisma.company.findFirst({
+      where: { tenantId: session.user.tenantId, name: body.prospectName },
+    });
+
+    const company = existing ?? await prisma.company.create({
+      data: {
+        tenantId: session.user.tenantId,
+        name: body.prospectName,
+        type: 'prospect',
+        email: body.prospectEmail || null,
+        phone: body.prospectPhone || null,
+      },
+    });
+    body.companyId = company.id;
+
+    // A named person becomes a contact on that prospect, so there is somebody
+    // to put on a quote later.
+    if (!body.contactId && (body.prospectContactName || body.prospectEmail)) {
+      const full = String(body.prospectContactName || body.prospectName).trim();
+      const [firstName, ...rest] = full.split(/\s+/);
+      const contact = await prisma.contact.create({
+        data: {
+          tenantId: session.user.tenantId,
+          companyId: company.id,
+          firstName: firstName || full,
+          lastName: rest.join(' ') || '',
+          email: body.prospectEmail || null,
+          phone: body.prospectPhone || null,
+        },
+      });
+      body.contactId = contact.id;
+    }
+  }
+
   // Whatever the business has decided it needs, enforced here as well as in
   // the form so the API cannot be used to get around it.
   const required = await getCrmRequired(session.user.tenantId);

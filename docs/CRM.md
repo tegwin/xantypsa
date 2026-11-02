@@ -10,6 +10,21 @@ is copied or re-keyed when one becomes the other.
   their open opportunities and total pipeline value.
 - **Contacts**, also under Companies, lists people across every company.
 
+### Where a prospect comes from
+
+A prospect is created when you:
+
+- add a company and set its type to prospect, or
+- raise an opportunity against a **new lead** rather than an existing company
+
+The second is the common one. Naming a new lead on a deal creates the prospect
+company, and a contact on it from the name and email given, then links the deal
+to both. Before this, the lead was only kept as text on the opportunity and
+existed nowhere, so it never appeared under Prospects.
+
+A lead whose name matches an existing company is attached to that company
+instead of creating a duplicate.
+
 Converting a prospect is one click on the Prospects list, or a tick box when you
 mark an opportunity as won. Either way its contacts, tickets and opportunities
 carry over untouched.
