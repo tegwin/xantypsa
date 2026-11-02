@@ -31,7 +31,7 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
       tenantId: session.user.tenantId,
       name: body.name,
       type: body.type,
-      sortOrder: body.sortOrder ?? 99,
+      sortOrder: parseInt(body.sortOrder ?? '99') || 99,
     },
   });
   return jsonResponse(reason, 201);

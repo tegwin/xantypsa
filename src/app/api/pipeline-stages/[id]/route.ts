@@ -21,13 +21,14 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
       ...(body.name !== undefined && { name: body.name }),
       ...(body.color !== undefined && { color: body.color }),
       ...(body.probability !== undefined && {
-        probability: Math.min(100, Math.max(0, parseInt(body.probability))),
+        // An empty field parses to NaN, which Prisma refuses outright.
+        probability: Math.min(100, Math.max(0, parseInt(body.probability) || 0)),
       }),
       ...(body.isWon !== undefined && { isWon }),
       ...(body.isLost !== undefined && { isLost }),
       ...(body.isDefault !== undefined && { isDefault: !!body.isDefault }),
       ...(body.isActive !== undefined && { isActive: !!body.isActive }),
-      ...(body.sortOrder !== undefined && { sortOrder: parseInt(body.sortOrder) }),
+      ...(body.sortOrder !== undefined && { sortOrder: parseInt(body.sortOrder) || 0 }),
     },
   });
 

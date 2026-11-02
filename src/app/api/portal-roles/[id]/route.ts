@@ -27,7 +27,7 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
       ...(body.canReplyTickets !== undefined && { canReplyTickets: !!body.canReplyTickets }),
       ...(body.isDefault !== undefined && { isDefault: !!body.isDefault }),
       ...(body.isActive !== undefined && { isActive: !!body.isActive }),
-      ...(body.sortOrder !== undefined && { sortOrder: parseInt(body.sortOrder) }),
+      ...(body.sortOrder !== undefined && { sortOrder: parseInt(body.sortOrder) || 0 }),
     },
   });
 

@@ -16,7 +16,7 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
     data: {
       ...(body.name !== undefined && { name: body.name }),
       ...(body.isActive !== undefined && { isActive: !!body.isActive }),
-      ...(body.sortOrder !== undefined && { sortOrder: parseInt(body.sortOrder) }),
+      ...(body.sortOrder !== undefined && { sortOrder: parseInt(body.sortOrder) || 0 }),
     },
   });
   return jsonResponse(updated);

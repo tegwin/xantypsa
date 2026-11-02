@@ -33,6 +33,52 @@ export default function ClientPortalSettings() {
   const [form, setForm] = useState<any>(emptyRole);
   const [saving, setSaving] = useState(false);
 
+  // Assigning people to a role. A role nobody is on does nothing, so this is
+  // reachable straight from the role row.
+  const [assignRole, setAssignRole] = useState<Role | null>(null);
+  const [people, setPeople] = useState<any[]>([]);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [assigning, setAssigning] = useState(false);
+
+  const openAssign = async (r: Role) => {
+    setAssignRole(r);
+    const data = await fetch(`/api/portal-roles/assign?roleId=${r.id}`).then(x => x.json());
+    setPeople(data.items || []);
+    setPicked(new Set(data.onThisRole || []));
+  };
+
+  const saveAssign = async () => {
+    if (!assignRole) return;
+    setAssigning(true);
+    try {
+      const onNow = people.filter(p => picked.has(p.id)).map(p => p.id);
+      const takenOff = people
+        .filter(p => p.portalRoleId === assignRole.id && !picked.has(p.id))
+        .map(p => p.id);
+
+      if (onNow.length) {
+        await fetch('/api/portal-roles/assign', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roleId: assignRole.id, contactIds: onNow }),
+        });
+      }
+      // Anyone unticked goes back to the default role.
+      if (takenOff.length) {
+        await fetch('/api/portal-roles/assign', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roleId: null, contactIds: takenOff }),
+        });
+      }
+      toast.success(`${onNow.length} on this role`);
+      setAssignRole(null);
+      await load();
+    } catch (e: any) {
+      toast.error(e.message || 'Could not save');
+    } finally {
+      setAssigning(false);
+    }
+  };
+
   const load = async () => {
     const r = await fetch('/api/portal-roles').then(x => x.json());
     setRoles(r.items || []);
@@ -132,6 +178,10 @@ export default function ClientPortalSettings() {
                   <td className="py-2 pr-4 text-surface-300">{r.showBlocks ? 'Yes' : 'No'}</td>
                   <td className="py-2 pr-4 text-right text-surface-400">{r._count?.contacts ?? 0}</td>
                   <td className="py-2 text-right whitespace-nowrap">
+                    <button onClick={() => openAssign(r)}
+                      className="text-xs px-2 py-1 rounded border border-surface-600 text-surface-300 hover:border-surface-500">
+                      People
+                    </button>
                     <button onClick={() => openEdit(r)} aria-label={`Edit ${r.name}`}
                       className="p-1.5 rounded hover:bg-white/10 text-surface-300"><Pencil className="h-3.5 w-3.5" /></button>
                     <button onClick={() => remove(r)} aria-label={`Delete ${r.name}`}
@@ -207,6 +257,59 @@ export default function ClientPortalSettings() {
           </div>
         </div>
       </Modal>
+
+      {assignRole && (
+        <Modal isOpen={!!assignRole} onClose={() => setAssignRole(null)}
+          title={`Who is on "${assignRole.name}"`} size="lg"
+          footer={<>
+            <Button variant="secondary" onClick={() => setAssignRole(null)}>Cancel</Button>
+            <Button loading={assigning} onClick={saveAssign}>Save</Button>
+          </>}>
+          <div className="space-y-3">
+            <p className="text-sm text-surface-400">
+              Only contacts at companies whose portal is switched on are listed. Unticking
+              somebody puts them back on the default role.
+            </p>
+
+            {people.length === 0 ? (
+              <p className="text-sm text-surface-500">
+                No company has a portal switched on yet. Turn one on from the company's
+                Portal tab first.
+              </p>
+            ) : (
+              <ul className="max-h-80 overflow-y-auto divide-y divide-surface-800">
+                {people.map(p => {
+                  const otherRole = p.portalRoleId && p.portalRoleId !== assignRole.id;
+                  return (
+                    <li key={p.id} className="flex items-center gap-3 py-2">
+                      <input type="checkbox" checked={picked.has(p.id)}
+                        onChange={e => {
+                          const next = new Set(picked);
+                          e.target.checked ? next.add(p.id) : next.delete(p.id);
+                          setPicked(next);
+                        }} />
+                      <span className="flex-1">
+                        <span className="block text-sm text-surface-200">
+                          {[p.firstName, p.lastName].filter(Boolean).join(' ')}
+                          {!p.portalEnabled && (
+                            <span className="ml-2 text-xs text-amber-400">no portal access</span>
+                          )}
+                          {otherRole && (
+                            <span className="ml-2 text-xs text-surface-500">on another role</span>
+                          )}
+                        </span>
+                        <span className="block text-xs text-surface-500">
+                          {p.company?.name}{p.email ? ` - ${p.email}` : ''}
+                        </span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

@@ -38,7 +38,7 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
       canCreateTickets: body.canCreateTickets !== false,
       canReplyTickets: body.canReplyTickets !== false,
       isDefault: !!body.isDefault,
-      sortOrder: body.sortOrder ?? 99,
+      sortOrder: parseInt(body.sortOrder ?? '99') || 99,
     },
   });
 

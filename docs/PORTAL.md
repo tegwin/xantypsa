@@ -48,6 +48,12 @@ checked on the server rather than trusted from the request.
 Everything except tickets is read only. A client never edits a quote, a project
 or an invoice.
 
+Roles are global: defined once for the whole system, then given to contacts.
+Assign one on a contact's Portal tab, where the chosen role is spelled out so
+you can see what it grants without going back to Settings, or in bulk from the
+**People** button on the role itself. The contact list shows each person's role
+in a Portal column.
+
 A contact with no role gets whichever role is marked default. With no default
 either, they see only their own tickets: the narrowest useful access, because
 widening it should be a decision somebody made, never something that happened

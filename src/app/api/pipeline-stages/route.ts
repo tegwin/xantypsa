@@ -33,7 +33,7 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
       isWon: !!body.isWon,
       isLost: !!body.isLost,
       isDefault: !!body.isDefault,
-      sortOrder: body.sortOrder ?? 99,
+      sortOrder: parseInt(body.sortOrder ?? '99') || 99,
     },
   });
 

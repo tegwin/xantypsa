@@ -72,6 +72,12 @@ export default function ContactsClient({ contacts: initial, companies = [] }: { 
       ) : <span className="text-surface-600"> - </span>,
     },
     {
+      key: "portal", header: "Portal",
+      render: (c: any) => !c.portalEnabled
+        ? <span className="text-surface-600">No access</span>
+        : <span className="text-surface-300">{c.portalRole || 'Default role'}</span>,
+    },
+    {
       key: "company", header: "Company",
       render: (c: Contact) => c.company ? (
         <span className="flex items-center gap-1.5 text-surface-300"><Building2 className="h-3.5 w-3.5" />{c.company}</span>

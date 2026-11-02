@@ -26,7 +26,11 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
   const roles = await prisma.portalRole.findMany({
     where: { tenantId: session.user.tenantId, isActive: true },
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-    select: { id: true, name: true, isDefault: true },
+    select: {
+      id: true, name: true, isDefault: true,
+      ticketScope: true, quoteScope: true, projectScope: true, invoiceScope: true,
+      showBlocks: true, canCreateTickets: true, canReplyTickets: true,
+    },
   });
 
   return jsonResponse({

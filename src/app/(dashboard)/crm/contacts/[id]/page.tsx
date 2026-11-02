@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useApi, apiPatch, apiDelete } from '@/hooks/useApi';
 import { PageHeader, StatusBadge, LoadingSpinner, Modal } from '@/components/ui';
-import { formatRelativeTime } from '@/lib/utils';
+import { formatCurrency, formatRelativeTime } from '@/lib/utils';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { User, Building2, Mail, Phone, Smartphone, MapPin, Briefcase, Edit, Trash2,
@@ -209,9 +209,34 @@ export default function ContactDetailPage() {
                 <option key={r.id} value={r.id}>{r.name}</option>
               ))}
             </select>
-            <p className="text-xs text-surface-400 mt-1">
-              Roles are set up under Settings, Client Portal.
-            </p>
+            {/* Spell out what the chosen role actually allows, so the effect
+                of the setting is visible without going to Settings. */}
+            {(() => {
+              const chosen = (portal?.roles || []).find((r: any) =>
+                portal?.portalRoleId ? r.id === portal.portalRoleId : r.isDefault);
+              if (!chosen) {
+                return (
+                  <p className="text-xs text-surface-400 mt-1">
+                    No role, so they see only their own tickets. Roles are set up under
+                    Settings, Client Portal.
+                  </p>
+                );
+              }
+              const word = (s: string) =>
+                s === 'company' ? 'the whole company' : s === 'own' ? 'their own' : 'nothing';
+              return (
+                <div className="mt-2 rounded-lg border border-surface-700 p-3 text-xs text-surface-400 space-y-0.5">
+                  <p className="text-surface-300">{chosen.name} gives them:</p>
+                  <p>Tickets: {word(chosen.ticketScope)}
+                    {chosen.canCreateTickets ? ', can raise' : ', cannot raise'}
+                    {chosen.canReplyTickets ? ', can reply' : ', cannot reply'}</p>
+                  <p>Projects: {word(chosen.projectScope)}</p>
+                  <p>Quotes: {word(chosen.quoteScope)}</p>
+                  <p>Invoices: {word(chosen.invoiceScope)}</p>
+                  <p>Prepaid hours: {chosen.showBlocks ? 'shown' : 'hidden'}</p>
+                </div>
+              );
+            })()}
           </div>
 
           <div className="rounded-lg border border-surface-700 p-3">
@@ -255,13 +280,88 @@ export default function ContactDetailPage() {
         </div>
       )}
 
-      {activeTab !== 'portal' && activeTab !== 'custom-fields' && (
+      {activeTab === 'tickets' && (
+        <div className="glass rounded-xl p-6">
+          <h3 className="text-white font-semibold mb-4">Tickets ({contact._count?.tickets || 0})</h3>
+          {contact.tickets?.length > 0 ? (
+            <div className="space-y-2">
+              {contact.tickets.map((t: any) => (
+                <Link key={t.id} href={`/service-desk/tickets/${t.id}`}
+                  className="flex items-center justify-between bg-white/5 rounded-lg p-3 hover:bg-white/10 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-xs text-slate-400">{t.ticketNumber}</span>
+                    <span className="text-white text-sm">{t.title}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={t.priority} />
+                    <StatusBadge status={t.status} />
+                    <span className="text-xs text-slate-500">{formatRelativeTime(t.createdAt)}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500 text-center py-8">No tickets for this contact</p>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'opportunities' && (
+        <div className="glass rounded-xl p-6">
+          <h3 className="text-white font-semibold mb-4">
+            Opportunities ({contact._count?.opportunities || 0})
+          </h3>
+          {contact.opportunities?.length > 0 ? (
+            <div className="space-y-2">
+              {contact.opportunities.map((o: any) => (
+                <Link key={o.id} href={`/crm/opportunities/${o.id}`}
+                  className="flex items-center justify-between bg-white/5 rounded-lg p-3 hover:bg-white/10 transition-colors">
+                  <span className="text-white text-sm">{o.title}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs capitalize text-slate-400">{o.stage}</span>
+                    <span className="text-sm text-white">{formatCurrency(o.value || 0)}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500 text-center py-8">No opportunities for this contact</p>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'quotes' && (
+        <div className="glass rounded-xl p-6">
+          <h3 className="text-white font-semibold mb-4">Quotes ({contact._count?.quotes || 0})</h3>
+          {contact.quotes?.length > 0 ? (
+            <div className="space-y-2">
+              {contact.quotes.map((q: any) => (
+                <Link key={q.id} href={`/quotes/${q.id}`}
+                  className="flex items-center justify-between bg-white/5 rounded-lg p-3 hover:bg-white/10 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-xs text-slate-400">{q.quoteNumber}</span>
+                    <span className="text-white text-sm">{q.title}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={q.status} />
+                    <span className="text-sm text-white">{formatCurrency(q.total || 0)}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500 text-center py-8">No quotes for this contact</p>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'overview' && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Recent Tickets */}
+          {/* A glance at recent work; the Tickets tab has the rest. */}
           <div className="glass rounded-xl p-6">
-            <h3 className="text-white font-semibold mb-4">Recent Tickets ({contact._count?.tickets || 0})</h3>
+            <h3 className="text-white font-semibold mb-4">Recent tickets ({contact._count?.tickets || 0})</h3>
             {contact.tickets?.length > 0 ? (
               <div className="space-y-2">
                 {contact.tickets.map((t: any) => (
