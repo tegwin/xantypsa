@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
-      path: '/portal',
+      path: '/',
       maxAge: 60 * 60 * 12,
     }
   );

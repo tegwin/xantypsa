@@ -14,15 +14,23 @@ import { encodeSession, PORTAL_COOKIE } from '@/lib/portal/session';
 
 export const dynamic = 'force-dynamic';
 
+export async function GET(req: NextRequest) {
+  return handle(req);
+}
+
 export async function POST(req: NextRequest) {
+  return handle(req);
+}
+
+async function handle(req: NextRequest) {
   const session = await getAppSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Previewing a client portal exposes that client's tickets and invoices, so
-  // it needs the same standing as managing them.
+  // Administrators only. Previewing a portal signs you in as somebody else and
+  // exposes everything they can see, so it sits with managing settings rather
+  // than with managing customers. Manager and below are deliberately excluded.
   const permitted =
     session.user.isSuperAdmin ||
-    session.user.permissions?.includes('crm:manage') ||
     session.user.permissions?.includes('settings:manage');
   if (!permitted) {
     return NextResponse.json({ error: 'You do not have permission to preview portals.' }, { status: 403 });
@@ -37,7 +45,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { contactId } = await req.json().catch(() => ({ contactId: null }));
+  // A GET carries it in the query, a POST in the body.
+  const contactId =
+    req.nextUrl.searchParams.get('contactId') ||
+    (await req.json().catch(() => ({ contactId: null }))).contactId;
   if (!contactId) return NextResponse.json({ error: 'contactId is required' }, { status: 400 });
 
   const contact = await prisma.contact.findFirst({
@@ -72,10 +83,15 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  const res = NextResponse.json({
-    ok: true,
-    url: `/portal/${contact.company.portalSlug}/tickets`,
-  });
+  const target = `/portal/${contact.company.portalSlug}/home`;
+
+  // A redirect rather than JSON, so the browser lands on the portal with the
+  // cookie already applied. Opening a window after an async fetch is both
+  // popup-blocked and a race against the cookie being stored.
+  const wantsRedirect = req.nextUrl.searchParams.get('redirect') === '1';
+  const res = wantsRedirect
+    ? NextResponse.redirect(new URL(target, req.nextUrl.origin))
+    : NextResponse.json({ ok: true, url: target });
 
   res.cookies.set(
     PORTAL_COOKIE,
@@ -93,7 +109,7 @@ export async function POST(req: NextRequest) {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
-      path: '/portal',
+      path: '/',
       maxAge: 60 * 30,
     }
   );

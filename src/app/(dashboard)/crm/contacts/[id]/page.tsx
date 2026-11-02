@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { User, Building2, Mail, Phone, Smartphone, MapPin, Briefcase, Edit, Trash2,
   Send, KeyRound, Eye, Globe } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useSession } from '@/components/SessionProvider';
 import CustomFieldsTab from './tabs/CustomFieldsTab';
 
 export default function ContactDetailPage() {
@@ -20,6 +21,7 @@ export default function ContactDetailPage() {
   const [editForm, setEditForm] = useState<any>({});
   const [showDelete, setShowDelete] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const { data: appSession } = useSession();
 
   // Portal access for this person. Sign-in is by emailed link, so there is no
   // password here to reset: a fresh link is the equivalent.
@@ -54,22 +56,16 @@ export default function ContactDetailPage() {
     }
   };
 
-  // Opens the portal as this person, in a new tab, so staff can see exactly
-  // what the client sees.
-  const impersonate = async () => {
-    try {
-      const res = await fetch('/api/portal/impersonate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contactId: id }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not open the portal');
-      window.open(data.url || `/portal/${portal?.company?.portalSlug}`, '_blank');
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
+  // Opens the portal as this person. A plain link rather than fetch then
+  // window.open: the browser follows the redirect with the cookie already set,
+  // and nothing is popup-blocked.
+  const impersonateHref = `/api/portal/impersonate?redirect=1&contactId=${id}`;
+
+  // Administrators only, matching the server. Showing a button that always
+  // refuses is worse than not showing it.
+  const canImpersonate =
+    !!appSession?.user?.isSuperAdmin ||
+    (appSession?.user?.permissions ?? []).includes('settings:manage');
 
   if (loading) return <LoadingSpinner />;
   if (!contact) return <div className="p-8 text-slate-400">Contact not found</div>;
@@ -119,9 +115,12 @@ export default function ContactDetailPage() {
                 <KeyRound className="w-3.5 h-3.5" />
                 {sending === 'login' ? 'Sending...' : 'Send Sign-in Link'}
               </button>
-              <button onClick={impersonate} className="btn-secondary flex items-center gap-1.5">
-                <Eye className="w-3.5 h-3.5" /> Impersonate
-              </button>
+              {canImpersonate && (
+                <a href={impersonateHref} target="_blank" rel="noreferrer"
+                  className="btn-secondary flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5" /> Impersonate
+                </a>
+              )}
             </>
           )}
           <button onClick={() => setShowDelete(true)} className="btn-danger flex items-center gap-1.5">
@@ -267,10 +266,18 @@ export default function ContactDetailPage() {
               className="btn-secondary text-sm flex items-center gap-1.5 disabled:opacity-50">
               <KeyRound className="w-3.5 h-3.5" /> Send sign-in link
             </button>
-            <button onClick={impersonate} disabled={!portal?.portalEnabled}
-              className="btn-secondary text-sm flex items-center gap-1.5 disabled:opacity-50">
-              <Eye className="w-3.5 h-3.5" /> Impersonate
-            </button>
+            {canImpersonate ? (
+              <a href={impersonateHref} target="_blank" rel="noreferrer"
+                className={`btn-secondary text-sm flex items-center gap-1.5 ${
+                  portal?.portalEnabled ? '' : 'pointer-events-none opacity-50'
+                }`}>
+                <Eye className="w-3.5 h-3.5" /> Impersonate
+              </a>
+            ) : (
+              <span className="text-xs text-surface-500 self-center">
+                Impersonating is for administrators only.
+              </span>
+            )}
           </div>
 
           <p className="text-xs text-surface-500">

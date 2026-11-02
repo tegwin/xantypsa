@@ -107,7 +107,10 @@ looks wrong on my end" call without asking them to screenshot anything.
 
 Guard rails:
 
-- Staff only, and only with permission to manage CRM or settings.
+- **Administrators only.** Signing in as somebody else exposes everything they
+  can see, so it sits with managing settings rather than managing customers.
+  Manager and below are deliberately excluded, and the button is not shown to
+  them rather than shown and refused.
 - Recorded against your name before any access is granted.
 - Somebody already being impersonated cannot start a portal preview, because the
   audit trail would then name the wrong person.

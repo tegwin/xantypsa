@@ -65,18 +65,27 @@ export function decodeSession(raw?: string | null): PortalPayload | null {
   }
 }
 
+/**
+ * Path is "/" deliberately, not "/portal".
+ *
+ * The portal's own API routes live under /api/portal, which a cookie scoped to
+ * /portal is never sent to: raising a ticket or replying would answer "not
+ * signed in" and bounce the client to the login page. The cookie is signed and
+ * httpOnly, so a wider path costs nothing.
+ */
 export async function setPortalCookie(payload: Omit<PortalPayload, 'exp'>) {
   cookies().set(PORTAL_COOKIE, encodeSession(payload), {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
-    path: '/portal',
+    path: '/',
     maxAge: TTL_SECONDS,
   });
 }
 
 export async function clearPortalCookie() {
-  cookies().delete(PORTAL_COOKIE);
+  // The path must match the one it was set with, or the delete silently misses.
+  cookies().set(PORTAL_COOKIE, '', { path: '/', maxAge: 0 });
 }
 
 /**
