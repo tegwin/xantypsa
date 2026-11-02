@@ -34,6 +34,7 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
       quoteScope: scope(body.quoteScope, 'none'),
       projectScope: scope(body.projectScope, 'none'),
       invoiceScope: scope(body.invoiceScope, 'none'),
+      reportScope: scope(body.reportScope, 'none'),
       showBlocks: !!body.showBlocks,
       canCreateTickets: body.canCreateTickets !== false,
       canReplyTickets: body.canReplyTickets !== false,

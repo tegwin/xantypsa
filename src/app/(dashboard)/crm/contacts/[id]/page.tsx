@@ -232,6 +232,7 @@ export default function ContactDetailPage() {
                   <p>Projects: {word(chosen.projectScope)}</p>
                   <p>Quotes: {word(chosen.quoteScope)}</p>
                   <p>Invoices: {word(chosen.invoiceScope)}</p>
+                  <p>Reports: {word(chosen.reportScope)}</p>
                   <p>Prepaid hours: {chosen.showBlocks ? 'shown' : 'hidden'}</p>
                 </div>
               );

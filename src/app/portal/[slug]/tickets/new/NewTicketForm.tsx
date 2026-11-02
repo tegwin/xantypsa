@@ -3,13 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-const PRIORITIES = [
-  { value: 'low', label: 'Low - a nuisance, not urgent' },
-  { value: 'medium', label: 'Medium - affecting my work' },
-  { value: 'high', label: 'High - I cannot work' },
-  { value: 'critical', label: 'Critical - the business is stopped' },
-];
-
 export default function NewTicketForm({
   slug,
   meId,
@@ -24,7 +17,6 @@ export default function NewTicketForm({
   const [form, setForm] = useState({
     title: '',
     description: '',
-    priority: 'medium',
     onBehalfOfContactId: '',
   });
   const [saving, setSaving] = useState(false);
@@ -41,6 +33,9 @@ export default function NewTicketForm({
         body: JSON.stringify(form),
       });
       const body = await res.json();
+      if (res.status === 401) {
+        throw new Error('Your session has expired. Reload this page and try again.');
+      }
       if (!res.ok) throw new Error(body.error || 'Could not raise the ticket.');
       router.push(`/portal/${slug}/tickets/${body.id}`);
     } catch (err: any) {
@@ -83,25 +78,10 @@ export default function NewTicketForm({
         />
       </div>
 
-      <div>
-        <label htmlFor="priority" className="mb-1.5 block text-sm text-slate-300">
-          How urgent is it?
-        </label>
-        <select
-          id="priority"
-          value={form.priority}
-          onChange={(e) => setForm({ ...form, priority: e.target.value })}
-          className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2.5 text-sm text-white"
-        >
-          {PRIORITIES.map((p) => (
-            <option key={p.value} value={p.value}>{p.label}</option>
-          ))}
-        </select>
-      </div>
 
       {/* Only shown to somebody allowed to raise for a colleague, which needs
           sight of the whole company's tickets so they can follow it afterwards. */}
-      {colleagues.length > 1 && (
+      {colleagues.length > 0 && (
         <div>
           <label htmlFor="onBehalfOf" className="mb-1.5 block text-sm text-slate-300">
             Who is this for?
@@ -119,7 +99,9 @@ export default function NewTicketForm({
             ))}
           </select>
           <p className="mt-1 text-xs text-slate-500">
-            The ticket is raised against this person, so updates go to them.
+            {colleagues.length > 1
+              ? 'The ticket is raised against this person, so updates go to them.'
+              : 'You are the only contact at your company at the moment.'}
           </p>
         </div>
       )}

@@ -1777,6 +1777,8 @@ model PortalRole {
   quoteScope   String @default("none")
   projectScope String @default("none")
   invoiceScope String @default("none")
+  /// The Reports area, which is where the prepaid hours report lives.
+  reportScope  String @default("none")
 
   /// Prepaid hours remaining, for clients who buy blocks.
   showBlocks Boolean @default(false)

@@ -29,6 +29,7 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
     select: {
       id: true, name: true, isDefault: true,
       ticketScope: true, quoteScope: true, projectScope: true, invoiceScope: true,
+      reportScope: true,
       showBlocks: true, canCreateTickets: true, canReplyTickets: true,
     },
   });

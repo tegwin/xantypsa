@@ -22,6 +22,7 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
       ...(isScope(body.quoteScope) && { quoteScope: body.quoteScope }),
       ...(isScope(body.projectScope) && { projectScope: body.projectScope }),
       ...(isScope(body.invoiceScope) && { invoiceScope: body.invoiceScope }),
+      ...(isScope(body.reportScope) && { reportScope: body.reportScope }),
       ...(body.showBlocks !== undefined && { showBlocks: !!body.showBlocks }),
       ...(body.canCreateTickets !== undefined && { canCreateTickets: !!body.canCreateTickets }),
       ...(body.canReplyTickets !== undefined && { canReplyTickets: !!body.canReplyTickets }),

@@ -27,6 +27,7 @@ export default function PortalHeader({
     { href: `/portal/${slug}/projects`, label: 'Projects', show: (access?.projectScope ?? 'none') !== 'none' },
     { href: `/portal/${slug}/quotes`, label: 'Quotes', show: (access?.quoteScope ?? 'none') !== 'none' },
     { href: `/portal/${slug}/invoices`, label: 'Invoices', show: (access?.invoiceScope ?? 'none') !== 'none' },
+    { href: `/portal/${slug}/reports`, label: 'Reports', show: (access?.reportScope ?? 'none') !== 'none' },
   ].filter((l) => l.show);
 
   return (

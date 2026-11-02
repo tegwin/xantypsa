@@ -22,7 +22,7 @@ export default async function PortalHome({ params }: { params: { slug: string } 
   const { contact, company, tenantId } = session;
   const access = await getPortalAccess(contact.id, tenantId);
 
-  const [openTickets, quoteCount, projectCount, invoiceCount, blocks] = await Promise.all([
+  const [openTickets, quoteCount, projectCount, invoiceCount] = await Promise.all([
     access.ticketScope === 'none' ? 0 : prisma.ticket.count({
       where: { tenantId, ...scopeFilter(access.ticketScope, company.id, contact.id) },
     }),
@@ -31,12 +31,6 @@ export default async function PortalHome({ params }: { params: { slug: string } 
     }),
     access.projectScope === 'none' ? 0 : prisma.project.count({ where: { tenantId, companyId: company.id } }),
     access.invoiceScope === 'none' ? 0 : prisma.invoice.count({ where: { tenantId, companyId: company.id } }),
-    access.showBlocks
-      ? prisma.contract.findMany({
-          where: { tenantId, companyId: company.id, type: 'prepay_hours', status: 'active' },
-          select: { id: true, name: true, totalHours: true, hoursUsed: true },
-        })
-      : [],
   ]);
 
   const accent = company.portalAccent || '#1e6af5';
@@ -67,6 +61,11 @@ export default async function PortalHome({ params }: { params: { slug: string } 
       title: 'Invoices',
       body: `Your invoices (${invoiceCount})`,
     },
+    access.reportScope !== 'none' && {
+      href: `/portal/${params.slug}/reports`,
+      title: 'Reports',
+      body: access.showBlocks ? 'Prepaid hours remaining' : 'Your reports',
+    },
   ].filter(Boolean) as { href: string; title: string; body: string }[];
 
   return (
@@ -77,30 +76,6 @@ export default async function PortalHome({ params }: { params: { slug: string } 
       <p className="text-center text-sm text-slate-400 mb-10">
         {contact.firstName} at {company.name}
       </p>
-
-      {/* Prepaid hours, for clients who buy blocks */}
-      {access.showBlocks && blocks.length > 0 && (
-        <div className="mb-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {blocks.map((b) => {
-            const remaining = (b.totalHours || 0) - (b.hoursUsed || 0);
-            const pct = b.totalHours ? Math.min(100, ((b.hoursUsed || 0) / b.totalHours) * 100) : 0;
-            return (
-              <div key={b.id} className="rounded-xl border border-slate-700 bg-slate-800/60 p-4">
-                <p className="text-sm text-slate-300">{b.name}</p>
-                <p className="mt-1 text-2xl font-semibold text-white">
-                  {remaining.toFixed(1)}h <span className="text-sm font-normal text-slate-400">remaining</span>
-                </p>
-                <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-700">
-                  <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: accent }} />
-                </div>
-                <p className="mt-1 text-xs text-slate-500">
-                  {(b.hoursUsed || 0).toFixed(1)}h of {(b.totalHours || 0).toFixed(1)}h used
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {tiles.map((t) => (

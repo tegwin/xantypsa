@@ -8,6 +8,7 @@ import { Plus, Pencil, Trash2 } from 'lucide-react';
 interface Role {
   id: string; name: string;
   ticketScope: string; quoteScope: string; projectScope: string; invoiceScope: string;
+  reportScope: string;
   showBlocks: boolean; canCreateTickets: boolean; canReplyTickets: boolean;
   isDefault: boolean; isActive: boolean; sortOrder: number;
   _count?: { contacts: number };
@@ -21,7 +22,7 @@ const SCOPES = [
 
 const emptyRole = {
   name: '', ticketScope: 'own', quoteScope: 'none', projectScope: 'none',
-  invoiceScope: 'none', showBlocks: false, canCreateTickets: true,
+  invoiceScope: 'none', reportScope: 'none', showBlocks: false, canCreateTickets: true,
   canReplyTickets: true, isDefault: false, sortOrder: '99',
 };
 
@@ -155,6 +156,7 @@ export default function ClientPortalSettings() {
                 <th scope="col" className="py-2 pr-4">Projects</th>
                 <th scope="col" className="py-2 pr-4">Quotes</th>
                 <th scope="col" className="py-2 pr-4">Invoices</th>
+                <th scope="col" className="py-2 pr-4">Reports</th>
                 <th scope="col" className="py-2 pr-4">Blocks</th>
                 <th scope="col" className="py-2 pr-4 text-right">People</th>
                 <th scope="col" className="py-2 text-right">Actions</th>
@@ -175,6 +177,7 @@ export default function ClientPortalSettings() {
                   <td className="py-2 pr-4 text-surface-300">{scopeLabel(r.projectScope)}</td>
                   <td className="py-2 pr-4 text-surface-300">{scopeLabel(r.quoteScope)}</td>
                   <td className="py-2 pr-4 text-surface-300">{scopeLabel(r.invoiceScope)}</td>
+                  <td className="py-2 pr-4 text-surface-300">{scopeLabel(r.reportScope)}</td>
                   <td className="py-2 pr-4 text-surface-300">{r.showBlocks ? 'Yes' : 'No'}</td>
                   <td className="py-2 pr-4 text-right text-surface-400">{r._count?.contacts ?? 0}</td>
                   <td className="py-2 text-right whitespace-nowrap">
@@ -190,7 +193,7 @@ export default function ClientPortalSettings() {
                 </tr>
               ))}
               {roles.length === 0 && (
-                <tr><td colSpan={8} className="py-6 text-center text-surface-500">
+                <tr><td colSpan={9} className="py-6 text-center text-surface-500">
                   No roles yet. Without one, a contact sees only their own tickets.
                 </td></tr>
               )}
@@ -218,6 +221,8 @@ export default function ClientPortalSettings() {
               onChange={(e: any) => setForm({ ...form, quoteScope: e.target.value })} options={SCOPES} />
             <Select label="Invoices they can see" value={form.invoiceScope}
               onChange={(e: any) => setForm({ ...form, invoiceScope: e.target.value })} options={SCOPES} />
+            <Select label="Reports they can see" value={form.reportScope}
+              onChange={(e: any) => setForm({ ...form, reportScope: e.target.value })} options={SCOPES} />
           </div>
 
           <p className="text-xs text-surface-500">
@@ -246,7 +251,9 @@ export default function ClientPortalSettings() {
                 onChange={e => setForm({ ...form, showBlocks: e.target.checked })} />
               <span>
                 <span className="block">Show prepaid hours remaining</span>
-                <span className="block text-xs text-surface-400">For clients who buy blocks of time.</span>
+                <span className="block text-xs text-surface-400">
+                  Appears in Reports, so they also need report access above.
+                </span>
               </span>
             </label>
             <label className="flex items-center gap-2 text-sm text-surface-300 cursor-pointer">

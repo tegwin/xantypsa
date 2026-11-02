@@ -102,15 +102,16 @@ async function handle(req: NextRequest) {
         tenantId: session.user.tenantId,
         impersonatedBy: session.user.id,
       },
-      // Short: this is a support glance, not a session.
-      60 * 30
+      // Long enough to work through a problem without being thrown out
+      // mid-task, short enough that a forgotten tab is not a standing door.
+      60 * 120
     ),
     {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
       path: '/',
-      maxAge: 60 * 30,
+      maxAge: 60 * 120,
     }
   );
 

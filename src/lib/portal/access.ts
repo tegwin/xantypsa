@@ -14,6 +14,8 @@ export interface PortalAccess {
   quoteScope: Scope;
   projectScope: Scope;
   invoiceScope: Scope;
+  /** The Reports area, which is where the prepaid hours report lives. */
+  reportScope: Scope;
   showBlocks: boolean;
   canCreateTickets: boolean;
   canReplyTickets: boolean;
@@ -32,6 +34,7 @@ const FALLBACK: PortalAccess = {
   quoteScope: 'none',
   projectScope: 'none',
   invoiceScope: 'none',
+  reportScope: 'none',
   showBlocks: false,
   canCreateTickets: true,
   canReplyTickets: true,
@@ -59,6 +62,7 @@ export async function getPortalAccess(contactId: string, tenantId: string): Prom
     quoteScope: role.quoteScope as Scope,
     projectScope: role.projectScope as Scope,
     invoiceScope: role.invoiceScope as Scope,
+    reportScope: role.reportScope as Scope,
     showBlocks: role.showBlocks,
     canCreateTickets: role.canCreateTickets,
     canReplyTickets: role.canReplyTickets,

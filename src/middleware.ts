@@ -13,6 +13,11 @@ export async function middleware(request: NextRequest) {
   // having to sign in again.
   const portalCookie = request.cookies.get(PORTAL_COOKIE)?.value;
   if (portalCookie && request.nextUrl.pathname.startsWith('/portal/')) {
+    // Expire the legacy one explicitly. Two cookies of the same name with
+    // different paths both get sent to /portal, and the browser picks one,
+    // which makes the failure look intermittent.
+    res.cookies.set(PORTAL_COOKIE, '', { path: '/portal', maxAge: 0 });
+
     res.cookies.set(PORTAL_COOKIE, portalCookie, {
       httpOnly: true,
       sameSite: 'lax',
