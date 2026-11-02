@@ -6,7 +6,7 @@ import {
   ChevronDown, ChevronRight, LayoutDashboard, Building2, Users, Target,
   LifeBuoy, FileText, Receipt, Package, CreditCard, Monitor, FolderKanban,
   Shield, Mail, Sliders, Webhook, Key, Zap, Upload, Globe, Code,
-  Search, BookOpen
+  Search, BookOpen, DollarSign
 } from 'lucide-react';
 
 interface HelpSection {
@@ -638,18 +638,338 @@ const HELP_SECTIONS: HelpSection[] = [
           a digital signature. Accepted quotes trigger a notification to your team for processing.
         </p>
         <p>
-          The ticket view in the portal shows all tickets for the client's company (or just their own tickets, depending on
-          the permission level). They can add notes, upload attachments, and see the status timeline. This reduces inbound
-          calls and emails asking for status updates.
+          Signing in lands on a page of tiles, and only the areas the contact's role allows are
+          there at all. An area somebody cannot reach is absent, not shown and refused.
+        </p>
+        <p className="text-white/70 font-medium">What a client can see:</p>
+        <ul className="list-disc list-inside space-y-1 text-slate-400">
+          <li><span className="text-white/80">Tickets</span>: raise, view and reply, their own or the whole company's.</li>
+          <li><span className="text-white/80">Projects</span>: progress, tasks and a timeline, read only.</li>
+          <li><span className="text-white/80">Quotes and invoices</span>: read only, each behind its own permission.</li>
+          <li><span className="text-white/80">Prepaid hours</span>: hours remaining per contract, for clients who buy blocks.</li>
+        </ul>
+        <p>
+          A project shows a Gantt chart drawn from the task dates: in progress in the client's
+          accent colour, done in green, overdue in red, with a line marking today, and milestones
+          listed beneath.
         </p>
         <p className="text-white/70 font-medium">Key Tips:</p>
         <ul className="list-disc list-inside space-y-1 text-slate-400">
-          <li>Enable portal access selectively for key contacts at each company.</li>
-          <li>Customise the portal branding to match your company identity.</li>
-          <li>Use the quote approval workflow to get faster sign-offs on proposals.</li>
+          <li>Switch the portal on for the company first, then give individual contacts access.</li>
+          <li>Set each client's logo, accent colour and welcome heading on the company's Portal tab.</li>
+          <li>Use a role to decide what each contact sees, rather than giving everyone the same view.</li>
           <li>Encourage clients to use the portal for ticket submissions to ensure proper logging.</li>
         </ul>
-        <p className="text-xs text-slate-500">Related: Contacts, Quotes, Tickets</p>
+        <p className="text-xs text-slate-500">Related: Client portal roles, Portal access and impersonating, Contacts</p>
+      </div>
+    ),
+  },
+  {
+    id: 'public-private-notes',
+    title: 'Public and private notes',
+    icon: <LifeBuoy className="w-4 h-4" />,
+    content: (
+      <div className="space-y-4 text-sm text-slate-400 leading-relaxed">
+        <p>
+          The choice sits in the action bar at the top of a ticket, not buried in the form.
+          Pick <span className="text-white/80">Public Note</span> or{' '}
+          <span className="text-white/80">Private Note</span> and the composer follows: the
+          placeholder, the tint on the time entry panel and the save button all change to match.
+        </p>
+        <p>
+          A public note is visible to the customer in the portal, and can be emailed to them
+          with the tick box on the composer. A private note never leaves the system.
+        </p>
+        <p>
+          Every note in the timeline is labelled Public or Private, and either can be switched
+          afterwards with the link on the note. System notes are the audit trail and cannot be
+          changed.
+        </p>
+        <p className="text-white/70 font-medium">Key Tips:</p>
+        <ul className="list-disc list-inside space-y-1 text-slate-400">
+          <li>If an email fails to send, the note is still saved. You get a separate warning, so a failed send is never mistaken for a lost note.</li>
+          <li>Use the badge on each note to check what the customer can see before they ask.</li>
+        </ul>
+        <p className="text-xs text-slate-500">Related: Tickets, Customer Portal</p>
+      </div>
+    ),
+  },
+  {
+    id: 'ticket-timer',
+    title: 'The ticket timer',
+    icon: <Zap className="w-4 h-4" />,
+    content: (
+      <div className="space-y-4 text-sm text-slate-400 leading-relaxed">
+        <p>
+          A work timer runs on each ticket, in the action bar and again in the time entry panel.
+          It keeps running when you leave the ticket and across a page reload, because it is
+          stored against the ticket rather than the page.
+        </p>
+        <p>
+          Time is entered in <span className="text-white/80">hours</span>, not minutes: 8 rather
+          than 480, with quick picks from 0.25 to 8. The field tracks the clock while it runs.
+          Type a figure or pick a quick value and it stops tracking and leaves your number alone.
+        </p>
+        <p className="text-white/70 font-medium">Settings, Service Desk, Timer:</p>
+        <ul className="list-disc list-inside space-y-1 text-slate-400">
+          <li><span className="text-white/80">Show the timer on tickets</span>: off hides it everywhere.</li>
+          <li><span className="text-white/80">Only run while the time entry panel is open</span>: paused on the ticket until you open Add Time.</li>
+          <li><span className="text-white/80">Only run while writing a public note</span>: switching to a private note pauses it, so internal work is not timed.</li>
+        </ul>
+        <p>With both narrowing options off, the timer simply runs the whole time a ticket is open.</p>
+        <p className="text-xs text-slate-500">Related: Tickets, Time tracking</p>
+      </div>
+    ),
+  },
+  {
+    id: 'references',
+    title: 'Reference numbers',
+    icon: <FileText className="w-4 h-4" />,
+    content: (
+      <div className="space-y-4 text-sm text-slate-400 leading-relaxed">
+        <p>
+          Every record quotes the same way: a prefix, a separator and a zero-padded number.
+          Tickets, quotes, invoices, contracts, projects and opportunities all follow one scheme,
+          so the system reads consistently rather than each area doing its own thing.
+        </p>
+        <p>
+          Under <span className="text-white/80">Settings, Service Desk, Ticket reference</span>{' '}
+          you can set the ticket prefix to whatever you use, for example SON, giving SON-00042.
+          The separator and the number of digits are shared by every record type.
+        </p>
+        <p>
+          <span className="text-white/80">Start numbering at</span> lets you carry on the
+          numbering from the PSA you are leaving. The next ticket takes whichever is higher: the
+          start you set, or one above the highest already used.
+        </p>
+        <p className="text-white/70 font-medium">Key Tips:</p>
+        <ul className="list-disc list-inside space-y-1 text-slate-400">
+          <li>Changing a prefix changes how everything displays at once. Nothing is renumbered.</li>
+          <li>Detail pages show the record name as the heading and its reference underneath.</li>
+        </ul>
+        <p className="text-xs text-slate-500">Related: Tickets, Quotes, Invoices, Projects</p>
+      </div>
+    ),
+  },
+  {
+    id: 'prepay-blocks',
+    title: 'Pre-pay hour blocks',
+    icon: <CreditCard className="w-4 h-4" />,
+    content: (
+      <div className="space-y-4 text-sm text-slate-400 leading-relaxed">
+        <p>
+          A pre-pay contract is sold as a block of hours, priced as{' '}
+          <span className="text-white/80">hours x hourly rate</span>. Ten hours at 250 is a 2,500
+          block: the contract holds 10 hours and work deducts from those 10 hours.
+        </p>
+        <p>
+          <span className="text-white/80">One off</span> is a single block, billed once.{' '}
+          <span className="text-white/80">Monthly</span> raises a fresh block every month and is
+          the only kind that recurs. A pre-pay contract has no Products and Services section,
+          because its blocks are what price it.
+        </p>
+        <p className="text-white/70 font-medium">Carry over and top-ups:</p>
+        <ul className="list-disc list-inside space-y-1 text-slate-400">
+          <li>Carry over moves unused hours into the next month, with an optional cap. It only applies to monthly contracts.</li>
+          <li>Automatic top-up raises another chargeable block once the balance falls below a threshold you set.</li>
+          <li>Hours past the block are always chargeable: at the overage rate if you set one, otherwise at the normal time and materials rate.</li>
+        </ul>
+        <p>
+          The contract lists every block it has, with the date added, how it came about, the
+          hours, the rate, what it cost, how much is used and whether it has been invoiced.
+          An invoiced block is locked, because changing what was billed would put the invoice and
+          the contract out of step.
+        </p>
+        <p className="text-white/70 font-medium">On a ticket:</p>
+        <ul className="list-disc list-inside space-y-1 text-slate-400">
+          <li>The sidebar shows hours used and remaining, with a bar that turns amber then red.</li>
+          <li>The time entry preview says <span className="text-white/80">Deducted from pre-pay</span> rather than showing a charge.</li>
+        </ul>
+        <p className="text-xs text-slate-500">Related: Contracts, Invoices, Tickets</p>
+      </div>
+    ),
+  },
+  {
+    id: 'non-billable',
+    title: 'Non-billable rates',
+    icon: <DollarSign className="w-4 h-4" />,
+    content: (
+      <div className="space-y-4 text-sm text-slate-400 leading-relaxed">
+        <p>
+          A billing rate marked non-billable is always zero. Work logged at it is not charged as
+          time and materials, does <span className="text-white/80">not</span> draw down a block of
+          prepaid hours, and is not recorded as covered by a managed service contract.
+        </p>
+        <p>
+          That last point is the one that matters: writing off an hour should not quietly consume
+          an hour the customer has already paid for.
+        </p>
+        <p className="text-white/70 font-medium">Key Tips:</p>
+        <ul className="list-disc list-inside space-y-1 text-slate-400">
+          <li>Minimums, rounding and the out-of-hours multiplier are hidden, because none of them can apply when nothing is charged.</li>
+          <li>A non-billable rate cannot be the default, or every new time entry would be free.</li>
+        </ul>
+        <p className="text-xs text-slate-500">Related: Contracts, Time tracking, Invoices</p>
+      </div>
+    ),
+  },
+  {
+    id: 'profitability',
+    title: 'Profitability and burden rates',
+    icon: <BookOpen className="w-4 h-4" />,
+    content: (
+      <div className="space-y-4 text-sm text-slate-400 leading-relaxed">
+        <p>
+          Profit is revenue less every cost: the burden rate of the engineers who did the work,
+          plus the wholesale cost of anything resold on a contract.
+        </p>
+        <p>
+          The burden rate is what an hour of an engineer's time costs you, set per person on their
+          user record. It is snapshotted onto the time entry when the time is logged, so changing
+          somebody's rate does not silently rewrite last quarter's figures.
+        </p>
+        <p className="text-white/70 font-medium">Worked examples:</p>
+        <ul className="list-disc list-inside space-y-1 text-slate-400">
+          <li>One hour charged at 140 by an engineer on 40: <span className="text-white/80">100 profit, 71.4% margin</span>.</li>
+          <li>A 400 a month contract, three hours at 40, and 100 of resold services: <span className="text-white/80">180 profit, 45% margin</span>.</li>
+          <li>Break even on that contract: (400 - 100) / 40 = <span className="text-white/80">7.5 hours</span>.</li>
+        </ul>
+        <p>
+          Reports, Profitability shows this per contract and for time and materials, with a
+          warning where somebody has no burden rate set, because the profit shown is then too
+          high.
+        </p>
+        <p className="text-xs text-slate-500">Related: Reports, Contracts, Users and roles</p>
+      </div>
+    ),
+  },
+  {
+    id: 'sales-pipeline',
+    title: 'Sales pipeline and prospects',
+    icon: <Target className="w-4 h-4" />,
+    content: (
+      <div className="space-y-4 text-sm text-slate-400 leading-relaxed">
+        <p>
+          Pipeline stages are yours to define under Settings, CRM: name, colour, probability,
+          order, and whether the stage means won, lost or still open. Deals are dragged between
+          columns on the Opportunities board, and the stage can also be changed from the notes
+          panel, which records the move.
+        </p>
+        <p>
+          <span className="text-white/80">Win and loss reasons</span> are optional. Define none
+          and the field never appears. Define some and they are offered when a deal closes, and
+          reported on in the funnel so you can see why work is being lost.
+        </p>
+        <p>
+          Under Settings, CRM you can also insist on particular fields: value, probability,
+          source, expected close date, company, contact, and a reason when a deal is won or lost.
+          The rules are enforced when the record is saved, not only in the form.
+        </p>
+        <p className="text-white/70 font-medium">Prospects:</p>
+        <ul className="list-disc list-inside space-y-1 text-slate-400">
+          <li>Prospects have their own area under CRM, separate from Companies, with their own contacts list, so leads that never convert do not clog up the customer lists.</li>
+          <li>Raising a deal against a new lead creates the prospect company and a contact on it.</li>
+          <li>Converting a prospect is a change of type: its contacts, tickets and opportunities carry over untouched, and its people move into the main contact list at the same moment.</li>
+          <li>Winning a deal offers the conversion, if it has not already been converted.</li>
+        </ul>
+        <p className="text-xs text-slate-500">Related: Opportunities, Companies, Reports</p>
+      </div>
+    ),
+  },
+  {
+    id: 'portal-roles',
+    title: 'Client portal roles',
+    icon: <Shield className="w-4 h-4" />,
+    content: (
+      <div className="space-y-4 text-sm text-slate-400 leading-relaxed">
+        <p>
+          Roles are global: defined once under Settings, Client Portal, then given to contacts.
+          A role decides what a client sees, with one deliberately coarse scope per area.
+        </p>
+        <p className="text-white/70 font-medium">Scopes:</p>
+        <ul className="list-disc list-inside space-y-1 text-slate-400">
+          <li><span className="text-white/80">Nothing</span>: the area does not appear at all.</li>
+          <li><span className="text-white/80">Their own</span>: records where they are the contact.</li>
+          <li><span className="text-white/80">The whole company</span>: everything their company has.</li>
+        </ul>
+        <p>
+          Plus whether they can raise tickets, reply to tickets, and see prepaid hours remaining.
+          Raising a ticket on a colleague's behalf unlocks when somebody can both raise tickets
+          and see the whole company's.
+        </p>
+        <p>
+          Everything except tickets is read only. A client never edits a quote, a project or an
+          invoice.
+        </p>
+        <p className="text-white/70 font-medium">Key Tips:</p>
+        <ul className="list-disc list-inside space-y-1 text-slate-400">
+          <li>Assign a role on a contact's Portal tab, where it spells out exactly what the role grants, or in bulk from the People button on the role.</li>
+          <li>A contact with no role gets the default. With no default either, they see only their own tickets.</li>
+          <li>Deleting a role people are on deactivates it instead, since deleting would silently change what they can see.</li>
+        </ul>
+        <p className="text-xs text-slate-500">Related: Customer Portal, Contacts</p>
+      </div>
+    ),
+  },
+  {
+    id: 'portal-access',
+    title: 'Portal access and impersonating',
+    icon: <Globe className="w-4 h-4" />,
+    content: (
+      <div className="space-y-4 text-sm text-slate-400 leading-relaxed">
+        <p>
+          Clients sign in with an emailed link. There is no password: each sign-in sends a
+          single-use link that expires shortly after, and requesting a new one retires any link
+          already outstanding.
+        </p>
+        <p className="text-white/70 font-medium">Two switches, both needed:</p>
+        <ul className="list-disc list-inside space-y-1 text-slate-400">
+          <li>The <span className="text-white/80">company</span> has its portal switched on, with a portal address, on its Portal tab.</li>
+          <li>The <span className="text-white/80">contact</span> has portal access, on their Portal tab. They need an email address first.</li>
+        </ul>
+        <p>
+          The contact's Portal tab also carries <span className="text-white/80">Send welcome
+          email</span>, <span className="text-white/80">Send sign-in link</span> and{' '}
+          <span className="text-white/80">Impersonate</span>.
+        </p>
+        <p>
+          Impersonating opens the portal exactly as that person sees it, which answers the usual
+          "it looks wrong on my end" call. It is{' '}
+          <span className="text-white/80">administrators only</span>, recorded against your name
+          before any access is granted, and blocked if you are already being impersonated so the
+          audit trail cannot name the wrong person.
+        </p>
+        <p>
+          Each client's portal carries their own logo, accent colour and welcome heading, set on
+          the company's Portal tab.
+        </p>
+        <p className="text-xs text-slate-500">Related: Customer Portal, Client portal roles, Contacts</p>
+      </div>
+    ),
+  },
+  {
+    id: 'deleting-records',
+    title: 'Why a record will not delete',
+    icon: <Shield className="w-4 h-4" />,
+    content: (
+      <div className="space-y-4 text-sm text-slate-400 leading-relaxed">
+        <p>
+          A record that real work points at cannot be deleted. Deleting a contract that invoices
+          and time entries reference would either orphan them or quietly unlink them and change
+          what the customer gets billed.
+        </p>
+        <p>
+          The refusal names what is holding it, for example: "This contract is used by 3 invoices,
+          12 time entries and 4 tickets, so it cannot be deleted. Deactivate it instead if you
+          want it out of the way."
+        </p>
+        <p className="text-white/70 font-medium">Key Tips:</p>
+        <ul className="list-disc list-inside space-y-1 text-slate-400">
+          <li>The same rule covers contacts, products, opportunities and projects.</li>
+          <li>Deactivating keeps the history intact and is almost always the better answer.</li>
+          <li>Pipeline stages, win and loss reasons, billing rates and portal roles deactivate automatically rather than refusing, when something is using them.</li>
+        </ul>
+        <p className="text-xs text-slate-500">Related: Contracts, Contacts, Projects</p>
       </div>
     ),
   },
