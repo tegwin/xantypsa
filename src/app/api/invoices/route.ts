@@ -15,7 +15,16 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
       { title: { contains: p.search, mode: 'insensitive' } },
     ];
   }
-  if (p.status) where.status = p.status;
+  // The status tiles group several statuses under one heading, so a filter is
+  // either one of those groups or a plain status.
+  const STATUS_GROUPS: Record<string, string[]> = {
+    unpaid: ['sent', 'viewed'],
+    void: ['void', 'cancelled', 'refunded'],
+  };
+  if (p.status) {
+    const group = STATUS_GROUPS[p.status];
+    where.status = group ? { in: group } : p.status;
+  }
   if (p.companyId) where.companyId = p.companyId;
 
   const [items, total] = await Promise.all([

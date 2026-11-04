@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withTenant, jsonResponse } from '@/lib/api';
 
+export const dynamic = 'force-dynamic';
+
 export const GET = withTenant(async (req: NextRequest, session: any) => {
   const tenantId = session.user.tenantId;
 
@@ -111,18 +113,60 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
   // Contract recurring charges and standalone recurring invoices both land here
   // as drafts. A contract is never billed directly - this is its billing
   // mechanism - so they must be actionable the moment they are created.
-  const draftInvoices = await prisma.invoice.findMany({
-    where: { tenantId, status: 'draft' },
-    include: {
-      company: { select: { id: true, name: true } },
-      contract: { select: { id: true, contractNumber: true, name: true } },
-      _count: { select: { items: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+  // Quotes the customer accepted that nobody converted, and completed
+  // fixed-price projects. Read alongside the drafts: the database is a network
+  // hop away, so these must not run one after another.
+  const [draftInvoices, acceptedQuotes, completedProjects] = await Promise.all([
+    prisma.invoice.findMany({
+      where: { tenantId, status: 'draft' },
+      include: {
+        company: { select: { id: true, name: true } },
+        contract: { select: { id: true, contractNumber: true, name: true } },
+        _count: { select: { items: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.quote.findMany({
+      where: { tenantId, status: 'accepted', invoice: null },
+      select: {
+        id: true, quoteNumber: true, title: true, total: true, currency: true, updatedAt: true,
+        company: { select: { id: true, name: true } },
+      },
+      orderBy: { updatedAt: 'asc' },
+    }),
+    // There is no invoice-to-project link in the schema, so a project stays
+    // listed once completed. Treat this section as a prompt, not a ledger.
+    prisma.project.findMany({
+      where: { tenantId, status: 'completed', billingMethod: 'fixed' },
+      select: {
+        id: true, name: true, budgetAmount: true, endDate: true,
+        company: { select: { id: true, name: true } },
+      },
+      orderBy: { endDate: 'desc' },
+      take: 100,
+    }),
+  ]);
 
   return jsonResponse({
     billingMode,
+    quotes: acceptedQuotes.map(q => ({
+      id: q.id,
+      quoteNumber: q.quoteNumber,
+      title: q.title,
+      company: q.company,
+      total: q.total,
+      currency: q.currency,
+      acceptedAt: q.updatedAt,
+    })),
+    quoteTotal: acceptedQuotes.reduce((s, q) => s + (q.total || 0), 0),
+    projects: completedProjects.map(p => ({
+      id: p.id,
+      name: p.name,
+      company: p.company,
+      value: p.budgetAmount || 0,
+      endDate: p.endDate,
+    })),
+    projectTotal: completedProjects.reduce((s, p) => s + (p.budgetAmount || 0), 0),
     groups: Object.values(grouped).sort((a, b) => b.total - a.total),
     totalEntries: entries.length,
     grandTotal: entries.reduce((sum, e) => sum + (e.billedAmount || 0), 0),

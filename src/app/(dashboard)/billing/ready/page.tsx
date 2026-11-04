@@ -22,9 +22,58 @@ interface CompanyGroup {
   totalMinutes: number;
 }
 
+/**
+ * One kind of work waiting to be invoiced.
+ *
+ * The count is in the heading and an empty panel still renders, so a category
+ * with nothing in it is visibly empty rather than absent.
+ */
+function Panel({ title, count, description, children }: {
+  title: string; count: number; description: string; children?: React.ReactNode;
+}) {
+  return (
+    <div className="glass-panel p-6">
+      <h3 className="text-white font-semibold mb-1">{title} ({count})</h3>
+      <p className="text-xs text-surface-500 mb-4">{description}</p>
+      {count === 0
+        ? <p className="py-8 text-center text-sm text-surface-500">No invoices to create</p>
+        : <div className="space-y-2">{children}</div>}
+    </div>
+  );
+}
+
+/** A single billable line inside a panel. */
+function Row({ title, meta, amount, actionLabel, onAction }: {
+  title: string; meta?: string; amount: number; actionLabel: string; onAction: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-surface-800/50 border border-surface-700/50">
+      <div className="min-w-0">
+        <p className="text-white text-sm font-medium truncate">{title}</p>
+        {meta && <p className="text-surface-500 text-xs truncate">{meta}</p>}
+      </div>
+      <div className="flex items-center gap-3 shrink-0">
+        <span className="text-white font-semibold">{formatCurrency(amount)}</span>
+        <button onClick={onAction}
+          className="text-xs bg-brand-500/20 text-brand-400 border border-brand-500/30 px-3 py-1.5 rounded-lg hover:bg-brand-500/30 transition-colors font-medium">
+          {actionLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ReadyForInvoicingPage() {
   const router = useRouter();
-  const [data, setData] = useState<{ billingMode: string; groups: CompanyGroup[]; totalEntries: number; grandTotal: number; uninvoicedContracts?: any[] } | null>(null);
+  const [data, setData] = useState<{
+    billingMode: string; groups: CompanyGroup[]; totalEntries: number; grandTotal: number;
+    uninvoicedContracts?: any[];
+    quotes?: any[]; quoteTotal?: number;
+    projects?: any[]; projectTotal?: number;
+  } | null>(null);
+  // Which kind of work is on screen. Billing a block is a different job from
+  // billing labour, so they are not mixed into one list.
+  const [section, setSection] = useState<'all' | 'labour' | 'quotes' | 'prepay' | 'products' | 'projects'>('all');
   const [loading, setLoading] = useState(true);
   const [selectedEntries, setSelectedEntries] = useState<Record<string, Set<string>>>({});
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -203,6 +252,24 @@ export default function ReadyForInvoicingPage() {
 
   const totalSelected = Object.values(selectedEntries).reduce((sum, s) => sum + s.size, 0);
 
+  // A pre-pay block and a monthly or fixed fee are both "contracts to bill" in
+  // the API, but they are different money to the person doing the billing.
+  const blockContracts = (data?.uninvoicedContracts ?? []).filter((c: any) => c.type === 'prepay_hours');
+  const productContracts = (data?.uninvoicedContracts ?? []).filter((c: any) => c.type !== 'prepay_hours');
+  const sum = (rows: any[], field = 'value') => rows.reduce((t, r) => t + (r[field] || 0), 0);
+
+  const SECTIONS = [
+    { key: 'all' as const, label: 'All', count: 0, total: 0 },
+    { key: 'quotes' as const, label: 'Quotes', count: data?.quotes?.length ?? 0, total: data?.quoteTotal ?? 0 },
+    { key: 'labour' as const, label: 'Labour', count: data?.totalEntries ?? 0, total: data?.grandTotal ?? 0 },
+    { key: 'prepay' as const, label: 'Prepay blocks', count: blockContracts.length, total: sum(blockContracts) },
+    { key: 'products' as const, label: 'Products & services', count: productContracts.length, total: sum(productContracts) },
+    { key: 'projects' as const, label: 'Projects', count: data?.projects?.length ?? 0, total: data?.projectTotal ?? 0 },
+  ];
+  // "All" carries the combined figure, so the top row always adds up.
+  SECTIONS[0].count = SECTIONS.slice(1).reduce((t, s) => t + s.count, 0);
+  SECTIONS[0].total = SECTIONS.slice(1).reduce((t, s) => t + s.total, 0);
+
   return (
     <div className="space-y-6 animate-fadeIn">
       <PageHeader title="Ready for Invoicing" subtitle={
@@ -217,42 +284,102 @@ export default function ReadyForInvoicingPage() {
         </div>
       )}
 
-      {/* Uninvoiced Contracts */}
-      {data?.uninvoicedContracts && data.uninvoicedContracts.length > 0 && (
-        <div className="glass-panel p-6">
-          <h3 className="text-white font-semibold mb-1">Contracts to Invoice</h3>
-          <p className="text-xs text-surface-500 mb-4">Active contracts that haven't been invoiced yet</p>
-          <div className="space-y-2">
-            {data.uninvoicedContracts.map((c: any) => (
-              <div key={c.id} className="flex items-center justify-between p-3 rounded-lg bg-surface-800/50 border border-surface-700/50">
-                <div className="flex items-center gap-3">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-                    c.type === 'prepay_hours' ? 'bg-purple-500/20 text-purple-400' :
-                    c.type === 'fixed_price' ? 'bg-blue-500/20 text-blue-400' :
-                    'bg-green-500/20 text-green-400'
-                  }`}>
-                    {c.type === 'prepay_hours' ? 'Block' : c.type === 'fixed_price' ? 'Fixed' : 'Monthly'}
-                  </span>
-                  <div>
-                    <span className="text-white text-sm font-medium">{c.name}</span>
-                    <span className="text-surface-500 text-xs ml-2">{c.company?.name}</span>
-                    {c.totalHours && <span className="text-surface-500 text-xs ml-1">({c.totalHours}h)</span>}
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-white font-semibold">{formatCurrency(c.value || 0)}</span>
-                  <button onClick={() => invoiceContract(c)}
-                    className="text-xs bg-brand-500/20 text-brand-400 border border-brand-500/30 px-3 py-1.5 rounded-lg hover:bg-brand-500/30 transition-colors font-medium">
-                    Create Invoice
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Where the money comes from. Every section is shown with its total, so
+          nothing is missed by sitting behind a tab nobody opened. */}
+      <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-5">
+        {SECTIONS.map(sec => (
+          <button
+            key={sec.key}
+            onClick={() => setSection(sec.key)}
+            aria-current={sec.key === section ? 'true' : undefined}
+            className={`rounded-lg border p-4 text-left transition-colors ${
+              sec.key === section
+                ? 'border-brand-500 bg-brand-500/10'
+                : 'border-surface-700 bg-surface-800/40 hover:border-surface-600'
+            }`}
+          >
+            <p className="text-sm text-surface-400">{sec.label}</p>
+            <p className="mt-1 text-xl font-semibold text-white">{formatCurrency(sec.total)}</p>
+            <p className="text-xs text-surface-500">{sec.count} {sec.count === 1 ? 'item' : 'items'}</p>
+          </button>
+        ))}
+      </div>
 
-      {data?.groups?.length === 0 && (!data?.uninvoicedContracts || data.uninvoicedContracts.length === 0) ? (
+      {/* Halo lays these out as one panel per kind of work, each showing its
+          count even when empty, so nothing is hidden behind an unopened tab.
+          "All" shows the lot; picking a kind gives it the full width. */}
+      <div className={section === 'all' ? 'grid gap-4 xl:grid-cols-2 items-start' : 'space-y-6'}>
+
+        {(section === 'all' || section === 'quotes') && (
+          <Panel title="Quotes" count={data?.quotes?.length ?? 0}
+            description="Accepted by the customer, not yet turned into an invoice">
+            {data?.quotes?.map((q: any) => (
+              <Row key={q.id}
+                title={q.title || 'Quote'}
+                meta={[q.quoteNumber, q.company?.name].filter(Boolean).join(' · ')}
+                amount={q.total || 0}
+                actionLabel="Convert to Invoice"
+                onAction={() => router.push(`/quotes/${q.id}`)}
+              />
+            ))}
+          </Panel>
+        )}
+
+        {(section === 'all' || section === 'prepay') && (
+          <Panel title="Prepay Blocks" count={blockContracts.length}
+            description="Blocks of hours sold but never invoiced. A block is billed when it is bought, not as it is used.">
+            {blockContracts.map((c: any) => (
+              <Row key={c.id}
+                title={c.name}
+                meta={[c.company?.name, c.totalHours ? `${c.totalHours}h` : null].filter(Boolean).join(' · ')}
+                amount={c.value || 0}
+                actionLabel="Create Invoice"
+                onAction={() => invoiceContract(c)}
+              />
+            ))}
+          </Panel>
+        )}
+
+        {(section === 'all' || section === 'products') && (
+          <Panel title="Products & Services" count={productContracts.length}
+            description="Monthly and fixed-price contracts that have not been invoiced yet">
+            {productContracts.map((c: any) => (
+              <Row key={c.id}
+                title={c.name}
+                meta={[c.company?.name, c.type === 'fixed_price' ? 'Fixed' : 'Monthly'].filter(Boolean).join(' · ')}
+                amount={c.value || 0}
+                actionLabel="Create Invoice"
+                onAction={() => invoiceContract(c)}
+              />
+            ))}
+          </Panel>
+        )}
+
+        {(section === 'all' || section === 'projects') && (
+          <Panel title="Projects" count={data?.projects?.length ?? 0}
+            description="Completed fixed-price projects. Nothing links an invoice back to a project yet, so these stay listed once billed - a reminder, not a ledger.">
+            {data?.projects?.map((p: any) => (
+              <Row key={p.id}
+                title={p.name}
+                meta={[p.company?.name, p.endDate ? formatDate(p.endDate) : null].filter(Boolean).join(' · ')}
+                amount={p.value || 0}
+                actionLabel="Open project"
+                onAction={() => router.push(`/projects/${p.id}`)}
+              />
+            ))}
+          </Panel>
+        )}
+
+
+        {/* Labour keeps its own layout: it carries the per-entry checkboxes
+            and the create-invoice flow, so it spans both columns. */}
+        {(section === 'all' || section === 'labour') && (
+          <div className={section === 'all' ? 'xl:col-span-2' : ''}>
+            <h3 className="text-white font-semibold mb-1">Labour ({data?.totalEntries ?? 0})</h3>
+            <p className="text-xs text-surface-500 mb-3">
+              Billable time charged time and materials. Time covered by a contract is not here, because the contract bills it.
+            </p>
+      {data?.groups?.length === 0 ? (
         <div className="glass-panel p-12 text-center">
           <DollarSign className="h-12 w-12 text-surface-600 mx-auto mb-3" />
           <h3 className="text-lg text-surface-300 mb-1">Nothing to invoice</h3>
@@ -337,6 +464,9 @@ export default function ReadyForInvoicingPage() {
           })}
         </div>
       )}
+          </div>
+        )}
+      </div>
 
       {/* Create Invoice Modal */}
       <Modal open={showInvoiceModal} onClose={() => setShowInvoiceModal(false)} title={`Create Invoice - ${invoiceCompany?.name}`}

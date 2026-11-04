@@ -29,6 +29,8 @@ export default function InvoicesPage() {
   const [productSearch, setProductSearch] = useState('');
 
   const { data, loading, refetch } = useApi<any>(`/api/invoices?page=${page}&search=${search}&status=${statusFilter}&limit=25`);
+  // Totals per status, for the tiles across the top.
+  const { data: stats } = useApi<any>('/api/invoices/stats');
   const { data: companiesData } = useApi<any>('/api/companies?limit=500');
 
   const [form, setForm] = useState({
@@ -50,7 +52,6 @@ export default function InvoicesPage() {
     showProductPicker ? `/api/products?limit=100&search=${productSearch}` : null
   );
 
-  const statuses = ['', 'draft', 'sent', 'paid', 'overdue', 'cancelled'];
 
   const addItem = () => setLineItems([...lineItems, emptyItem(lineItems.length)]);
   const removeItem = (idx: number) => {
@@ -127,18 +128,35 @@ export default function InvoicesPage() {
         <button onClick={() => setShowCreate(true)} className="btn-primary">+ New Invoice</button>
       </PageHeader>
 
+      {/* Where the money stands, and the filter at the same time. Outstanding
+          is what is still owed, which is the figure that actually matters on
+          anything not yet paid. */}
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 mb-6">
+        {(stats?.tiles ?? []).map((tile: any) => (
+          <button
+            key={tile.key || 'all'}
+            onClick={() => { setStatusFilter(tile.key); setPage(1); }}
+            aria-current={statusFilter === tile.key ? 'true' : undefined}
+            className={`rounded-lg border p-3 text-left transition-colors ${
+              statusFilter === tile.key
+                ? 'border-brand-500 bg-brand-500/10'
+                : 'border-surface-700 bg-surface-800/40 hover:border-surface-600'
+            }`}
+          >
+            <p className="text-xs text-surface-400">{tile.label}</p>
+            <p className="mt-0.5 text-lg font-semibold text-white">{formatCurrency(tile.total)}</p>
+            <p className="text-xs text-surface-500">
+              {tile.count} {tile.count === 1 ? 'invoice' : 'invoices'}
+              {tile.key !== 'paid' && tile.outstanding > 0 && ` · ${formatCurrency(tile.outstanding)} due`}
+            </p>
+          </button>
+        ))}
+      </div>
+
       <div className="glass rounded-xl p-6">
         <div className="flex flex-wrap gap-3 mb-4">
           <input type="text" placeholder="Search invoices..." value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="input w-full max-w-md" />
-          <div className="flex gap-2">
-            {statuses.map(s => (
-              <button key={s} onClick={() => { setStatusFilter(s); setPage(1); }}
-                className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${statusFilter === s ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
-                {s || 'All'}
-              </button>
-            ))}
-          </div>
         </div>
 
         {loading ? <LoadingSpinner /> : !data?.items?.length ? (
