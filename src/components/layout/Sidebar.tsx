@@ -164,48 +164,12 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
-    label: 'Settings',
+    // One entry only. The settings area has its own sectioned sub-menu, so
+    // repeating all fourteen screens here just gives two places to maintain.
+    label: 'Administration',
     icon: <Settings className="h-4.5 w-4.5" />,
     module: 'settings',
-    children: [
-      // Grouped by subject so related pages sit together. A group with an href
-      // is itself a page (Email, Integrations); one without is just a heading.
-      { label: 'General', href: '/settings/general' },
-      { label: 'AI', href: '/settings/ai' },
-      {
-        label: 'Email',
-        href: '/settings/email',
-        children: [
-          { label: 'Processing', href: '/settings/email/processing' },
-          { label: 'Templates', href: '/settings/email-templates' },
-        ],
-      },
-      {
-        label: 'Users & Access',
-        children: [
-          { label: 'Users', href: '/settings/users' },
-          { label: 'Roles', href: '/settings/roles' },
-        ],
-      },
-      { label: 'Service Desk', href: '/settings/service-desk' },
-      { label: 'CRM', href: '/settings/crm' },
-      { label: 'Client Portal', href: '/settings/client-portal' },
-      { label: 'Products & Services', href: '/settings/products' },
-      {
-        label: 'Billing',
-        children: [
-          { label: 'Billing Rates', href: '/settings/billing' },
-          { label: 'Quote Templates', href: '/settings/quote-templates' },
-        ],
-      },
-      {
-        label: 'Customisation',
-        children: [
-          { label: 'Custom Fields', href: '/settings/custom-fields' },
-          { label: 'Entity Names', href: '/settings/entity-names' },
-        ],
-      },
-    ],
+    href: '/settings',
   },
 ];
 
