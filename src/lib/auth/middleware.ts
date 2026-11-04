@@ -38,6 +38,12 @@ const PUBLIC_PATHS = [
   // proves itself with a per-endpoint shared secret instead, checked inside
   // the route. Narrow on purpose: only the payments path, not /api/webhooks.
   '/api/webhooks/payments',
+  // Microsoft Graph calls this one, so again there is no session. Graph first
+  // sends a validation request that must answer 200 with the token echoed
+  // back, and every notification after it carries the per-subscription
+  // clientState secret, which the route checks itself. Named exactly, not the
+  // whole of /api/webhooks.
+  '/api/webhooks/microsoft-email',
 ];
 
 function isPublic(pathname: string): boolean {
