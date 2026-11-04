@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader, Button, DataTable, Badge, SearchInput, Modal, Input, Select } from "@/components/ui";
-import { Plus, Building2, Globe, MapPin, Eye, Pencil } from "lucide-react";
+import { Plus, Building2, Globe, MapPin, Eye, Pencil, Search } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { COUNTRIES } from "@/lib/countries";
 import toast from "react-hot-toast";
@@ -18,6 +18,52 @@ export default function CompaniesClient({ companies: initial }: { companies: Com
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ name: "", type: "customer", industry: "", email: "", phone: "", website: "", city: "", country: "" });
   const [saving, setSaving] = useState(false);
+  const [lookingUp, setLookingUp] = useState(false);
+
+  // Most of a new company's details are already published on its own website,
+  // so the domain goes first and fills in what it can. Everything stays
+  // editable, and nothing already typed is overwritten.
+  async function lookupFromWebsite() {
+    if (!form.website.trim()) return;
+    setLookingUp(true);
+    try {
+      const res = await fetch('/api/lookup/website', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ website: form.website }),
+      });
+      const json = await res.json();
+      if (!res.ok) { toast.error(json.error || 'Lookup failed'); return; }
+      if (!json.company) { toast(json.message || 'Nothing published on that site'); return; }
+
+      const found = json.company;
+      const filled: string[] = [];
+      setForm(prev => {
+        const next = { ...prev };
+        const put = (field: keyof typeof prev, value?: string) => {
+          if (value && !String(prev[field] || '').trim()) {
+            (next[field] as string) = value;
+            filled.push(field);
+          }
+        };
+        put('name', found.name);
+        put('email', found.email);
+        put('phone', found.phone);
+        put('city', found.address?.city);
+        put('country', found.address?.country);
+        return next;
+      });
+      toast[filled.length ? 'success' : 'error'](
+        filled.length
+          ? `Filled in ${filled.join(', ')}`
+          : 'Found the site, but nothing new to fill in'
+      );
+    } catch {
+      toast.error('Could not reach that website');
+    } finally {
+      setLookingUp(false);
+    }
+  }
 
   const filtered = initial.filter((c) => `${c.name} ${c.industry} ${c.city}`.toLowerCase().includes(search.toLowerCase()));
 
@@ -60,6 +106,30 @@ export default function CompaniesClient({ companies: initial }: { companies: Com
       <Modal open={showModal} onClose={() => setShowModal(false)} title="New Company"
         footer={<><Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button><Button loading={saving} onClick={handleCreate}>Create</Button></>}>
         <form onSubmit={handleCreate} className="space-y-4">
+          {/* The website comes first: give it a domain and the rest fills
+              itself in where the site publishes it. */}
+          <div>
+            <label className="block text-sm font-medium text-surface-400 mb-1">Website</label>
+            <div className="flex gap-2">
+              <input
+                value={form.website}
+                onChange={update("website")}
+                onBlur={() => { if (form.website.trim() && !form.name.trim()) lookupFromWebsite(); }}
+                placeholder="acme.com"
+                className="w-full"
+              />
+              <button type="button" onClick={lookupFromWebsite}
+                disabled={!form.website.trim() || lookingUp}
+                className="btn-secondary flex items-center gap-1.5 whitespace-nowrap disabled:opacity-40">
+                <Search className="h-3.5 w-3.5" />
+                {lookingUp ? 'Looking...' : 'Look up'}
+              </button>
+            </div>
+            <p className="text-xs text-surface-500 mt-1">
+              Fills in whatever the site publishes. Plenty of sites publish nothing, so just
+              carry on typing if it comes back empty.
+            </p>
+          </div>
           <Input label="Company Name" value={form.name} onChange={update("name")} required />
           <Select label="Type" value={form.type} onChange={update("type")} options={[
             {value:"prospect",label:"Prospect"},{value:"customer",label:"Customer"},{value:"vendor",label:"Vendor"},{value:"partner",label:"Partner"}
@@ -69,8 +139,6 @@ export default function CompaniesClient({ companies: initial }: { companies: Com
             <Input label="Email" type="email" value={form.email} onChange={update("email")} />
             <Input label="Phone" value={form.phone} onChange={update("phone")} />
           </div>
-          <Input label="Website" value={form.website} onChange={update("website")} />
-          {/* City belongs with Country as a location row, not paired with Website. */}
           <div className="grid grid-cols-2 gap-4">
             <Input label="City" value={form.city} onChange={update("city")} />
             <Select label="Country" value={form.country} onChange={update("country")}

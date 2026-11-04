@@ -73,6 +73,9 @@ export default function ReadyForInvoicingPage() {
   } | null>(null);
   // Which kind of work is on screen. Billing a block is a different job from
   // billing labour, so they are not mixed into one list.
+  const [showBillAll, setShowBillAll] = useState(false);
+  const [billMode, setBillMode] = useState<'combined' | 'separate'>('combined');
+  const [billing, setBilling] = useState(false);
   const [section, setSection] = useState<'all' | 'labour' | 'quotes' | 'prepay' | 'products' | 'projects'>('all');
   const [loading, setLoading] = useState(true);
   const [selectedEntries, setSelectedEntries] = useState<Record<string, Set<string>>>({});
@@ -94,6 +97,36 @@ export default function ReadyForInvoicingPage() {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  // Bills everything the screen is showing, in one go. The whole point is not
+  // having to work through each kind of work by hand.
+  const billAll = async () => {
+    setBilling(true);
+    try {
+      const res = await fetch('/api/billing/bill-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: billMode }),
+      });
+      const json = await res.json();
+      if (!res.ok) { toast.error(json.error || 'Could not bill'); return; }
+
+      toast.success(`${json.count} invoice${json.count === 1 ? '' : 's'} created`);
+      if (json.unpriced?.length) {
+        const hours = json.unpriced.reduce((t: number, u: any) => t + u.hours, 0);
+        toast(`${hours}h of time has no rate set, so it was left unbilled. Set a rate on those entries.`, { duration: 9000 });
+      }
+      if (json.deferred?.length) {
+        // A quote carries a unique link to its invoice, so only one can go on
+        // a combined invoice. Say so rather than silently leaving them behind.
+        toast(`${json.deferred.length} quote(s) left for the next run: a quote needs its own invoice.`, { duration: 8000 });
+      }
+      setShowBillAll(false);
+      fetchData();
+    } finally {
+      setBilling(false);
+    }
+  };
 
   const toggleGroup = (companyId: string) => {
     setExpandedGroups(prev => {
@@ -305,6 +338,20 @@ export default function ReadyForInvoicingPage() {
         ))}
       </div>
 
+      {section === 'all' && SECTIONS[0].count > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-brand-500/30 bg-brand-500/10 px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-white">
+              {SECTIONS[0].count} items ready, {formatCurrency(SECTIONS[0].total)} in all
+            </p>
+            <p className="text-xs text-surface-400">
+              Invoice the lot in one go rather than working through each kind by hand.
+            </p>
+          </div>
+          <Button onClick={() => setShowBillAll(true)}>Bill all</Button>
+        </div>
+      )}
+
       {/* Halo lays these out as one panel per kind of work, each showing its
           count even when empty, so nothing is hidden behind an unopened tab.
           "All" shows the lot; picking a kind gives it the full width. */}
@@ -467,6 +514,53 @@ export default function ReadyForInvoicingPage() {
           </div>
         )}
       </div>
+
+      <Modal open={showBillAll} onClose={() => setShowBillAll(false)} title="Bill everything that is ready"
+        footer={<>
+          <Button variant="secondary" onClick={() => setShowBillAll(false)}>Cancel</Button>
+          <Button loading={billing} onClick={billAll}>
+            {billMode === 'combined' ? 'Create one invoice per customer' : 'Create separate invoices'}
+          </Button>
+        </>}>
+        <div className="space-y-3">
+          <p className="text-sm text-surface-300">
+            {SECTIONS[0].count} items, {formatCurrency(SECTIONS[0].total)} in all. How should they
+            be grouped?
+          </p>
+
+          {([
+            {
+              value: 'combined' as const,
+              title: 'One invoice per customer',
+              detail: 'Everything owed by a customer goes on a single invoice, whatever kind of work it is.',
+            },
+            {
+              value: 'separate' as const,
+              title: 'A separate invoice for each piece of work',
+              detail: 'Each quote, contract, block and project gets its own invoice. Labour stays grouped per customer, since one invoice per hour logged helps nobody.',
+            },
+          ]).map(option => (
+            <button
+              key={option.value}
+              onClick={() => setBillMode(option.value)}
+              aria-current={billMode === option.value ? 'true' : undefined}
+              className={`block w-full rounded-lg border p-3 text-left transition-colors ${
+                billMode === option.value
+                  ? 'border-brand-500 bg-brand-500/10'
+                  : 'border-surface-700 bg-surface-800/40 hover:border-surface-600'
+              }`}
+            >
+              <p className="text-sm font-medium text-white">{option.title}</p>
+              <p className="mt-0.5 text-xs text-surface-400">{option.detail}</p>
+            </button>
+          ))}
+
+          <p className="text-xs text-surface-500">
+            Everything is created as a draft, so nothing reaches a customer until you send it.
+            The work is marked billed at the same time, so a second run will not bill it twice.
+          </p>
+        </div>
+      </Modal>
 
       {/* Create Invoice Modal */}
       <Modal open={showInvoiceModal} onClose={() => setShowInvoiceModal(false)} title={`Create Invoice - ${invoiceCompany?.name}`}

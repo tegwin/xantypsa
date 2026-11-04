@@ -6,6 +6,14 @@
 // in an <address> tag. Anything less reliable than those two is left alone,
 // because a wrong address silently saved is worse than no address at all.
 
+export interface LookedUpCompany {
+  /** The organisation's own name, as it publishes it. */
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: LookedUpAddress;
+}
+
 export interface LookedUpAddress {
   address1?: string;
   address2?: string;
@@ -114,6 +122,49 @@ function findPostalAddress(node: any, depth = 0): LookedUpAddress | null {
   return null;
 }
 
+/** The organisation's own details from JSON-LD, where it publishes them. */
+function organisationFromJsonLd(html: string): Omit<LookedUpCompany, 'address'> | null {
+  for (const block of html.matchAll(
+    /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
+  )) {
+    let data: unknown;
+    try { data = JSON.parse(block[1].trim()); } catch { continue; }
+    const found = findOrganisation(data);
+    if (found) return found;
+  }
+  return null;
+}
+
+const ORG_TYPES = ['Organization', 'Corporation', 'LocalBusiness', 'ProfessionalService'];
+
+function findOrganisation(node: any, depth = 0): Omit<LookedUpCompany, 'address'> | null {
+  if (!node || typeof node !== 'object' || depth > 6) return null;
+
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      const found = findOrganisation(item, depth + 1);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  const type = node['@type'];
+  const types = Array.isArray(type) ? type : [type];
+  if (types.some((t) => ORG_TYPES.includes(t)) && node.name) {
+    return {
+      name: String(node.name).trim() || undefined,
+      email: typeof node.email === 'string' ? node.email.replace(/^mailto:/i, '') : undefined,
+      phone: typeof node.telephone === 'string' ? node.telephone : undefined,
+    };
+  }
+
+  for (const value of Object.values(node)) {
+    const found = findOrganisation(value, depth + 1);
+    if (found) return found;
+  }
+  return null;
+}
+
 /** Last resort: the visible text of an <address> element. */
 function addressFromAddressTag(html: string): LookedUpAddress | null {
   const match = html.match(/<address[^>]*>([\s\S]*?)<\/address>/i);
@@ -141,7 +192,7 @@ function addressFromAddressTag(html: string): LookedUpAddress | null {
  * Returns null whenever we cannot be reasonably confident, which is often:
  * plenty of sites publish no machine readable address at all.
  */
-export async function lookupAddressFromWebsite(website: string): Promise<LookedUpAddress | null> {
+export async function lookupCompanyFromWebsite(website: string): Promise<LookedUpCompany | null> {
   const url = safeWebsiteUrl(website);
   if (!url) return null;
 
@@ -164,9 +215,18 @@ export async function lookupAddressFromWebsite(website: string): Promise<LookedU
       continue; // Unreachable, too slow, or bad TLS. Move on to the next page.
     }
 
-    const found = addressFromJsonLd(html) ?? addressFromAddressTag(html);
-    if (found) return found;
+    const address = addressFromJsonLd(html) ?? addressFromAddressTag(html) ?? undefined;
+    const org = organisationFromJsonLd(html) ?? {};
+    // A page that yielded neither a name nor an address is no use; try the
+    // next candidate page before giving up.
+    if (address || org.name) return { ...org, address };
   }
 
   return null;
+}
+
+/** Kept for callers that only want the address. */
+export async function lookupAddressFromWebsite(website: string): Promise<LookedUpAddress | null> {
+  const company = await lookupCompanyFromWebsite(website);
+  return company?.address ?? null;
 }

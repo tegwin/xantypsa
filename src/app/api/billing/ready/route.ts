@@ -1,6 +1,9 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withTenant, jsonResponse } from '@/lib/api';
+import {
+  unconvertedQuotesWhere, unbilledProjectsWhere, billableContractsWhere, contractIsDue,
+} from '@/lib/billing/sources';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,11 +75,7 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
   // === Uninvoiced Contracts ===
   // Prepay blocks, managed service fees, and fixed-price one-offs that need billing
   const billableContracts = await prisma.contract.findMany({
-    where: {
-      tenantId,
-      status: 'active',
-      type: { in: ['prepay_hours', 'managed_service', 'fixed_price'] },
-    },
+    where: billableContractsWhere(tenantId),
     include: {
       company: { select: { id: true, name: true } },
       _count: { select: { invoices: true } },
@@ -100,14 +99,7 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
   });
 
   // Filter to contracts that haven't been invoiced yet (or recurring ones due again)
-  const uninvoicedContracts = billableContracts.filter(c => {
-    // A pre-pay contract is due whenever it has a block that has not been
-    // billed, which covers the monthly block as well as the opening one.
-    if (c.type === 'prepay_hours') return c.hourBlocks.some(b => b.amount > 0);
-    if (c.type === 'fixed_price' && c.billingMode === 'one_off' && c._count.invoices === 0) return true;
-    if (c.type === 'managed_service' && c._count.invoices === 0) return true; // First month
-    return false;
-  });
+  const uninvoicedContracts = billableContracts.filter(contractIsDue);
 
   // === Draft invoices awaiting billing ===
   // Contract recurring charges and standalone recurring invoices both land here
@@ -127,17 +119,17 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
       orderBy: { createdAt: 'desc' },
     }),
     prisma.quote.findMany({
-      where: { tenantId, status: 'accepted', invoice: null },
+      where: unconvertedQuotesWhere(tenantId),
       select: {
         id: true, quoteNumber: true, title: true, total: true, currency: true, updatedAt: true,
         company: { select: { id: true, name: true } },
       },
       orderBy: { updatedAt: 'asc' },
     }),
-    // There is no invoice-to-project link in the schema, so a project stays
-    // listed once completed. Treat this section as a prompt, not a ledger.
+    // A project with an invoice against it drops off the list, so billing it
+    // clears it rather than leaving it to be billed again.
     prisma.project.findMany({
-      where: { tenantId, status: 'completed', billingMethod: 'fixed' },
+      where: unbilledProjectsWhere(tenantId),
       select: {
         id: true, name: true, budgetAmount: true, endDate: true,
         company: { select: { id: true, name: true } },

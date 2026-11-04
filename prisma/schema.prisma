@@ -806,6 +806,9 @@ model Invoice {
   companyId     String?
   contactId     String?
   contractId    String?
+  /// Set when the invoice bills a fixed-price project, so a completed project
+  /// stops appearing as ready to invoice once it has been billed.
+  projectId     String?
   quoteId       String?   @unique
   createdById   String
   invoiceNumber String
@@ -836,6 +839,7 @@ model Invoice {
   company   Company?      @relation(fields: [companyId], references: [id])
   contact   Contact?      @relation(fields: [contactId], references: [id])
   contract  Contract?     @relation(fields: [contractId], references: [id])
+  project   Project?      @relation(fields: [projectId], references: [id])
   quote     Quote?        @relation("QuoteInvoice", fields: [quoteId], references: [id])
   createdBy User          @relation(fields: [createdById], references: [id])
   items     InvoiceItem[]
@@ -921,6 +925,7 @@ model Project {
 
   @@index([tenantId])
   @@map("projects")
+  invoices      Invoice[]
 }
 
 model ProjectMember {

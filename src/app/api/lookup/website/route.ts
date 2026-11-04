@@ -4,7 +4,7 @@
 
 import { NextRequest } from 'next/server';
 import { withTenant, jsonResponse, errorResponse } from '@/lib/api';
-import { lookupAddressFromWebsite, safeWebsiteUrl } from '@/lib/websiteLookup';
+import { lookupCompanyFromWebsite, safeWebsiteUrl } from '@/lib/websiteLookup';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,13 +15,16 @@ export const POST = withTenant(async (req: NextRequest) => {
     return errorResponse('Enter a website address first, for example acme.com', 400);
   }
 
-  const address = await lookupAddressFromWebsite(String(website));
-  if (!address) {
+  const company = await lookupCompanyFromWebsite(String(website));
+  if (!company) {
     return jsonResponse({
+      company: null,
       address: null,
-      message: 'No address published on that website. Enter it by hand.',
+      message: 'Nothing published on that website to read. Fill it in by hand.',
     });
   }
 
-  return jsonResponse({ address });
+  // `address` is kept at the top level for the company edit form, which asks
+  // only for an address.
+  return jsonResponse({ company, address: company.address ?? null });
 });
