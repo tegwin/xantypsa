@@ -9,7 +9,7 @@ import { useReferenceFormat } from '@/hooks/useReferenceFormat';
 import { PageHeader, StatusBadge, LoadingSpinner, Avatar, Badge, Modal, Input, Textarea, Select } from '@/components/ui';
 import { formatDate, formatRelativeTime, formatCurrency } from '@/lib/utils';
 import { useRouter, useParams } from 'next/navigation';
-import { Clock, DollarSign, ChevronDown, ChevronUp, Moon, Mail, EyeOff, Play, Pause, RotateCcw, Pencil } from 'lucide-react';
+import { Clock, DollarSign, ChevronDown, ChevronUp, Moon, Mail, EyeOff, Play, Pause, RotateCcw, Pencil, ArrowRightLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface BillingRate {
@@ -67,6 +67,11 @@ export default function TicketDetailPage() {
   const [newStatus, setNewStatus] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [agents, setAgents] = useState<{id:string;name:string}[]>([]);
+  const [queues, setQueues] = useState<{id:string;name:string}[]>([]);
+  const [showTransfer, setShowTransfer] = useState(false);
+  const [transferring, setTransferring] = useState(false);
+  // Empty string means no queue / nobody, which is a valid destination.
+  const [transferForm, setTransferForm] = useState({ queueId: '', assignedToId: '', note: '' });
 
   // Billing preview
   const [preview, setPreview] = useState({ billableMinutes: 0, rate: 0, total: 0 });
@@ -83,6 +88,9 @@ export default function TicketDetailPage() {
     });
     fetch('/api/users').then(r => r.json()).then(data => {
       setAgents((data.items || []).map((u: any) => ({ id: u.id, name: u.name })));
+    }).catch(() => {});
+    fetch('/api/ticket-queues').then(r => r.json()).then(data => {
+      setQueues((data.items || []).map((q: any) => ({ id: q.id, name: q.name })));
     }).catch(() => {});
     fetch('/api/companies').then(r => r.json()).then(data => {
       setCompanies((data.items || []).map((c: any) => ({ id: c.id, name: c.name })));
@@ -325,9 +333,44 @@ export default function TicketDetailPage() {
     </button>
   );
 
+  const openTransfer = () => {
+    setTransferForm({
+      queueId: ticket.queue?.id ?? ticket.queueId ?? '',
+      assignedToId: ticket.assignedTo?.id ?? '',
+      note: '',
+    });
+    setShowTransfer(true);
+  };
+
+  const doTransfer = async () => {
+    setTransferring(true);
+    try {
+      const res = await fetch(`/api/tickets/${id}/transfer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          queueId: transferForm.queueId || null,
+          // Sent explicitly so clearing it means unassign, not "leave alone".
+          assignedToId: transferForm.assignedToId || null,
+          note: transferForm.note || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) { toast.error(json.error || 'Transfer failed'); return; }
+      toast.success(`Moved to ${json.queue?.name ?? 'no queue'}, ${json.assignedTo?.name ?? 'unassigned'}`);
+      setShowTransfer(false);
+      refetch();
+    } finally {
+      setTransferring(false);
+    }
+  };
+
   return (
     <div className="animate-fadeIn">
       <PageHeader title={ticket.title} subtitle={ref('ticket', ticket.ticketNumber)}>
+        <button onClick={openTransfer} className="btn-secondary flex items-center gap-1.5">
+          <ArrowRightLeft className="h-3.5 w-3.5" /> Transfer
+        </button>
         <button onClick={() => router.push('/service-desk/tickets')} className="btn-secondary">← Back</button>
       </PageHeader>
 
@@ -827,8 +870,63 @@ export default function TicketDetailPage() {
         </div>
       </div>
 
+
+
+      <Modal
+        open={showTransfer}
+        onClose={() => setShowTransfer(false)}
+        title="Transfer ticket"
+        footer={<>
+          <button className="btn-secondary" onClick={() => setShowTransfer(false)}>Cancel</button>
+          <button className="btn-primary" disabled={transferring} onClick={doTransfer}>
+            {transferring ? 'Transferring...' : 'Transfer'}
+          </button>
+        </>}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-1">Queue</label>
+            <select
+              value={transferForm.queueId}
+              onChange={e => setTransferForm({ ...transferForm, queueId: e.target.value })}
+              className="w-full"
+            >
+              <option value="">No queue</option>
+              {queues.map(q => <option key={q.id} value={q.id}>{q.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-1">Assign to</label>
+            <select
+              value={transferForm.assignedToId}
+              onChange={e => setTransferForm({ ...transferForm, assignedToId: e.target.value })}
+              className="w-full"
+            >
+              {/* Leaving it with nobody is a normal outcome of a transfer: the
+                  queue picks it up next. */}
+              <option value="">None</option>
+              {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-1">Note (optional)</label>
+            <textarea
+              rows={3}
+              value={transferForm.note}
+              onChange={e => setTransferForm({ ...transferForm, note: e.target.value })}
+              placeholder="Why it is being moved"
+              className="w-full"
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              The transfer is recorded on the ticket as an internal note either way.
+            </p>
+          </div>
+        </div>
+      </Modal>
+
       {editing && editForm && (
-        <Modal
+
+      <Modal
           isOpen={editing}
           onClose={() => setEditing(false)}
           title="Edit ticket"

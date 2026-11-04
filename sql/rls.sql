@@ -318,6 +318,11 @@ DROP POLICY IF EXISTS ai_tenant_isolation ON "ticket_notes";
 CREATE POLICY ai_tenant_isolation ON "ticket_notes"
   FOR SELECT USING (EXISTS (SELECT 1 FROM "tickets" AS p WHERE p."id" = "ticketId" AND p."tenantId" = current_setting('app.tenant_id', true)));
 
+ALTER TABLE "ticket_queue_members" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS ai_tenant_isolation ON "ticket_queue_members";
+CREATE POLICY ai_tenant_isolation ON "ticket_queue_members"
+  FOR SELECT USING ("tenantId" = current_setting('app.tenant_id', true));
+
 ALTER TABLE "ticket_queues" ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS ai_tenant_isolation ON "ticket_queues";
 CREATE POLICY ai_tenant_isolation ON "ticket_queues"

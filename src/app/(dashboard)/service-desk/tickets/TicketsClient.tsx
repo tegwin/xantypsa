@@ -28,6 +28,8 @@ export default function TicketsClient({ tickets: initial, queues, agents, compan
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [queueFilter, setQueueFilter] = useState("all");
+  // Flat list, or gathered under a heading per queue or per engineer.
+  const [groupBy, setGroupBy] = useState<'none' | 'queue' | 'agent'>('none');
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", priority: "medium", type: "incident", queueId: queues[0]?.id || "", companyId: "", contactId: "", contractId: "" });
   const [saving, setSaving] = useState(false);
@@ -83,6 +85,27 @@ export default function TicketsClient({ tickets: initial, queues, agents, compan
       : initial.filter(t => t.status === s.slug).length,
   }));
 
+  // Gathered by whichever heading is chosen, biggest group first, with the
+  // unassigned and unqueued bucket kept last where it belongs.
+  const groups = (() => {
+    if (groupBy === 'none') return [];
+    const map = new Map<string, Ticket[]>();
+    for (const t of filtered) {
+      const key = groupBy === 'queue'
+        ? (t.queue || 'No queue')
+        : (t.assignedTo && t.assignedTo !== 'Unassigned' ? t.assignedTo : 'Unassigned');
+      map.set(key, [...(map.get(key) ?? []), t]);
+    }
+    const spare = ['No queue', 'Unassigned'];
+    return [...map.entries()]
+      .map(([label, rows]) => ({ label, rows }))
+      .sort((a, b) => {
+        const aSpare = spare.includes(a.label), bSpare = spare.includes(b.label);
+        if (aSpare !== bSpare) return aSpare ? 1 : -1;
+        return b.rows.length - a.rows.length;
+      });
+  })();
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault(); setSaving(true);
     try {
@@ -134,6 +157,29 @@ export default function TicketsClient({ tickets: initial, queues, agents, compan
       <div className="flex flex-wrap items-center gap-3">
         <SearchInput value={search} onChange={setSearch} placeholder="Search tickets..." className="flex-1 max-w-md" />
 
+        {/* Group the list by queue or by engineer. */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-surface-500">View</span>
+          {([
+            { key: 'none' as const, label: 'List' },
+            { key: 'queue' as const, label: 'By queue' },
+            { key: 'agent' as const, label: 'By engineer' },
+          ]).map(opt => (
+            <button
+              key={opt.key}
+              onClick={() => setGroupBy(opt.key)}
+              aria-pressed={groupBy === opt.key}
+              className={`px-2.5 py-1.5 rounded-lg text-sm transition-colors ${
+                groupBy === opt.key
+                  ? 'bg-brand-500/20 text-brand-400 border border-brand-500/30'
+                  : 'text-surface-400 hover:text-white hover:bg-white/5 border border-transparent'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
         {/* Queue filter */}
         {queues.length > 0 && (
           <div className="flex items-center gap-2">
@@ -154,7 +200,26 @@ export default function TicketsClient({ tickets: initial, queues, agents, compan
         )}
       </div>
 
-      <DataTable columns={columns} data={filtered} emptyMessage="No tickets found" onRowClick={(t: any) => router.push(`/service-desk/tickets/${t.id}`)} />
+      {groupBy === 'none' ? (
+        <DataTable columns={columns} data={filtered} emptyMessage="No tickets found" onRowClick={(t: any) => router.push(`/service-desk/tickets/${t.id}`)} />
+      ) : (
+        <div className="space-y-6">
+          {groups.length === 0 ? (
+            <p className="text-sm text-surface-400">No tickets found</p>
+          ) : groups.map(group => (
+            <div key={group.label}>
+              <div className="flex items-baseline justify-between mb-2">
+                <h3 className="text-sm font-semibold text-surface-200">{group.label}</h3>
+                <span className="text-xs text-surface-500">
+                  {group.rows.length} {group.rows.length === 1 ? 'ticket' : 'tickets'}
+                </span>
+              </div>
+              <DataTable columns={columns} data={group.rows} emptyMessage="None"
+                onRowClick={(t: any) => router.push(`/service-desk/tickets/${t.id}`)} />
+            </div>
+          ))}
+        </div>
+      )}
 
       <Modal open={showModal} onClose={() => setShowModal(false)} title="New Ticket" size="lg"
         footer={<><Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button><Button loading={saving} onClick={handleCreate}>Create Ticket</Button></>}>

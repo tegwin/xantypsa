@@ -2,11 +2,15 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { isClosedStatus } from '@/lib/ticketStatus';
 import { withTenant, jsonResponse, errorResponse } from '@/lib/api';
+import { visibleTicketFilter } from '@/lib/queueAccess';
 
 export const GET = withTenant(async (req: NextRequest, session: any) => {
   const id = req.nextUrl.pathname.split('/').pop()!;
+  // The same queue rules as the list. Without this, a ticket hidden from the
+  // list would still open for anybody who knew or guessed its URL.
+  const visibility = await visibleTicketFilter(session);
   const ticket = await prisma.ticket.findFirst({
-    where: { id, tenantId: session.user.tenantId },
+    where: { id, tenantId: session.user.tenantId, ...(visibility ?? {}) },
     include: {
       company: { select: { id: true, name: true } },
       contact: { select: { id: true, firstName: true, lastName: true, email: true } },

@@ -6,9 +6,19 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
   const queues = await prisma.ticketQueue.findMany({
     where: { tenantId: session.user.tenantId },
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-    include: { _count: { select: { tickets: true } } },
+    include: {
+      _count: { select: { tickets: true } },
+      members: { select: { user: { select: { id: true, name: true, email: true } } } },
+    },
   });
-  return jsonResponse({ items: queues });
+  return jsonResponse({
+    items: queues.map((q) => ({
+      ...q,
+      members: q.members.map((m) => m.user),
+      // A queue nobody is in is worked by everybody.
+      isOpenToEveryone: q.members.length === 0,
+    })),
+  });
 }, 'settings', 'read');
 
 export const POST = withTenant(async (req: NextRequest, session: any) => {

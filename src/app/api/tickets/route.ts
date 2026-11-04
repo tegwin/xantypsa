@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withTenant, jsonResponse, errorResponse, parseSearchParams } from '@/lib/api';
+import { visibleTicketFilter } from '@/lib/queueAccess';
 import { getNextNumber } from '@/lib/server-utils';
 import { nextSequenceNumber } from '@/lib/references';
 import { sendTicketNotification } from '@/lib/ticketEmail';
@@ -23,6 +24,15 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
   if (p.companyId) where.companyId = p.companyId;
   if (p.opportunityId) where.opportunityId = p.opportunityId;
   if (p.assigneeId) where.assignedToId = p.assigneeId;
+  // Filtering by queue, for the by-queue view.
+  const queueId = new URL(req.url).searchParams.get('queueId');
+  if (queueId) where.queueId = queueId === 'none' ? null : queueId;
+
+  // Queue membership. Composed under AND because the search above already
+  // uses OR, and a second OR at the top level would widen it instead of
+  // narrowing it, showing people tickets they should not see.
+  const visibility = await visibleTicketFilter(session);
+  if (visibility) where.AND = [...(where.AND ?? []), visibility];
 
   const [items, total] = await Promise.all([
     prisma.ticket.findMany({

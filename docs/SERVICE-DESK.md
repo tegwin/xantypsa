@@ -86,3 +86,58 @@ above the highest already used. Existing tickets are never renumbered.
 Detail pages read the same way throughout: the record's own name as the
 heading, its reference underneath. A ticket shows its subject with
 `SON-00042` below it, exactly as a quote shows its title with `QTE-00002`.
+
+## Queues, membership and transfers
+
+### Who sees what
+
+A queue with nobody in it is visible to everyone. Adding the first agent makes
+it private. This matters: making empty queues private would have hidden every
+existing ticket the moment the feature arrived.
+
+In full, a ticket is visible when any of these holds:
+
+- you are an administrator (`service_desk:manage`, or a super admin)
+- the ticket is in no queue
+- the ticket is in a queue that has no members
+- you are a member of the queue it is in
+- the ticket is assigned to you, wherever it sits
+
+The last rule means handing somebody a ticket never also hides it from them.
+The same filter guards the ticket list and a single ticket, so a ticket kept
+off your list cannot be opened by going straight to its URL.
+
+### Managing agents on a queue
+
+Settings, Service Desk, Queues, then edit a queue: the **Agents** tab lists
+every agent with a tick box. Changes save immediately, not on Save, because
+membership is its own record rather than a field on the queue.
+
+The same thing from the other side: Settings, Users, open somebody, **Queues**
+tab, which lists every queue and whether they are in it.
+
+### Transferring a ticket
+
+**Transfer** sits at the top of a ticket. It moves the ticket to another queue
+and sets the engineer, or leaves it as None so the queue picks it up. Every
+transfer writes an internal note saying where it went and why, because a
+transfer that leaves no trace is how a ticket quietly becomes nobody's problem.
+
+### API
+
+| Method | Route | Does |
+|---|---|---|
+| GET | `/api/ticket-queues` | Queues, with members and `isOpenToEveryone` |
+| POST | `/api/ticket-queues` | Create a queue |
+| PATCH | `/api/ticket-queues/{id}` | Rename, set default, activate or deactivate |
+| DELETE | `/api/ticket-queues/{id}` | Delete, refused while tickets are in it |
+| GET | `/api/ticket-queues/{id}/members` | Who works the queue |
+| POST | `/api/ticket-queues/{id}/members` | Add an agent, body `{ userId }` |
+| DELETE | `/api/ticket-queues/{id}/members?userId=` | Remove an agent |
+| GET | `/api/users/{id}/queues` | Every queue, flagged with `isMember` |
+| POST | `/api/users/{id}/queues` | Put them in a queue, body `{ queueId }` |
+| DELETE | `/api/users/{id}/queues?queueId=` | Take them out |
+| POST | `/api/tickets/{id}/transfer` | `{ queueId, assignedToId, note }`; null for either means none |
+
+Ticket listing also accepts `?queueId=` to filter, or `?queueId=none` for
+tickets in no queue at all.

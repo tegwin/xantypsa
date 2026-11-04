@@ -6,12 +6,13 @@ import { useApi } from '@/hooks/useApi';
 import { PageHeader, Button, LoadingSpinner, StatusBadge } from '@/components/ui';
 import { formatDate } from '@/lib/utils';
 import { useSession } from '@/components/SessionProvider';
-import { UserCog, ShieldCheck, PoundSterling, User as UserIcon } from 'lucide-react';
+import { UserCog, ShieldCheck, PoundSterling, User as UserIcon, Layers } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const TABS = [
   { key: 'general', label: 'General', icon: UserIcon },
   { key: 'role', label: 'Role & Access', icon: UserCog },
+  { key: 'queues', label: 'Queues', icon: Layers },
   { key: 'security', label: 'Security', icon: ShieldCheck },
   { key: 'costs', label: 'Costs', icon: PoundSterling },
 ] as const;
@@ -28,6 +29,43 @@ export default function UserEditPage() {
   const [form, setForm] = useState<any>({});
   const [saving, setSaving] = useState(false);
   const [impersonating, setImpersonating] = useState(false);
+  const [queues, setQueues] = useState<any[]>([]);
+  const [queuesLoading, setQueuesLoading] = useState(false);
+
+  const loadQueues = async () => {
+    setQueuesLoading(true);
+    try {
+      const res = await fetch(`/api/users/${id}/queues`);
+      const json = await res.json();
+      setQueues(json.items ?? []);
+    } finally {
+      setQueuesLoading(false);
+    }
+  };
+
+  // Only when the tab is opened: most visits here never look at it.
+  useEffect(() => {
+    if (tab === 'queues') loadQueues();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, id]);
+
+  const setMembership = async (queueId: string, shouldBeMember: boolean) => {
+    const res = shouldBeMember
+      ? await fetch(`/api/users/${id}/queues`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ queueId }),
+        })
+      : await fetch(`/api/users/${id}/queues?queueId=${queueId}`, { method: 'DELETE' });
+
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      toast.error(json.error || 'Could not change that');
+      return;
+    }
+    toast.success(shouldBeMember ? 'Added to the queue' : 'Removed from the queue');
+    loadQueues();
+  };
 
   useEffect(() => {
     if (user) {
@@ -252,6 +290,45 @@ export default function UserEditPage() {
           )}
         </div>
       )}
+      {tab === 'queues' && (
+        <div className="space-y-4">
+          <div className="rounded-lg border border-surface-700 bg-surface-800/40 p-3 text-sm text-surface-300">
+            A queue with nobody in it is visible to everyone. Put people in a queue and it becomes
+            private to them, except for administrators, who always see every queue.
+          </div>
+
+          {queuesLoading ? (
+            <p className="text-sm text-surface-400">Loading...</p>
+          ) : queues.length === 0 ? (
+            <p className="text-sm text-surface-400">No queues have been set up yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {queues.map((q) => (
+                <label
+                  key={q.id}
+                  className="flex cursor-pointer items-center gap-3 rounded-lg border border-surface-700 bg-surface-800/40 p-3 hover:border-surface-600"
+                >
+                  <input
+                    type="checkbox"
+                    checked={q.isMember}
+                    onChange={(e) => setMembership(q.id, e.target.checked)}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium text-surface-100">{q.name}</span>
+                    <span className="block text-xs text-surface-500">
+                      {q.ticketCount} {q.ticketCount === 1 ? 'ticket' : 'tickets'}
+                      {q.isOpenToEveryone
+                        ? ' · open to everyone'
+                        : ` · ${q.memberCount} ${q.memberCount === 1 ? 'member' : 'members'}`}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
     </div>
   );
 }

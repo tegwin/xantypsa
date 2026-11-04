@@ -25,6 +25,34 @@ export default function ServiceDeskSettingsPage() {
   const [showQueueModal, setShowQueueModal] = useState(false);
   const [editQueueId, setEditQueueId] = useState<string | null>(null);
   const [queueForm, setQueueForm] = useState({ name: '', description: '', isDefault: false });
+  // Agents only make sense on a queue that exists, so the tab appears on edit.
+  const [queueTab, setQueueTab] = useState<'details' | 'agents'>('details');
+  const [queueAgents, setQueueAgents] = useState<any[]>([]);
+  const [allAgents, setAllAgents] = useState<any[]>([]);
+
+  const loadQueueAgents = async (queueId: string) => {
+    const [members, users] = await Promise.all([
+      fetch(`/api/ticket-queues/${queueId}/members`).then(r => r.json()).catch(() => ({ members: [] })),
+      fetch('/api/users').then(r => r.json()).catch(() => ({ items: [] })),
+    ]);
+    setQueueAgents((members.members ?? []).map((m: any) => m.user));
+    setAllAgents(users.items ?? []);
+  };
+
+  const setQueueAgent = async (queueId: string, userId: string, add: boolean) => {
+    const res = add
+      ? await fetch(`/api/ticket-queues/${queueId}/members`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId }),
+        })
+      : await fetch(`/api/ticket-queues/${queueId}/members?userId=${userId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      toast.error(json.error || 'Could not change that');
+      return;
+    }
+    loadQueueAgents(queueId);
+  };
 
   const [saving, setSaving] = useState(false);
   const [ref, setRef] = useState<any>({
@@ -137,12 +165,16 @@ export default function ServiceDeskSettingsPage() {
   const openNewQueue = () => {
     setEditQueueId(null);
     setQueueForm({ name: '', description: '', isDefault: false });
+    setQueueTab('details');
     setShowQueueModal(true);
   };
 
   const openEditQueue = (q: TicketQueue) => {
     setEditQueueId(q.id);
     setQueueForm({ name: q.name, description: q.description || '', isDefault: q.isDefault });
+    setQueueTab('details');
+    setQueueAgents([]);
+    loadQueueAgents(q.id);
     setShowQueueModal(true);
   };
 
@@ -422,14 +454,72 @@ export default function ServiceDeskSettingsPage() {
       {/* === QUEUE MODAL === */}
       <Modal open={showQueueModal} onClose={() => setShowQueueModal(false)} title={editQueueId ? 'Edit Queue' : 'New Queue'}
         footer={<><Button variant="secondary" onClick={() => setShowQueueModal(false)}>Cancel</Button><Button loading={saving} onClick={saveQueue}>{editQueueId ? 'Save' : 'Create'}</Button></>}>
-        <form onSubmit={saveQueue} className="space-y-4">
-          <Input label="Queue Name" value={queueForm.name} onChange={e => setQueueForm(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. First Line, Second Line, Projects" />
-          <Input label="Description" value={queueForm.description} onChange={e => setQueueForm(p => ({ ...p, description: e.target.value }))} placeholder="Optional description" />
-          <label className="flex items-center gap-2 text-sm text-surface-300 cursor-pointer">
-            <input type="checkbox" checked={queueForm.isDefault} onChange={e => setQueueForm(p => ({ ...p, isDefault: e.target.checked }))} />
-            Default queue for new tickets
-          </label>
-        </form>
+
+        {/* Agents can only be attached to a queue that exists, so the tabs
+            appear once it has been created. */}
+        {editQueueId && (
+          <div className="flex items-center gap-1 border-b border-surface-700 mb-4">
+            {([
+              { key: 'details' as const, label: 'Details' },
+              { key: 'agents' as const, label: 'Agents' },
+            ]).map(t => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setQueueTab(t.key)}
+                aria-current={queueTab === t.key ? 'page' : undefined}
+                className={`px-4 py-2 text-sm transition-colors ${
+                  queueTab === t.key
+                    ? 'text-white border-b-2 border-brand-500'
+                    : 'text-surface-400 hover:text-white border-b-2 border-transparent'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {(!editQueueId || queueTab === 'details') && (
+          <form onSubmit={saveQueue} className="space-y-4">
+            <Input label="Queue Name" value={queueForm.name} onChange={e => setQueueForm(p => ({ ...p, name: e.target.value }))} required placeholder="e.g. First Line, Second Line, Projects" />
+            <Input label="Description" value={queueForm.description} onChange={e => setQueueForm(p => ({ ...p, description: e.target.value }))} placeholder="Optional description" />
+            <label className="flex items-center gap-2 text-sm text-surface-300 cursor-pointer">
+              <input type="checkbox" checked={queueForm.isDefault} onChange={e => setQueueForm(p => ({ ...p, isDefault: e.target.checked }))} />
+              Default queue for new tickets
+            </label>
+          </form>
+        )}
+
+        {editQueueId && queueTab === 'agents' && (
+          <div className="space-y-3">
+            <p className="text-sm text-surface-400">
+              {queueAgents.length === 0
+                ? 'Nobody is in this queue, so every agent can see its tickets. Tick somebody to close it.'
+                : 'Only these agents, and administrators, can see tickets in this queue. Anybody still sees a ticket assigned to them.'}
+            </p>
+            {/* Ticked immediately, not on Save: membership is its own record,
+                and Save only writes the fields on the Details tab. */}
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {allAgents.length === 0 ? (
+                <p className="text-sm text-surface-500">No agents yet.</p>
+              ) : allAgents.map((a: any) => (
+                <label key={a.id}
+                  className="flex cursor-pointer items-center gap-3 rounded-lg border border-surface-700 bg-surface-800/40 p-3 hover:border-surface-600">
+                  <input
+                    type="checkbox"
+                    checked={queueAgents.some((m: any) => m.id === a.id)}
+                    onChange={e => setQueueAgent(editQueueId, a.id, e.target.checked)}
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm text-surface-100">{a.name}</span>
+                    <span className="block text-xs text-surface-500">{a.email}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

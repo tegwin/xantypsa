@@ -85,6 +85,7 @@ model Tenant {
   @@map("tenants")
   paymentWebhooks     PaymentWebhook[]
   paymentWebhookEvents PaymentWebhookEvent[]
+  queueMembers        TicketQueueMember[]
 }
 
 // ============================================================
@@ -190,6 +191,7 @@ model User {
   opportunityNotes OpportunityNote[] @relation("OpportunityNoteAuthor")
 
   @@map("users")
+  queueMembers  TicketQueueMember[]
 }
 
 model TenantUser {
@@ -478,12 +480,36 @@ model TicketQueue {
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
 
-  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant  Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   tickets Ticket[]
+  members TicketQueueMember[]
 
   @@unique([tenantId, name])
   @@index([tenantId])
   @@map("ticket_queues")
+}
+
+/// Which agents work a queue.
+///
+/// A queue with no members is open to everyone. That is deliberate: making an
+/// empty queue private would have hidden every existing ticket the moment this
+/// was added. A queue becomes private by having somebody put in it.
+model TicketQueueMember {
+  id       String @id @default(cuid())
+  tenantId String
+  queueId  String
+  userId   String
+
+  createdAt DateTime @default(now())
+
+  tenant Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  queue  TicketQueue @relation(fields: [queueId], references: [id], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([queueId, userId])
+  @@index([tenantId])
+  @@index([userId])
+  @@map("ticket_queue_members")
 }
 
 model TicketStatus {
