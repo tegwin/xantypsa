@@ -178,6 +178,16 @@ ALTER TABLE "password_reset_tokens" ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS ai_tenant_isolation ON "password_reset_tokens";
 -- PasswordResetToken: no path to a tenant - denied by default.
 
+ALTER TABLE "payment_webhook_events" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS ai_tenant_isolation ON "payment_webhook_events";
+CREATE POLICY ai_tenant_isolation ON "payment_webhook_events"
+  FOR SELECT USING ("tenantId" = current_setting('app.tenant_id', true));
+
+ALTER TABLE "payment_webhooks" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS ai_tenant_isolation ON "payment_webhooks";
+CREATE POLICY ai_tenant_isolation ON "payment_webhooks"
+  FOR SELECT USING ("tenantId" = current_setting('app.tenant_id', true));
+
 ALTER TABLE "payments" ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS ai_tenant_isolation ON "payments";
 CREATE POLICY ai_tenant_isolation ON "payments"

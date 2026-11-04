@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { withTenant, jsonResponse, errorResponse } from '@/lib/api';
+import { recordPayment } from '@/lib/payments';
 
 export const POST = withTenant(async (req: NextRequest, session: any) => {
   const segments = req.nextUrl.pathname.split('/');
@@ -8,32 +8,21 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
   const body = await req.json();
   const { amount, paymentDate, method, reference, notes } = body;
 
-  const invoice = await prisma.invoice.findFirst({ where: { id: invoiceId, tenantId: session.user.tenantId } });
-  if (!invoice) return errorResponse('Invoice not found', 404);
   if (!amount || amount <= 0) return errorResponse('Valid amount required', 400);
 
-  const payment = await prisma.payment.create({
-    data: {
+  try {
+    const { payment } = await recordPayment({
       tenantId: session.user.tenantId,
       invoiceId,
       amount,
+      method,
+      reference,
+      notes,
       // The client sends `paymentDate`; the column is `paidAt`.
-      paidAt: paymentDate ? new Date(paymentDate) : new Date(),
-      method: method || 'bank_transfer',
-      reference: reference || null,
-      notes: notes || null,
-    },
-  });
-
-  const newPaidAmount = (invoice.amountPaid || 0) + amount;
-  await prisma.invoice.update({
-    where: { id: invoiceId },
-    data: {
-      amountPaid: newPaidAmount,
-      amountDue: Math.max(invoice.total - newPaidAmount, 0),
-      ...(newPaidAmount >= invoice.total && { status: 'paid', paidAt: new Date() }),
-    },
-  });
-
-  return jsonResponse(payment, 201);
+      paidAt: paymentDate ? new Date(paymentDate) : undefined,
+    });
+    return jsonResponse(payment, 201);
+  } catch (err: any) {
+    return errorResponse(err.message || 'Could not record the payment', 400);
+  }
 }, 'invoices', 'write');

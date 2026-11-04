@@ -34,6 +34,10 @@ const PUBLIC_PATHS = [
   '/api/auth',   // sign in, sign out, reset - necessarily public
   '/portal',     // client portal - its own signed session, not a staff login
   '/api/portal', // portal endpoints authenticate themselves individually
+  // A payment provider calls this one, so there is no session to find. It
+  // proves itself with a per-endpoint shared secret instead, checked inside
+  // the route. Narrow on purpose: only the payments path, not /api/webhooks.
+  '/api/webhooks/payments',
 ];
 
 function isPublic(pathname: string): boolean {

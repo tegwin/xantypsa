@@ -83,6 +83,8 @@ model Tenant {
   portalRoles        PortalRole[]
 
   @@map("tenants")
+  paymentWebhooks     PaymentWebhook[]
+  paymentWebhookEvents PaymentWebhookEvent[]
 }
 
 // ============================================================
@@ -1802,4 +1804,61 @@ model PortalRole {
   @@unique([tenantId, name])
   @@index([tenantId])
   @@map("portal_roles")
+}
+
+// ============================================================
+// INBOUND PAYMENT WEBHOOKS
+// ============================================================
+
+/// An endpoint a payment provider calls when money arrives, which marks the
+/// matching invoice paid. Inbound, so the opposite direction to Webhook.
+model PaymentWebhook {
+  id       String @id @default(cuid())
+  tenantId String
+  name     String
+
+  /// The public half of the URL: /api/webhooks/payments/<publicId>.
+  /// Not a secret on its own; the shared secret is what authenticates a call.
+  publicId String @unique
+
+  /// SHA-256 of the shared secret. The secret itself is shown once, when the
+  /// endpoint is created, and is never stored anywhere in readable form.
+  secretHash String
+
+  /// Which provider posts here, for the payment's method field.
+  provider String  @default("generic") // generic, stripe, gocardless, xero, paypal
+  isActive Boolean @default(true)
+
+  lastReceivedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tenant Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  events PaymentWebhookEvent[]
+
+  @@index([tenantId])
+  @@map("payment_webhooks")
+}
+
+/// Every call received, accepted or not. Without this an inbound webhook is
+/// impossible to debug, because the sender's logs are the only other record.
+model PaymentWebhookEvent {
+  id        String  @id @default(cuid())
+  tenantId  String
+  webhookId String
+  payload   Json
+  success   Boolean @default(false)
+  /// Why it was rejected, or what it did.
+  message   String?
+  invoiceId String?
+  amount    Float?
+
+  createdAt DateTime @default(now())
+
+  tenant  Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  webhook PaymentWebhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([webhookId])
+  @@map("payment_webhook_events")
 }
