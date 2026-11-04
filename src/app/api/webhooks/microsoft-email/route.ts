@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { routeIncomingEmail } from '@/lib/emailRouting';
 import { renewSubscription, minutesRemaining, RENEW_WHEN_UNDER_MINUTES } from '@/lib/graphSubscription';
+import { findTicketForEmail } from '@/lib/ticketRef';
 
 /**
  * Keep the subscription alive without a scheduled job.
@@ -181,9 +182,6 @@ export async function POST(req: NextRequest) {
       });
       if (existingNote) continue;
 
-      // Extract ticket number from subject
-      const ticketMatch = msg.subject?.match(/(?:\[Ticket\s*#?|TKT-|Ticket-|Ticket\s*#|#)(\d+)/i);
-
       const senderEmail = msg.from?.emailAddress?.address;
       // Known contact → their company; else the sender's domain → that client;
       // else the catch-all, so nothing is ever dropped.
@@ -200,22 +198,23 @@ export async function POST(req: NextRequest) {
         .replace(/&gt;/g, '>')
         .trim();
 
-      if (ticketMatch) {
-        // Add note to existing ticket
-        const ticketNumber = parseInt(ticketMatch[1]);
-        const ticket = await prisma.ticket.findFirst({ where: { tenantId, ticketNumber } });
-        if (ticket) {
-          const owner = await prisma.tenantUser.findFirst({ where: { tenantId, isOwner: true } });
-          await prisma.ticketNote.create({
-            data: {
-              ticketId: ticket.id,
-              userId: owner?.userId || '',
-              content: `Email from ${senderEmail}:\n\n${bodyContent}\n\n[Email ID: ${msg.id}]`,
-              isInternal: false,
-              isEmail: true,
-            },
-          });
-        }
+      // Which ticket is this a reply to? The subject tag first, then the body,
+      // so stripping the tag out of the subject does not lose the thread. A
+      // reference to a ticket that no longer exists falls through to a new one
+      // rather than being dropped.
+      const existingTicket = await findTicketForEmail(tenantId, msg.subject || '', bodyContent);
+
+      if (existingTicket) {
+        const owner = await prisma.tenantUser.findFirst({ where: { tenantId, isOwner: true } });
+        await prisma.ticketNote.create({
+          data: {
+            ticketId: existingTicket.id,
+            userId: owner?.userId || '',
+            content: `Email from ${senderEmail}:\n\n${bodyContent}\n\n[Email ID: ${msg.id}]`,
+            isInternal: false,
+            isEmail: true,
+          },
+        });
       } else {
         // Create new ticket
         const lastTicket = await prisma.ticket.findFirst({

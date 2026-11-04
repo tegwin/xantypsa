@@ -18,6 +18,29 @@ and cannot be changed.
 If an email fails to send, the note is still saved. You get a separate warning
 so a failed send is never mistaken for a lost note.
 
+## Email threading
+
+Every email the system sends about a ticket carries its number in the subject,
+as `[#123]`, and the same reference again in the footer:
+
+    Ticket reference: [#123] - please keep this in your reply.
+
+A reply is matched back to its ticket in that order:
+
+1. The **subject**, which also accepts `[Ticket #123]`, `TKT-123`,
+   `Ticket-123`, `Ticket 123` and a bare `#123`, with or without any number of
+   `Re:` and `Fw:` prefixes.
+2. The **body**, if the subject was rewritten or the tag taken out. Only the
+   explicit forms count here, never a bare `#123`, so an invoice or PO number
+   in a quoted signature cannot hijack a reply.
+
+Each candidate number is checked against your own tickets and the first that
+exists wins. If nothing matches, or the ticket it names has been deleted, the
+email becomes a new ticket rather than being dropped.
+
+The subject tag is added by the system, not by the template, so editing an
+email template cannot break threading.
+
 ## The timer
 
 A work timer runs on each ticket, in the action bar and again in the time entry

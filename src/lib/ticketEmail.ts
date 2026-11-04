@@ -1,5 +1,6 @@
 import { prisma } from './prisma';
 import { getSmtpConfig, getEmailTemplate, replaceTemplateVars, sendEmail, logEmail } from './email';
+import { withTicketTag, ticketRefFooter, ticketTag } from './ticketRef';
 
 export async function sendTicketNotification(tenantId: string, ticketId: string, templateSlug: string) {
   try {
@@ -32,8 +33,12 @@ export async function sendTicketNotification(tenantId: string, ticketId: string,
       assigned_to: '',
     };
 
-    const subject = replaceTemplateVars(template.subject, vars);
-    const html = replaceTemplateVars(template.body, vars);
+    // The tag in the subject, and the same reference in the footer, are what
+    // route a reply back here. Templates are editable, so neither can be left
+    // to the template to remember.
+    const subject = withTicketTag(replaceTemplateVars(template.subject, vars), ticket.ticketNumber);
+    const html = `${replaceTemplateVars(template.body, vars)}
+      <p style="color:#666;font-size:12px;margin-top:16px">${ticketRefFooter(ticket.ticketNumber)}</p>`;
 
     await sendEmail(config, recipientEmail, subject, html);
     await logEmail(tenantId, null, recipientEmail, subject, 'sent');
@@ -75,7 +80,7 @@ export async function sendPublicNoteEmail(
     if (!config) return { sent: false, reason: 'Email is not configured' };
 
     const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
-    const subject = `[#${ticket.ticketNumber}] ${ticket.title}`;
+    const subject = withTicketTag(ticket.title, ticket.ticketNumber);
 
     // Plain, readable markup: the note is the message, nothing else.
     const escaped = noteContent
@@ -88,7 +93,8 @@ export async function sendPublicNoteEmail(
         <hr style="border:none;border-top:1px solid #ddd;margin:16px 0">
         <p style="color:#666;font-size:12px">
           ${authorName}${tenant?.name ? ` at ${tenant.name}` : ''}<br>
-          Ticket #${ticket.ticketNumber}: ${ticket.title}
+          ${ticketTag(ticket.ticketNumber)} ${ticket.title}<br>
+          ${ticketRefFooter(ticket.ticketNumber)}
         </p>
       </div>`;
 

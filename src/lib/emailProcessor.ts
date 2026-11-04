@@ -1,4 +1,5 @@
 import { sendTicketNotification } from './ticketEmail';
+import { findTicketForEmail } from './ticketRef';
 
 export interface MicrosoftConfig {
   clientId: string;
@@ -61,32 +62,6 @@ function stripHtml(html: string): string {
   return text.trim();
 }
 
-/**
- * Try to extract a ticket number from an email subject.
- * Matches patterns like: #123, TKT-123, [Ticket #123], Ticket-123, Re: [TKT-456] etc.
- */
-function extractTicketNumber(subject: string): number | null {
-  if (!subject) return null;
-
-  // Order matters: try most specific patterns first
-  const patterns = [
-    /\[Ticket\s*#?(\d+)\]/i,   // [Ticket #123] or [Ticket 123]
-    /\bTKT-(\d+)\b/i,          // TKT-123
-    /\bTicket-(\d+)\b/i,       // Ticket-123
-    /\bTicket\s*#(\d+)\b/i,    // Ticket #123
-    /#(\d+)\b/,                 // #123 (generic, last resort)
-  ];
-
-  for (const pattern of patterns) {
-    const match = subject.match(pattern);
-    if (match) {
-      return parseInt(match[1], 10);
-    }
-  }
-
-  return null;
-}
-
 export async function processIncomingEmails(appTenantId: string): Promise<EmailProcessingResult> {
   const result: EmailProcessingResult = {
     processed: 0,
@@ -140,33 +115,23 @@ export async function processIncomingEmails(appTenantId: string): Promise<EmailP
       const bodyIsHtml = msg.body?.contentType === 'html';
       const plainTextBody = bodyIsHtml ? stripHtml(rawBody) : rawBody;
 
-      // Check if this is a reply to existing ticket
-      const ticketNumber = extractTicketNumber(subject);
+      // Which ticket is this a reply to? The subject tag first, then the body,
+      // so stripping the tag out of the subject does not lose the thread.
+      const ticket = await findTicketForEmail(appTenantId, subject, plainTextBody);
 
-      if (ticketNumber) {
-        // Try to find the matching ticket
-        const ticket = await prisma.ticket.findFirst({
-          where: { tenantId: appTenantId, ticketNumber },
+      if (ticket) {
+        await prisma.ticketNote.create({
+          data: {
+            ticketId: ticket.id,
+            userId: ownerUserId,
+            content: `Email from ${senderName} (${senderEmail}):\n\n${plainTextBody}`,
+            isInternal: false,
+            isEmail: true,
+          },
         });
-
-        if (ticket) {
-          // Add as note to existing ticket
-          await prisma.ticketNote.create({
-            data: {
-              ticketId: ticket.id,
-              userId: ownerUserId,
-              content: `Email from ${senderName} (${senderEmail}):\n\n${plainTextBody}`,
-              isInternal: false,
-              isEmail: true,
-            },
-          });
-          result.notesAdded++;
-        } else {
-          // Ticket number referenced but not found -- create a new ticket instead
-          await createTicketFromEmail(prisma, appTenantId, ownerUserId, senderEmail, subject, plainTextBody, result);
-        }
+        result.notesAdded++;
       } else {
-        // No ticket reference -- create new ticket from email
+        // Nothing recognisable, or a reference to a ticket that is gone.
         await createTicketFromEmail(prisma, appTenantId, ownerUserId, senderEmail, subject, plainTextBody, result);
       }
 
