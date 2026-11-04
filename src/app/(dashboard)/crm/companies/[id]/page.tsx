@@ -65,9 +65,9 @@ export default function CompanyDetailPage() {
     setEditing(true);
   };
 
-  // Reads the company's own website for a published postal address and fills
-  // in whatever is still blank. Never overwrites something already typed.
-  const lookupAddress = async () => {
+  // Fetches the company's logo from its website. Reading the address this way
+  // was tried and dropped: real customer sites do not publish one.
+  const lookupLogo = async () => {
     setLookingUp(true);
     try {
       const res = await fetch('/api/lookup/website', {
@@ -77,28 +77,9 @@ export default function CompanyDetailPage() {
       });
       const json = await res.json();
       if (!res.ok) return toast.error(json.error || 'Lookup failed');
-      if (!json.address && !json.company?.logoUrl) {
-        return toast(json.message || 'Nothing found on that site');
-      }
-
-      const found = json.address ?? {};
-      const filled: string[] = [];
-      setEditForm((prev: any) => {
-        const next = { ...prev };
-        for (const field of ['address1', 'address2', 'city', 'state', 'postcode', 'country']) {
-          if (found[field] && !String(prev[field] || '').trim()) {
-            next[field] = found[field];
-            filled.push(field);
-          }
-        }
-        // The same call returns the logo, so take it while we are here.
-        if (json.company?.logoUrl && !String(prev.logoUrl || '').trim()) {
-          next.logoUrl = json.company.logoUrl;
-          filled.push('logo');
-        }
-        return next;
-      });
-      toast.success(filled.length ? `Filled ${filled.length} field(s) from the website` : 'Address found, but your fields are already filled');
+      if (!json.logoUrl) return toast(json.message || 'No logo found on that site');
+      setEditForm((prev: any) => ({ ...prev, logoUrl: json.logoUrl }));
+      toast.success('Logo found');
     } catch {
       toast.error('Could not reach that website');
     } finally {
@@ -234,18 +215,18 @@ export default function CompanyDetailPage() {
                 <input value={editForm.website} onChange={e => setEditForm({ ...editForm, website: e.target.value })} className="w-full" />
                 <button
                   type="button"
-                  onClick={lookupAddress}
+                  onClick={lookupLogo}
                   disabled={!editForm.website || lookingUp}
-                  title="Read the address from this website"
+                  title="Fetch the logo from this website"
                   className="btn-secondary flex items-center gap-1.5 whitespace-nowrap disabled:opacity-40"
                 >
                   <Search className="w-3.5 h-3.5" />
-                  {lookingUp ? 'Looking...' : 'Get address'}
+                  {lookingUp ? 'Looking...' : 'Fetch logo'}
                 </button>
               </div>
               <p className="text-xs text-slate-500 mt-1">
-                Reads a published address off the site and fills in blank fields only. Many sites
-                do not publish one, so expect to type it in yourself fairly often.
+                Fetches the logo from this site. Addresses are typed in by hand: too few sites
+                publish one in a form worth trusting.
               </p>
             </div>
             <div>

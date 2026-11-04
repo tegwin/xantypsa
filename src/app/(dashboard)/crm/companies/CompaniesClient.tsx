@@ -45,9 +45,9 @@ export default function CompaniesClient({ companies: initial }: { companies: Com
   const [saving, setSaving] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
 
-  // Most of a new company's details are already published on its own website,
-  // so the domain goes first and fills in what it can. Everything stays
-  // editable, and nothing already typed is overwritten.
+  // Sites reliably declare their logo, so that is what this fetches. Reading
+  // the name and address off a website was tried and dropped: real customer
+  // sites publish neither, so it only ever produced empty results.
   async function lookupFromWebsite() {
     if (!form.website.trim()) return;
     setLookingUp(true);
@@ -59,31 +59,10 @@ export default function CompaniesClient({ companies: initial }: { companies: Com
       });
       const json = await res.json();
       if (!res.ok) { toast.error(json.error || 'Lookup failed'); return; }
-      if (!json.company) { toast(json.message || 'Nothing published on that site'); return; }
+      if (!json.logoUrl) { toast(json.message || 'No logo found on that site'); return; }
 
-      const found = json.company;
-      const filled: string[] = [];
-      setForm(prev => {
-        const next = { ...prev };
-        const put = (field: keyof typeof prev, value?: string) => {
-          if (value && !String(prev[field] || '').trim()) {
-            (next[field] as string) = value;
-            filled.push(field);
-          }
-        };
-        put('name', found.name);
-        put('email', found.email);
-        put('phone', found.phone);
-        put('logoUrl', found.logoUrl);
-        put('city', found.address?.city);
-        put('country', found.address?.country);
-        return next;
-      });
-      toast[filled.length ? 'success' : 'error'](
-        filled.length
-          ? `Filled in ${filled.join(', ')}`
-          : 'Found the site, but nothing new to fill in'
-      );
+      setForm(prev => ({ ...prev, logoUrl: json.logoUrl }));
+      toast.success('Logo found');
     } catch {
       toast.error('Could not reach that website');
     } finally {
@@ -132,15 +111,13 @@ export default function CompaniesClient({ companies: initial }: { companies: Com
       <Modal open={showModal} onClose={() => setShowModal(false)} title="New Company"
         footer={<><Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button><Button loading={saving} onClick={handleCreate}>Create</Button></>}>
         <form onSubmit={handleCreate} className="space-y-4">
-          {/* The website comes first: give it a domain and the rest fills
-              itself in where the site publishes it. */}
           <div>
             <label className="block text-sm font-medium text-surface-400 mb-1">Website</label>
             <div className="flex gap-2">
               <input
                 value={form.website}
                 onChange={update("website")}
-                onBlur={() => { if (form.website.trim() && !form.name.trim()) lookupFromWebsite(); }}
+                onBlur={() => { if (form.website.trim() && !form.logoUrl) lookupFromWebsite(); }}
                 placeholder="acme.com"
                 className="w-full"
               />
@@ -148,13 +125,9 @@ export default function CompaniesClient({ companies: initial }: { companies: Com
                 disabled={!form.website.trim() || lookingUp}
                 className="btn-secondary flex items-center gap-1.5 whitespace-nowrap disabled:opacity-40">
                 <Search className="h-3.5 w-3.5" />
-                {lookingUp ? 'Looking...' : 'Look up'}
+                {lookingUp ? 'Looking...' : 'Fetch logo'}
               </button>
             </div>
-            <p className="text-xs text-surface-500 mt-1">
-              Fills in whatever the site publishes. Plenty of sites publish nothing, so just
-              carry on typing if it comes back empty.
-            </p>
           </div>
           {form.logoUrl && (
             <div className="flex items-center gap-3 rounded-lg border border-surface-700 bg-surface-800/40 p-3">
