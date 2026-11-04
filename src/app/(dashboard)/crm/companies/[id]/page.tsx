@@ -34,6 +34,7 @@ export default function CompanyDetailPage() {
   const [editForm, setEditForm] = useState<any>({});
   const [showDelete, setShowDelete] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [lookingUp, setLookingUp] = useState(false);
 
   if (loading) return <LoadingSpinner />;
   if (!company) return <div className="p-8 text-slate-400">Company not found</div>;
@@ -65,7 +66,6 @@ export default function CompanyDetailPage() {
 
   // Reads the company's own website for a published postal address and fills
   // in whatever is still blank. Never overwrites something already typed.
-  const [lookingUp, setLookingUp] = useState(false);
   const lookupAddress = async () => {
     setLookingUp(true);
     try {
