@@ -7,7 +7,7 @@ import { formatCurrency, formatRelativeTime } from '@/lib/utils';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { User, Building2, Mail, Phone, Smartphone, MapPin, Briefcase, Edit, Trash2,
-  Send, KeyRound, Eye, Globe } from 'lucide-react';
+  Send, KeyRound, Eye, Globe, Linkedin } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSession } from '@/components/SessionProvider';
 import CustomFieldsTab from './tabs/CustomFieldsTab';
@@ -466,6 +466,19 @@ export default function ContactDetailPage() {
                   <Briefcase className="w-4 h-4 text-slate-400" /> {contact.department}
                 </div>
               )}
+              {/* LinkedIn has no public API for looking somebody up and blocks
+                  scraping, so this is a search for the person at their company
+                  rather than a stored profile link. One click, then pick them. */}
+              <a
+                href={`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(
+                  [contact.firstName, contact.lastName, contact.company?.name].filter(Boolean).join(' ')
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-slate-300 hover:text-white"
+              >
+                <Linkedin className="w-4 h-4 text-slate-400" /> Find on LinkedIn
+              </a>
               {contact.source && (
                 <div className="flex items-center gap-2 text-slate-300">
                   <User className="w-4 h-4 text-slate-400" /> Source: {contact.source}

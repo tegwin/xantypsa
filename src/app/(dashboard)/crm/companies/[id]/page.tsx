@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import { useApi, apiPatch, apiDelete } from '@/hooks/useApi';
 import { PageHeader, StatusBadge, LoadingSpinner, StatCard, Modal } from '@/components/ui';
 import { formatCurrency } from '@/lib/utils';
 import { useRouter, useParams } from 'next/navigation';
 import {
-  Users, Ticket, Receipt, Handshake, Edit, Trash2,
+  Users, Ticket, Receipt, Handshake, Edit, Trash2, Search,
 } from 'lucide-react';
 
 import OverviewTab from './tabs/OverviewTab';
@@ -60,6 +61,41 @@ export default function CompanyDetailPage() {
       notes: company.notes || '',
     });
     setEditing(true);
+  };
+
+  // Reads the company's own website for a published postal address and fills
+  // in whatever is still blank. Never overwrites something already typed.
+  const [lookingUp, setLookingUp] = useState(false);
+  const lookupAddress = async () => {
+    setLookingUp(true);
+    try {
+      const res = await fetch('/api/lookup/website', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ website: editForm.website }),
+      });
+      const json = await res.json();
+      if (!res.ok) return toast.error(json.error || 'Lookup failed');
+      if (!json.address) return toast(json.message || 'No address found on that site');
+
+      const found = json.address;
+      const filled: string[] = [];
+      setEditForm((prev: any) => {
+        const next = { ...prev };
+        for (const field of ['address1', 'address2', 'city', 'state', 'postcode', 'country']) {
+          if (found[field] && !String(prev[field] || '').trim()) {
+            next[field] = found[field];
+            filled.push(field);
+          }
+        }
+        return next;
+      });
+      toast.success(filled.length ? `Filled ${filled.length} field(s) from the website` : 'Address found, but your fields are already filled');
+    } catch {
+      toast.error('Could not reach that website');
+    } finally {
+      setLookingUp(false);
+    }
   };
 
   const saveEdit = async () => {
@@ -173,7 +209,23 @@ export default function CompanyDetailPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-400 mb-1">Website</label>
-              <input value={editForm.website} onChange={e => setEditForm({ ...editForm, website: e.target.value })} className="w-full" />
+              <div className="flex gap-2">
+                <input value={editForm.website} onChange={e => setEditForm({ ...editForm, website: e.target.value })} className="w-full" />
+                <button
+                  type="button"
+                  onClick={lookupAddress}
+                  disabled={!editForm.website || lookingUp}
+                  title="Read the address from this website"
+                  className="btn-secondary flex items-center gap-1.5 whitespace-nowrap disabled:opacity-40"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  {lookingUp ? 'Looking...' : 'Get address'}
+                </button>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Reads a published address off the site and fills in blank fields only. Many sites
+                do not publish one, so expect to type it in yourself fairly often.
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-400 mb-1">Email domains</label>

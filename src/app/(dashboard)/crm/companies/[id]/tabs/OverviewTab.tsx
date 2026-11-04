@@ -151,7 +151,17 @@ export default function OverviewTab({ company }: OverviewTabProps) {
             </a>
           )}
           {(company.address1 || company.city) && (
-            <div className="flex items-start gap-2 text-sm text-slate-300">
+            // Opens the address in Google Maps. Built from whichever parts are
+            // filled in, so a half complete address still finds the town.
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                [company.address1, company.address2, company.address3, company.city,
+                 company.state, company.postcode, company.country].filter(Boolean).join(', ')
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-start gap-2 text-sm text-slate-300 hover:text-white"
+            >
               <MapPin className="w-4 h-4 text-slate-400 mt-0.5" />
               <div>
                 {company.address1 && <div>{company.address1}</div>}
@@ -160,7 +170,8 @@ export default function OverviewTab({ company }: OverviewTabProps) {
                 <div>{[company.city, company.state, company.postcode].filter(Boolean).join(', ')}</div>
                 {company.country && <div>{company.country}</div>}
               </div>
-            </div>
+              <ExternalLink className="w-3 h-3 ml-auto mt-0.5 shrink-0" />
+            </a>
           )}
         </div>
 
