@@ -342,6 +342,9 @@ model Company {
   tenantId      String
   name          String
   website       String?
+  /// The company's own logo, read off its website. A URL on their server, so
+  /// it can go missing; every use falls back to the generic icon.
+  logoUrl       String?
   phone         String?
   email         String?
   address1      String?

@@ -44,6 +44,7 @@ export default function CompanyDetailPage() {
       name: company.name,
       type: company.type,
       website: company.website || '',
+      logoUrl: company.logoUrl || '',
       // Stored as an array; edited as one-per-line text, which is far easier to
       // paste into than a tag widget.
       emailDomains: (company.emailDomains ?? []).join('\n'),
@@ -76,9 +77,11 @@ export default function CompanyDetailPage() {
       });
       const json = await res.json();
       if (!res.ok) return toast.error(json.error || 'Lookup failed');
-      if (!json.address) return toast(json.message || 'No address found on that site');
+      if (!json.address && !json.company?.logoUrl) {
+        return toast(json.message || 'Nothing found on that site');
+      }
 
-      const found = json.address;
+      const found = json.address ?? {};
       const filled: string[] = [];
       setEditForm((prev: any) => {
         const next = { ...prev };
@@ -87,6 +90,11 @@ export default function CompanyDetailPage() {
             next[field] = found[field];
             filled.push(field);
           }
+        }
+        // The same call returns the logo, so take it while we are here.
+        if (json.company?.logoUrl && !String(prev.logoUrl || '').trim()) {
+          next.logoUrl = json.company.logoUrl;
+          filled.push('logo');
         }
         return next;
       });
@@ -131,6 +139,19 @@ export default function CompanyDetailPage() {
 
   return (
     <div className="animate-fadeIn">
+      {company.logoUrl && (
+        // The customer's own logo, read off their website. It lives on their
+        // server, so a broken one simply disappears rather than leaving a gap.
+        <div className="mb-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={company.logoUrl}
+            alt=""
+            className="h-12 w-auto max-w-[180px] object-contain"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+          />
+        </div>
+      )}
       <PageHeader title={company.name} subtitle={`${company.type} • ${company.industry || 'No industry'}`}>
         <div className="flex gap-2">
           <button onClick={startEdit} className="btn-secondary flex items-center gap-1.5">

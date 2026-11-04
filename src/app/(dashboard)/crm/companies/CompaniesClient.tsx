@@ -9,14 +9,39 @@ import toast from "react-hot-toast";
 
 interface Company {
   id: string; name: string; type: string; industry: string; phone: string; email: string;
-  website: string; city: string; isActive: boolean; contacts: number; tickets: number; contracts: number; createdAt: string;
+  website: string; logoUrl?: string; city: string; isActive: boolean; contacts: number; tickets: number; contracts: number; createdAt: string;
+}
+
+/**
+ * The company's own logo where we have one, the generic icon otherwise.
+ * The URL points at the customer's server, so a broken image falls back
+ * rather than leaving a gap.
+ */
+function CompanyLogo({ name, logoUrl }: { name: string; logoUrl?: string }) {
+  const [failed, setFailed] = useState(false);
+  if (logoUrl && !failed) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={logoUrl}
+        alt=""
+        onError={() => setFailed(true)}
+        className="w-8 h-8 rounded-lg object-contain bg-white/5"
+      />
+    );
+  }
+  return (
+    <div className="w-8 h-8 rounded-lg bg-brand-600/10 flex items-center justify-center">
+      <Building2 className="h-4 w-4 text-brand-400" />
+    </div>
+  );
 }
 
 export default function CompaniesClient({ companies: initial }: { companies: Company[] }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: "", type: "customer", industry: "", email: "", phone: "", website: "", city: "", country: "" });
+  const [form, setForm] = useState({ name: "", type: "customer", industry: "", email: "", phone: "", website: "", logoUrl: "", city: "", country: "" });
   const [saving, setSaving] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
 
@@ -49,6 +74,7 @@ export default function CompaniesClient({ companies: initial }: { companies: Com
         put('name', found.name);
         put('email', found.email);
         put('phone', found.phone);
+        put('logoUrl', found.logoUrl);
         put('city', found.address?.city);
         put('country', found.address?.country);
         return next;
@@ -78,7 +104,7 @@ export default function CompaniesClient({ companies: initial }: { companies: Com
   const columns = [
     { key: "name", header: "Company", render: (c: Company) => (
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-brand-600/10 flex items-center justify-center"><Building2 className="h-4 w-4 text-brand-400" /></div>
+        <CompanyLogo name={c.name} logoUrl={c.logoUrl} />
         <div><p className="font-medium text-surface-100">{c.name}</p>{c.industry && <p className="text-xs text-surface-500">{c.industry}</p>}</div>
       </div>
     )},
@@ -130,6 +156,18 @@ export default function CompaniesClient({ companies: initial }: { companies: Com
               carry on typing if it comes back empty.
             </p>
           </div>
+          {form.logoUrl && (
+            <div className="flex items-center gap-3 rounded-lg border border-surface-700 bg-surface-800/40 p-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={form.logoUrl} alt="" className="h-10 w-10 rounded object-contain bg-white/5" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-surface-200">Logo found on the site</p>
+                <p className="truncate text-xs text-surface-500">{form.logoUrl}</p>
+              </div>
+              <button type="button" onClick={() => setForm({ ...form, logoUrl: "" })}
+                className="text-xs text-surface-400 hover:text-white">Remove</button>
+            </div>
+          )}
           <Input label="Company Name" value={form.name} onChange={update("name")} required />
           <Select label="Type" value={form.type} onChange={update("type")} options={[
             {value:"prospect",label:"Prospect"},{value:"customer",label:"Customer"},{value:"vendor",label:"Vendor"},{value:"partner",label:"Partner"}

@@ -15,7 +15,7 @@ export default async function CompaniesPage() {
   });
   return <CompaniesClient companies={companies.map((c) => ({
     id: c.id, name: c.name, type: c.type, industry: c.industry || '', phone: c.phone || '',
-    email: c.email || '', website: c.website || '', city: c.city || '', isActive: c.isActive,
+    email: c.email || '', website: c.website || '', logoUrl: c.logoUrl || '', city: c.city || '', isActive: c.isActive,
     contacts: c._count.contacts, tickets: c._count.tickets, contracts: c._count.contracts,
     createdAt: c.createdAt.toISOString(),
   }))} />;

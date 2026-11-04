@@ -48,6 +48,7 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
       email: body.email || null,
       phone: body.phone || null,
       website: body.website || null,
+      logoUrl: body.logoUrl || null,
       emailDomains: normaliseDomains(body.emailDomains),
       address1: body.address1 || null,
       address2: body.address2 || null,

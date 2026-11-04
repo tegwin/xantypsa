@@ -63,6 +63,7 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
       ...(body.name !== undefined && { name: body.name }),
       ...(body.type !== undefined && { type: body.type }),
       ...(body.website !== undefined && { website: body.website }),
+      ...(body.logoUrl !== undefined && { logoUrl: body.logoUrl }),
       // Domains that route incoming email to this client. Normalised so
       // "@Acme.COM " and "acme.com" cannot both be stored and only one match.
       ...(body.emailDomains !== undefined && { emailDomains: normaliseDomains(body.emailDomains) }),
