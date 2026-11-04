@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { prisma } from './prisma';
 
 /**
@@ -8,15 +9,18 @@ import { prisma } from './prisma';
  * ticket closed, so nothing in the app should compare against the slug 'closed'.
  *
  * The fallback only applies to a tenant that has not defined any statuses yet.
+ *
+ * `cache()` dedupes this per request. Several pages ask for it more than once,
+ * and the statuses cannot change midway through rendering one.
  */
-export async function closedStatusSlugs(tenantId: string): Promise<string[]> {
+export const closedStatusSlugs = cache(async (tenantId: string): Promise<string[]> => {
   const statuses = await prisma.ticketStatus.findMany({
     where: { tenantId, isClosed: true, isActive: true },
     select: { slug: true },
   });
   if (statuses.length > 0) return statuses.map((s) => s.slug);
   return ['closed', 'resolved'];
-}
+});
 
 export async function isClosedStatus(tenantId: string, slug: string): Promise<boolean> {
   const status = await prisma.ticketStatus.findFirst({

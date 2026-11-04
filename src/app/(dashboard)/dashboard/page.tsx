@@ -9,18 +9,22 @@ async function getDashboardData(tenantId: string) {
 
   // Open means "not in a status this tenant has flagged as closed". The old
   // hard coded list ignored every custom status.
-  const closedSlugs = await closedStatusSlugs(tenantId);
-
   // Stages flagged won or lost are out of the pipeline. Falling back to the
   // two default names for a tenant that has not defined its own.
-  const terminalStages = await prisma.pipelineStage.findMany({
-    where: { tenantId, OR: [{ isWon: true }, { isLost: true }] },
-    select: { slug: true },
-  });
+  // Both of these feed the queries below, so they go first, but in parallel
+  // with each other: the database is a round trip away and they are unrelated.
+  const [closedSlugs, terminalStages] = await Promise.all([
+    closedStatusSlugs(tenantId),
+    prisma.pipelineStage.findMany({
+      where: { tenantId, OR: [{ isWon: true }, { isLost: true }] },
+      select: { slug: true },
+    }),
+  ]);
   const closedStages = terminalStages.length > 0
     ? terminalStages.map((s) => s.slug)
     : ['won', 'lost'];
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
   const [
     openTickets,
@@ -32,6 +36,10 @@ async function getDashboardData(tenantId: string) {
     recentTickets,
     contacts,
     companies,
+    ticketsByStatus,
+    billedInvoices,
+    billedTimeEntries,
+    activeContracts,
   ] = await Promise.all([
     prisma.ticket.count({ where: { tenantId, status: { notIn: closedSlugs } } }),
     prisma.ticket.count({ where: { tenantId, createdAt: { gte: thirtyDaysAgo } } }),
@@ -54,27 +62,28 @@ async function getDashboardData(tenantId: string) {
     }),
     prisma.contact.count({ where: { tenantId } }),
     prisma.company.count({ where: { tenantId } }),
+    // Ticket stats by status, for the chart.
+    prisma.ticket.groupBy({
+      by: ['status'],
+      where: { tenantId },
+      _count: { id: true },
+    }),
+    // Revenue by month over the last six. Sent and partial count as billed,
+    // not only paid, or the figure reads zero until somebody settles a bill.
+    prisma.invoice.findMany({
+      where: { tenantId, status: { in: ['sent', 'paid', 'partial'] }, issueDate: { gte: sixMonthsAgo } },
+      select: { total: true, issueDate: true, contractId: true },
+    }),
+    // Billed time entries, for the T&M breakdown.
+    prisma.timeEntry.findMany({
+      where: { tenantId, billed: true, date: { gte: sixMonthsAgo } },
+      select: { billedAmount: true, date: true, chargeType: true },
+    }),
+    prisma.contract.findMany({
+      where: { tenantId, status: 'active' },
+      select: { id: true, name: true, type: true, totalHours: true, hoursUsed: true, monthlyFee: true, fixedPrice: true, value: true },
+    }),
   ]);
-
-  // Get ticket stats by status for chart
-  const ticketsByStatus = await prisma.ticket.groupBy({
-    by: ['status'],
-    where: { tenantId },
-    _count: { id: true },
-  });
-
-  // Revenue by month (last 6 months) - include sent + paid invoices (not just paid)
-  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-  const billedInvoices = await prisma.invoice.findMany({
-    where: { tenantId, status: { in: ['sent', 'paid', 'partial'] }, issueDate: { gte: sixMonthsAgo } },
-    select: { total: true, issueDate: true, contractId: true },
-  });
-
-  // Also count billed time entries for T&M breakdown
-  const billedTimeEntries = await prisma.timeEntry.findMany({
-    where: { tenantId, billed: true, date: { gte: sixMonthsAgo } },
-    select: { billedAmount: true, date: true, chargeType: true },
-  });
 
   const revenueByMonth: Record<string, { month: string; invoiced: number; tam: number; contract: number }> = {};
   for (let i = 5; i >= 0; i--) {
@@ -95,11 +104,6 @@ async function getDashboardData(tenantId: string) {
   }
 
   // Active contracts summary
-  const activeContracts = await prisma.contract.findMany({
-    where: { tenantId, status: 'active' },
-    select: { id: true, name: true, type: true, totalHours: true, hoursUsed: true, monthlyFee: true, fixedPrice: true, value: true },
-  });
-
   const contractSummary = {
     total: activeContracts.length,
     blocks: activeContracts.filter(c => c.type === 'prepay_hours').map(c => ({
