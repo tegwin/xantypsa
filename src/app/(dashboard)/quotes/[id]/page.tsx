@@ -39,6 +39,18 @@ export default function QuoteDetailPage() {
     }
   };
 
+  // Turns the accepted quote into a draft invoice and opens it. The button
+  // used to navigate back to this same page, so it appeared to do nothing.
+  const handleConvert = async () => {
+    // apiPost toasts both success and failure, so nothing to report here.
+    try {
+      const invoice = await apiPost(`/api/quotes/${id}/convert`, {});
+      if (invoice?.id) router.push(`/invoices/${invoice.id}`);
+    } catch {
+      // Already shown to the user; stay on the quote so they can retry.
+    }
+  };
+
   const handleDelete = async () => {
     await apiDelete(`/api/quotes/${id}`);
     router.push('/quotes/list');
@@ -99,7 +111,7 @@ export default function QuoteDetailPage() {
             </>
           )}
           {quote.status === 'accepted' && !quote.invoice && (
-            <button onClick={() => router.push(`/quotes/${id}`)} className="btn-primary flex items-center gap-1.5"><ArrowRightCircle className="w-3.5 h-3.5" /> Convert to Invoice</button>
+            <button onClick={handleConvert} className="btn-primary flex items-center gap-1.5"><ArrowRightCircle className="w-3.5 h-3.5" /> Convert to Invoice</button>
           )}
           {['rejected', 'expired'].includes(quote.status) && (
             <>
