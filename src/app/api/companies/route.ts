@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { withTenant, jsonResponse, errorResponse, parseSearchParams } from '@/lib/api';
 import { dispatchWebhookEvent } from '@/lib/webhooks';
 import { normaliseDomains } from '@/lib/emailRouting';
+import { lookupLogoFromWebsite } from '@/lib/websiteLookup';
 
 export const GET = withTenant(async (req: NextRequest, session: any) => {
   const p = parseSearchParams(req.url);
@@ -48,7 +49,10 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
       email: body.email || null,
       phone: body.phone || null,
       website: body.website || null,
-      logoUrl: body.logoUrl || null,
+      // Fetched from the website rather than asked for. Null when the site
+      // declares none, and every place that shows a logo falls back to the
+      // generic icon, so nothing here needs to succeed.
+      logoUrl: body.logoUrl || (body.website ? await lookupLogoFromWebsite(body.website) : null),
       emailDomains: normaliseDomains(body.emailDomains),
       address1: body.address1 || null,
       address2: body.address2 || null,

@@ -7,7 +7,7 @@ import { PageHeader, StatusBadge, LoadingSpinner, StatCard, Modal } from '@/comp
 import { formatCurrency } from '@/lib/utils';
 import { useRouter, useParams } from 'next/navigation';
 import {
-  Users, Ticket, Receipt, Handshake, Edit, Trash2, Search,
+  Users, Ticket, Receipt, Handshake, Edit, Trash2,
 } from 'lucide-react';
 
 import OverviewTab from './tabs/OverviewTab';
@@ -34,7 +34,6 @@ export default function CompanyDetailPage() {
   const [editForm, setEditForm] = useState<any>({});
   const [showDelete, setShowDelete] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
-  const [lookingUp, setLookingUp] = useState(false);
 
   if (loading) return <LoadingSpinner />;
   if (!company) return <div className="p-8 text-slate-400">Company not found</div>;
@@ -63,28 +62,6 @@ export default function CompanyDetailPage() {
       notes: company.notes || '',
     });
     setEditing(true);
-  };
-
-  // Fetches the company's logo from its website. Reading the address this way
-  // was tried and dropped: real customer sites do not publish one.
-  const lookupLogo = async () => {
-    setLookingUp(true);
-    try {
-      const res = await fetch('/api/lookup/website', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ website: editForm.website }),
-      });
-      const json = await res.json();
-      if (!res.ok) return toast.error(json.error || 'Lookup failed');
-      if (!json.logoUrl) return toast(json.message || 'No logo found on that site');
-      setEditForm((prev: any) => ({ ...prev, logoUrl: json.logoUrl }));
-      toast.success('Logo found');
-    } catch {
-      toast.error('Could not reach that website');
-    } finally {
-      setLookingUp(false);
-    }
   };
 
   const saveEdit = async () => {
@@ -211,22 +188,10 @@ export default function CompanyDetailPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-400 mb-1">Website</label>
-              <div className="flex gap-2">
-                <input value={editForm.website} onChange={e => setEditForm({ ...editForm, website: e.target.value })} className="w-full" />
-                <button
-                  type="button"
-                  onClick={lookupLogo}
-                  disabled={!editForm.website || lookingUp}
-                  title="Fetch the logo from this website"
-                  className="btn-secondary flex items-center gap-1.5 whitespace-nowrap disabled:opacity-40"
-                >
-                  <Search className="w-3.5 h-3.5" />
-                  {lookingUp ? 'Looking...' : 'Fetch logo'}
-                </button>
-              </div>
+              <input value={editForm.website} onChange={e => setEditForm({ ...editForm, website: e.target.value })} className="w-full" />
               <p className="text-xs text-slate-500 mt-1">
-                Fetches the logo from this site. Addresses are typed in by hand: too few sites
-                publish one in a form worth trusting.
+                The logo is fetched from this site when you save. If the site declares none, the
+                generic icon is used.
               </p>
             </div>
             <div>

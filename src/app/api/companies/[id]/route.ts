@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { lookupLogoFromWebsite } from '@/lib/websiteLookup';
 import { withTenant, jsonResponse, errorResponse } from '@/lib/api';
 import { dispatchWebhookEvent } from '@/lib/webhooks';
 import { normaliseDomains } from '@/lib/emailRouting';
@@ -57,13 +58,29 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
   const company = await prisma.company.findFirst({ where: { id, tenantId: session.user.tenantId } });
   if (!company) return errorResponse('Company not found', 404);
 
+  // The logo is fetched from the website rather than typed in: on a change of
+  // website, or whenever there is a website and no logo stored. A save that
+  // touches neither goes nowhere near the internet.
+  //
+  // Note this means clearing a logo only lasts until the next save, which then
+  // fetches it again. Making a clear stick would need a flag recording that it
+  // was deliberate.
+  let logoUrl: string | null | undefined = body.logoUrl;
+  if (logoUrl === undefined) {
+    const website = body.website !== undefined ? body.website : company.website;
+    const websiteChanged = body.website !== undefined && body.website !== company.website;
+    if (website && (websiteChanged || !company.logoUrl)) {
+      logoUrl = await lookupLogoFromWebsite(website);
+    }
+  }
+
   const updated = await prisma.company.update({
     where: { id },
     data: {
       ...(body.name !== undefined && { name: body.name }),
       ...(body.type !== undefined && { type: body.type }),
       ...(body.website !== undefined && { website: body.website }),
-      ...(body.logoUrl !== undefined && { logoUrl: body.logoUrl }),
+      ...(logoUrl !== undefined && { logoUrl }),
       // Domains that route incoming email to this client. Normalised so
       // "@Acme.COM " and "acme.com" cannot both be stored and only one match.
       ...(body.emailDomains !== undefined && { emailDomains: normaliseDomains(body.emailDomains) }),
