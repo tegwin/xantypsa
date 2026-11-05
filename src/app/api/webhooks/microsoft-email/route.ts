@@ -28,6 +28,28 @@ async function renewIfExpiringSoon(tenantId: string, expiry?: string) {
   }
 }
 
+/**
+ * Is this an automatic message rather than a person?
+ *
+ * Out-of-office replies, bounces and other robots answer an acknowledgement,
+ * which would be answered in turn. RFC 3834 asks senders to mark these, and
+ * the major providers do.
+ */
+function isAutomatic(msg: any): boolean {
+  const headers: Array<{ name?: string; value?: string }> = msg.internetMessageHeaders ?? [];
+  for (const h of headers) {
+    const name = (h.name || '').toLowerCase();
+    const value = (h.value || '').toLowerCase();
+    if (name === 'auto-submitted' && value && value !== 'no') return true;
+    if (name === 'x-auto-response-suppress') return true;
+    if (name === 'precedence' && ['bulk', 'auto_reply', 'junk', 'list'].includes(value)) return true;
+    if (name === 'x-autoreply' || name === 'x-autorespond') return true;
+  }
+  // Some systems mark nothing at all, so fall back to the one subject prefix
+  // that is standard across mail clients.
+  return /^\s*(automatic reply|out of office|undeliverable)\b/i.test(msg.subject || '');
+}
+
 /** Constant-time compare, so a wrong secret cannot be found by timing. */
 function safeEqual(a: string, b: string): boolean {
   const x = Buffer.from(String(a));
@@ -189,7 +211,9 @@ export async function POST(req: NextRequest) {
       }
 
       // Fetch the actual email message
-      const msgUrl = `https://graph.microsoft.com/v1.0/${resource}`;
+      // internetMessageHeaders is not returned unless asked for, and it is
+      // what identifies an automatic reply.
+      const msgUrl = `https://graph.microsoft.com/v1.0/${resource}?$select=id,subject,body,bodyPreview,from,hasAttachments,internetMessageHeaders`;
       const msgRes = await fetch(msgUrl, {
         headers: { Authorization: `Bearer ${tokenData.access_token}` },
       });
@@ -215,6 +239,24 @@ export async function POST(req: NextRequest) {
       }
 
       const senderEmail = msg.from?.emailAddress?.address;
+
+      // Never ingest our own post.
+      //
+      // The acknowledgement is sent *as* the monitored mailbox, so a copy can
+      // land back in it - and since a reply is acknowledged too, filing it
+      // would answer itself for ever. Anything from this mailbox, and anything
+      // a mail system marked as automatic, stops here.
+      const fromSelf =
+        senderEmail && msConfig.mailbox &&
+        senderEmail.toLowerCase() === String(msConfig.mailbox).toLowerCase();
+      if (fromSelf) {
+        console.log('[ms-email] skipped: message is from the monitored mailbox itself');
+        continue;
+      }
+      if (isAutomatic(msg)) {
+        console.log('[ms-email] skipped: automatic message (out of office, bounce or similar)');
+        continue;
+      }
       // Known contact → their company; else the sender's domain → that client;
       // else the catch-all, so nothing is ever dropped.
       const route = await routeIncomingEmail(tenantId, senderEmail);

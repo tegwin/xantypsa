@@ -109,6 +109,12 @@ export async function processIncomingEmails(appTenantId: string): Promise<EmailP
     try {
       const senderEmail = msg.from?.emailAddress?.address;
       const senderName = msg.from?.emailAddress?.name || senderEmail || 'Unknown';
+
+      // Our own acknowledgements land back in this mailbox. Filing them would
+      // have the system hold a conversation with itself.
+      if (senderEmail && String(senderEmail).toLowerCase() === String(msConfig.mailbox).toLowerCase()) {
+        continue;
+      }
       const subject = msg.subject || '';
 
       // Get plain text content from the email body
