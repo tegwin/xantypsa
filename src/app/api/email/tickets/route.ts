@@ -17,7 +17,9 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
       },
     });
 
-    return jsonResponse(tickets);
+    // Wrapped, not a bare array: the page reads `items`, and returning the
+    // array alone made every email ticket invisible on the processing screen.
+    return jsonResponse({ items: tickets });
   } catch (err: any) {
     return errorResponse(err.message || 'Failed to fetch email tickets', 500);
   }
