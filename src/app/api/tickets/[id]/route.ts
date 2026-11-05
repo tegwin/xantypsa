@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { isClosedStatus } from '@/lib/ticketStatus';
 import { withTenant, jsonResponse, errorResponse } from '@/lib/api';
-import { visibleTicketFilter } from '@/lib/queueAccess';
+import { visibleTicketFilter, assignableUserIds } from '@/lib/queueAccess';
 
 export const GET = withTenant(async (req: NextRequest, session: any) => {
   const id = req.nextUrl.pathname.split('/').pop()!;
@@ -60,6 +60,17 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
   // Moving a queue is the same change the Transfer dialog makes; it just no
   // longer requires opening it.
   if (body.queueId !== undefined) data.queueId = body.queueId || null;
+
+  // Somebody who cannot open the queue cannot be given its work. Checked
+  // against the queue the ticket will be in once this change lands, not the
+  // one it is in now, so moving and assigning in one go is judged correctly.
+  if (data.assignedToId) {
+    const queueId = data.queueId !== undefined ? data.queueId : ticket.queueId;
+    const allowed = await assignableUserIds(session.user.tenantId, queueId);
+    if (allowed && !allowed.has(data.assignedToId)) {
+      return errorResponse('That person is not in this queue, so they could not open the ticket.', 400);
+    }
+  }
   if (body.opportunityId !== undefined) data.opportunityId = body.opportunityId || null;
   if (body.dueDate !== undefined) data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
 

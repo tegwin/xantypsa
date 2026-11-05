@@ -63,3 +63,38 @@ export async function visibleTicketFilter(session: any): Promise<Record<string, 
     ],
   };
 }
+
+/**
+ * Who may be given a ticket in this queue.
+ *
+ * A queue with nobody in it is worked by everyone, so returns null meaning "no
+ * restriction". Otherwise it is the members, plus anyone who sees every queue:
+ * handing work to somebody who cannot open it is how a ticket goes quiet.
+ */
+export async function assignableUserIds(
+  tenantId: string,
+  queueId: string | null | undefined
+): Promise<Set<string> | null> {
+  if (!queueId) return null;
+
+  const members = await prisma.ticketQueueMember.findMany({
+    where: { tenantId, queueId },
+    select: { userId: true },
+  });
+  if (members.length === 0) return null;
+
+  // Administrators are never excluded: they can see the queue anyway.
+  // Permissions are stored as a JSON array, so the filtering happens here
+  // rather than in the query.
+  const staff = await prisma.tenantUser.findMany({
+    where: { tenantId },
+    select: { userId: true, isOwner: true, role: { select: { permissions: true } } },
+  });
+  const admins = staff.filter((t) => {
+    if (t.isOwner) return true;
+    const perms = Array.isArray(t.role?.permissions) ? (t.role.permissions as string[]) : [];
+    return perms.includes('service_desk:manage');
+  });
+
+  return new Set([...members.map((m) => m.userId), ...admins.map((a) => a.userId)]);
+}

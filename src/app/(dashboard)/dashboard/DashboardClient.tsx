@@ -35,6 +35,8 @@ interface ContractBlock {
 }
 
 interface DashboardClientProps {
+  /** False hides every money widget: see canSeeMoney in page.tsx. */
+  showMoney?: boolean;
   data: {
     stats: {
       openTickets: number;
@@ -85,7 +87,7 @@ const STATUS_COLORS_CHART: Record<string, string> = {
   closed: '#64748b',
 };
 
-export default function DashboardClient({ data, currency, userName }: DashboardClientProps) {
+export default function DashboardClient({ data, currency, userName, showMoney = true }: DashboardClientProps) {
   const { stats, ticketsByStatus, revenueByMonth, contractSummary, recentTickets, opportunities } = data;
   const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening';
 
@@ -104,18 +106,24 @@ export default function DashboardClient({ data, currency, userName }: DashboardC
           icon={<LifeBuoy className="h-5 w-5" />}
           description={`${stats.ticketsThisMonth} this month`}
         />
-        <StatsCard
-          title="Total Invoiced"
-          value={formatCurrency(stats.totalRevenue, currency)}
-          icon={<TrendingUp className="h-5 w-5" />}
-          description="All time billed"
-        />
-        <StatsCard
-          title="Pipeline Value"
-          value={formatCurrency(stats.pipelineValue, currency)}
-          icon={<Target className="h-5 w-5" />}
-          description={`${formatCurrency(stats.weightedPipeline, currency)} weighted`}
-        />
+        {/* Commercial figures, not operational ones. Hidden, and not sent at
+            all, for anybody without invoices or quotes. */}
+        {showMoney && (
+          <StatsCard
+            title="Total Invoiced"
+            value={formatCurrency(stats.totalRevenue, currency)}
+            icon={<TrendingUp className="h-5 w-5" />}
+            description="All time billed"
+          />
+        )}
+        {showMoney && (
+          <StatsCard
+            title="Pipeline Value"
+            value={formatCurrency(stats.pipelineValue, currency)}
+            icon={<Target className="h-5 w-5" />}
+            description={`${formatCurrency(stats.weightedPipeline, currency)} weighted`}
+          />
+        )}
         <StatsCard
           title="Active Projects"
           value={stats.activeProjects}
@@ -127,6 +135,7 @@ export default function DashboardClient({ data, currency, userName }: DashboardC
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Revenue Chart - Stacked by type */}
+        {showMoney && (
         <Card>
           <CardHeader>
             <CardTitle>Invoiced Revenue (Last 6 Months)</CardTitle>
@@ -162,6 +171,7 @@ export default function DashboardClient({ data, currency, userName }: DashboardC
             </ResponsiveContainer>
           </div>
         </Card>
+        )}
 
         {/* Tickets by Status Pie */}
         <Card>
@@ -248,7 +258,7 @@ export default function DashboardClient({ data, currency, userName }: DashboardC
               );
             })}
           </div>
-          {contractSummary.managedValue > 0 && (
+          {showMoney && contractSummary.managedValue > 0 && (
             <div className="mt-3 pt-3 border-t border-surface-700/50 px-1">
               <span className="text-xs text-surface-500">
                 Monthly managed services: <span className="text-green-400 font-medium">{formatCurrency(contractSummary.managedValue, currency)}/mo</span>
@@ -272,7 +282,9 @@ export default function DashboardClient({ data, currency, userName }: DashboardC
             {recentTickets.length === 0 ? (
               <p className="text-sm text-surface-500 py-4 text-center">No tickets yet</p>
             ) : (
-              recentTickets.map((ticket) => (
+              // Five is what the card has room for without scrolling, and
+              // anything older belongs on the ticket list behind View all.
+              recentTickets.slice(0, 5).map((ticket) => (
                 <Link
                   key={ticket.id}
                   href={`/service-desk/tickets?id=${ticket.id}`}
@@ -282,7 +294,7 @@ export default function DashboardClient({ data, currency, userName }: DashboardC
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-surface-500 font-mono">#{ticket.ticketNumber}</span>
                       <Badge variant="status" status={ticket.priority}>
-                        {ticket.priority}
+                        {ticket.priority?.replace(/_/g, ' ')}
                       </Badge>
                     </div>
                     <p className="text-sm text-surface-200 truncate mt-0.5 group-hover:text-surface-100">
@@ -292,8 +304,10 @@ export default function DashboardClient({ data, currency, userName }: DashboardC
                       {ticket.company} · {ticket.assignedTo}
                     </p>
                   </div>
+                  {/* The slug is how it is stored, not how it is read:
+                      "in_progress" should say "in progress". */}
                   <Badge variant="status" status={ticket.status}>
-                    {ticket.status}
+                    {ticket.status?.replace(/_/g, ' ')}
                   </Badge>
                 </Link>
               ))

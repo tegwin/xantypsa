@@ -233,6 +233,10 @@ membership is its own record rather than a field on the queue.
 The same thing from the other side: Settings, Users, open somebody, **Queues**
 tab, which lists every queue and whether they are in it.
 
+Only members of a queue, and administrators, can be assigned a ticket in it.
+The assignee list on the ticket and in the Transfer dialog shows them alone,
+and the server refuses the rest.
+
 ### Transferring a ticket
 
 **Transfer** sits at the top of a ticket. It moves the ticket to another queue

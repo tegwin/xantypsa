@@ -96,7 +96,12 @@ export const STATUS_COLORS: Record<string, string> = {
   lost: 'bg-red-500/15 text-red-400 ring-red-500/20',
   // Contracts
   suspended: 'bg-orange-500/15 text-orange-400 ring-orange-500/20',
+  // Ticket statuses a tenant adds itself, beyond the five built in.
+  in_review: 'bg-purple-500/15 text-purple-400 ring-purple-500/20',
+  escalated: 'bg-red-500/15 text-red-400 ring-red-500/20',
+  scheduled: 'bg-cyan-500/15 text-cyan-400 ring-cyan-500/20',
   // Priority
+  urgent: 'bg-red-500/15 text-red-400 ring-red-500/20',
   critical: 'bg-red-500/15 text-red-400 ring-red-500/20',
   high: 'bg-orange-500/15 text-orange-400 ring-orange-500/20',
   medium: 'bg-yellow-500/15 text-yellow-400 ring-yellow-500/20',

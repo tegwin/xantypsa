@@ -6,6 +6,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withTenant, jsonResponse, errorResponse } from '@/lib/api';
 import { dispatchWebhookEvent } from '@/lib/webhooks';
+import { assignableUserIds } from '@/lib/queueAccess';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,6 +48,14 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
       select: { user: { select: { name: true } } },
     });
     if (!member) return errorResponse('That person is not in this organisation', 400);
+
+    // The queue this ticket is being moved into, not the one it is leaving.
+    const destination = queueId === undefined ? ticket.queueId : (queueId ? String(queueId) : null);
+    const allowed = await assignableUserIds(tenantId, destination);
+    if (allowed && !allowed.has(String(assignedToId))) {
+      return errorResponse('That person is not in that queue, so they could not open the ticket.', 400);
+    }
+
     newAgentName = member.user.name;
   }
 

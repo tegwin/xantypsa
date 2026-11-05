@@ -152,11 +152,48 @@ async function getDashboardData(tenantId: string) {
   };
 }
 
+/**
+ * May this person see what the business earns?
+ *
+ * Revenue, the pipeline and contract values are commercial, not operational.
+ * A technician needs none of them to work a ticket, so they are decided here
+ * and the figures are never sent to the browser rather than being hidden once
+ * they arrive.
+ */
+function canSeeMoney(session: any): boolean {
+  if (session?.user?.isSuperAdmin) return true;
+  const perms: string[] = session?.user?.permissions || [];
+  return ['invoices', 'quotes'].some(
+    (m) => perms.includes(`${m}:view`) || perms.includes(`${m}:manage`)
+  );
+}
+
 export default async function DashboardPage() {
   const session = await getAppSession();
   if (!session?.user?.tenantId) return null;
 
   const data = await getDashboardData(session.user.tenantId);
+  const showMoney = canSeeMoney(session);
 
-  return <DashboardClient data={data} currency="GBP" userName={session.user.name} />;
+  return (
+    <DashboardClient
+      data={showMoney ? data : withoutMoney(data)}
+      showMoney={showMoney}
+      currency="GBP"
+      userName={session.user.name}
+    />
+  );
+}
+
+/** The same shape, with every figure stripped out of it. */
+function withoutMoney(data: Awaited<ReturnType<typeof getDashboardData>>) {
+  return {
+    ...data,
+    // Pre-pay blocks stay: hours left on a contract is operational, and an
+    // engineer needs to know before logging two more against it.
+    stats: { ...data.stats, totalRevenue: 0, pipelineValue: 0, weightedPipeline: 0 },
+    revenueByMonth: [],
+    contractSummary: { ...data.contractSummary, managedValue: 0 },
+    opportunities: data.opportunities.map((o) => ({ ...o, value: 0 })),
+  };
 }

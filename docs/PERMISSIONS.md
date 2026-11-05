@@ -43,3 +43,23 @@ Membership decides whose tickets you see, not which queues you may file into.
 
 Roles are editable under Settings, Roles. The built-in ones are templates for
 a new tenant, not a ceiling.
+
+## Money
+
+Revenue, the pipeline and contract values are commercial, not operational. The
+dashboard decides this on the server, in `canSeeMoney`, and anybody without
+`invoices:view` or `quotes:view` is not sent the figures at all rather than
+being shown a page with them hidden. Pre-pay hour balances stay: how many hours
+are left on a contract is something an engineer needs before logging two more
+against it.
+
+## Who can be given a ticket
+
+A queue with nobody in it is worked by everyone. Once it has members, only
+those members and administrators may be assigned a ticket in it, and only they
+appear in the assignee list on the ticket and in the Transfer dialog. Handing
+work to somebody who cannot open it is how a ticket goes quiet.
+
+Both the ticket update and the transfer refuse it server side, judged against
+the queue the ticket will be in after the change rather than the one it is
+leaving, so moving and assigning in one step is checked correctly.

@@ -90,25 +90,12 @@ export default function TicketDetailPage() {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
   const [hideSystemNotes, setHideSystemNotes] = useState(false);
-  const [showAllDetails, setShowAllDetails] = useState(false);
-
-  // Kept with the other remembered view choices, so the panel opens the way it
-  // was left rather than folding itself up on every ticket.
-  const toggleAllDetails = (open: boolean) => {
-    setShowAllDetails(open);
-    try {
-      localStorage.setItem('xantypsa.showAllDetails', String(open));
-    } catch {
-      // Blocked storage: the choice just does not outlive the page.
-    }
-  };
 
   // Read once on mount: localStorage is not available while rendering on the
   // server, and reading it during render would mismatch the first paint.
   useEffect(() => {
     try {
       setHideSystemNotes(localStorage.getItem('xantypsa.hideSystemNotes') === 'true');
-      setShowAllDetails(localStorage.getItem('xantypsa.showAllDetails') === 'true');
     } catch {
       // Nothing stored, nothing lost.
     }
@@ -137,7 +124,7 @@ export default function TicketDetailPage() {
   const [newStatus, setNewStatus] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [agents, setAgents] = useState<{id:string;name:string}[]>([]);
-  const [queues, setQueues] = useState<{id:string;name:string}[]>([]);
+  const [queues, setQueues] = useState<{id:string;name:string;memberIds:string[]}[]>([]);
   const [showTransfer, setShowTransfer] = useState(false);
   const [transferring, setTransferring] = useState(false);
   // Empty string means no queue / nobody, which is a valid destination.
@@ -160,7 +147,12 @@ export default function TicketDetailPage() {
       setAgents((data.items || []).map((u: any) => ({ id: u.id, name: u.name })));
     }).catch(() => {});
     fetch('/api/ticket-queues').then(r => r.json()).then(data => {
-      setQueues((data.items || []).map((q: any) => ({ id: q.id, name: q.name })));
+      setQueues((data.items || []).map((q: any) => ({
+        id: q.id,
+        name: q.name,
+        // An empty list means the queue is worked by everybody.
+        memberIds: (q.members || []).map((m: any) => m.id),
+      })));
     }).catch(() => {});
     fetch('/api/companies').then(r => r.json()).then(data => {
       setCompanies((data.items || []).map((c: any) => ({ id: c.id, name: c.name })));
@@ -298,6 +290,18 @@ export default function TicketDetailPage() {
   // One save path for every inline field, so each one reports its own failure
   // instead of silently doing nothing.
   const visibleNotes = (ticket.notes || []).filter((n: any) => !hideSystemNotes || !n.isSystem);
+
+  /**
+   * Who may be given a ticket in a queue.
+   *
+   * Offering somebody outside the queue was offering a dead end: they cannot
+   * open what they are handed, and the server refuses it anyway.
+   */
+  const agentsForQueue = (queueId?: string | null) => {
+    const queue = queues.find(q => q.id === queueId);
+    if (!queue || queue.memberIds.length === 0) return agents;
+    return agents.filter(a => queue.memberIds.includes(a.id));
+  };
 
   const patchTicket = async (patch: Record<string, any>) => {
     try {
@@ -880,22 +884,9 @@ export default function TicketDetailPage() {
                 </select>
               </InlineField>
 
-              {/* The five above are what an agent reads at a glance. The rest
-                  matter, but not on every look, so they are folded away and
-                  the choice is remembered. */}
-              {!showAllDetails && (
-                <button
-                  onClick={() => toggleAllDetails(true)}
-                  className="w-full pt-1 text-left text-xs text-brand-400 hover:text-brand-300"
-                >
-                  Show all details
-                </button>
-              )}
-
               {/* Which queue a ticket sits in decides who can see it, so it
                   belongs on the panel next to the assignee rather than only
                   inside the Transfer dialog. */}
-              <div className={showAllDetails ? 'space-y-3' : 'hidden'}>
               <InlineField label="Queue">
                 <select value={ticket.queueId || ''}
                   onChange={e => patchTicket({ queueId: e.target.value || null })}
@@ -910,7 +901,7 @@ export default function TicketDetailPage() {
                   onChange={e => patchTicket({ assignedToId: e.target.value || null })}
                   className={inlineSelect}>
                   <option value="">Unassigned</option>
-                  {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  {agentsForQueue(ticket.queueId).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                 </select>
               </InlineField>
 
@@ -932,13 +923,6 @@ export default function TicketDetailPage() {
               {ticket.resolvedAt && <div className="flex justify-between"><span className="text-surface-400">Resolved</span><span className="text-green-400">{formatDate(ticket.resolvedAt)}</span></div>}
               {ticket.closedAt && <div className="flex justify-between"><span className="text-surface-400">Closed</span><span className="text-green-400">{formatDate(ticket.closedAt)}</span></div>}
 
-              <button
-                onClick={() => toggleAllDetails(false)}
-                className="w-full pt-1 text-left text-xs text-brand-400 hover:text-brand-300"
-              >
-                Show less
-              </button>
-              </div>
             </div>
           </div>
 
@@ -1095,7 +1079,16 @@ export default function TicketDetailPage() {
             <label className="block text-sm font-medium text-slate-400 mb-1">Queue</label>
             <select
               value={transferForm.queueId}
-              onChange={e => setTransferForm({ ...transferForm, queueId: e.target.value })}
+              onChange={e => {
+                const queueId = e.target.value;
+                // Changing the queue can strand the chosen person outside it.
+                const stillAllowed = agentsForQueue(queueId).some(a => a.id === transferForm.assignedToId);
+                setTransferForm({
+                  ...transferForm,
+                  queueId,
+                  assignedToId: stillAllowed ? transferForm.assignedToId : '',
+                });
+              }}
               className="w-full"
             >
               <option value="">No queue</option>
@@ -1112,7 +1105,9 @@ export default function TicketDetailPage() {
               {/* Leaving it with nobody is a normal outcome of a transfer: the
                   queue picks it up next. */}
               <option value="">None</option>
-              {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              {/* Only people who work the destination queue. Offering the rest
+                  invited a hand-off to somebody who cannot open the ticket. */}
+              {agentsForQueue(transferForm.queueId).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </div>
           <div>
