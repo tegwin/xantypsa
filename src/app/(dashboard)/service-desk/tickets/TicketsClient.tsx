@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useRouter } from "next/navigation";
 import { PageHeader, Button, DataTable, Badge, SearchInput, Modal, Input, Select, Textarea, Tabs } from "@/components/ui";
 import { useApi } from "@/hooks/useApi";
-import { Plus, LifeBuoy, Clock, Filter, Pencil, Layers, X } from "lucide-react";
+import { Plus, LifeBuoy, Clock, Filter, Pencil, Layers, X, Columns3 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import toast from "react-hot-toast";
 
@@ -14,6 +14,27 @@ interface Ticket {
   category: string; company: string; contact: string; assignedTo: string; queue: string; queueId: string; source: string;
   createdAt: string; timeSpent: number;
 }
+
+/**
+ * The columns a person can switch on, in the order they appear.
+ *
+ * Reference, Subject and the edit button are always shown, so they are not
+ * listed here. Everything else is a preference, remembered per browser.
+ */
+const OPTIONAL_COLUMNS: { key: string; label: string }[] = [
+  { key: 'company', label: 'Customer' },
+  { key: 'contact', label: 'Contact' },
+  { key: 'status', label: 'Status' },
+  { key: 'priority', label: 'Priority' },
+  { key: 'type', label: 'Type' },
+  { key: 'category', label: 'Category' },
+  { key: 'assignedTo', label: 'Assigned' },
+  { key: 'queue', label: 'Queue' },
+  { key: 'time', label: 'Time' },
+  { key: 'created', label: 'Created' },
+];
+
+const DEFAULT_COLUMNS = ['company', 'status', 'priority', 'assignedTo', 'queue', 'time', 'created'];
 
 // Default statuses - "all" here means "all except closed"
 const STATUSES = ["all","new","open","pending","waiting","resolved","closed"];
@@ -31,6 +52,31 @@ export default function TicketsClient({ tickets: initial, queues, agents, compan
   // Flat list, or gathered under a heading per queue or per engineer.
   const [groupBy, setGroupBy] = useState<'none' | 'queue' | 'agent'>('none');
   const [showModal, setShowModal] = useState(false);
+  const [showColumns, setShowColumns] = useState(false);
+  // Which optional columns are on. Reference, Subject and the edit button are
+  // not in here: a list with no subject is not a list.
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(DEFAULT_COLUMNS);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('xantypsa.ticketColumns');
+      if (saved) setVisibleColumns(JSON.parse(saved));
+    } catch {
+      // Blocked or malformed storage: the defaults are a fine answer.
+    }
+  }, []);
+
+  const toggleColumn = (key: string) => {
+    setVisibleColumns(prev => {
+      const next = prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key];
+      try {
+        localStorage.setItem('xantypsa.ticketColumns', JSON.stringify(next));
+      } catch {
+        // The choice just does not outlive the page.
+      }
+      return next;
+    });
+  };
   const [form, setForm] = useState({ title: "", description: "", priority: "medium", type: "incident", queueId: queues[0]?.id || "", companyId: "", contactId: "", contractId: "" });
   const [saving, setSaving] = useState(false);
   const { data: contractsData } = useApi<any>(form.companyId ? `/api/contracts?companyId=${form.companyId}&status=active&limit=50` : null);
@@ -117,13 +163,33 @@ export default function TicketsClient({ tickets: initial, queues, agents, compan
 
   const update = (f: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setForm((p) => ({ ...p, [f]: e.target.value }));
 
-  const columns = [
+  const allColumns = [
     { key: "id", header: "Reference", render: (t: Ticket) => (
       <span className="text-xs font-mono text-surface-400">{ref('ticket', t.ticketNumber)}</span>
     ), className: "w-28" },
     { key: "title", header: "Subject", render: (t: Ticket) => (
-      <div><p className="font-medium text-surface-100 truncate max-w-xs">{t.title}</p>
-        <p className="text-xs text-surface-500">{t.company}{t.contact ? ` · ${t.contact}` : ""}</p></div>
+      <div>
+        <p className="font-medium text-surface-100 truncate max-w-xs">{t.title}</p>
+        {/* Only as a subtitle when the customer has no column of its own,
+            so the same name is not printed twice on every row. */}
+        {!visibleColumns.includes('company') && (
+          <p className="text-xs text-surface-500">{t.company}{t.contact ? ` · ${t.contact}` : ""}</p>
+        )}
+      </div>
+    )},
+    // The company was only ever a subtitle under the subject, which meant it
+    // could not be sorted on, scanned down, or switched off.
+    { key: "company", header: "Customer", render: (t: Ticket) => (
+      <span className="text-surface-300">{t.company || " - "}</span>
+    )},
+    { key: "contact", header: "Contact", render: (t: Ticket) => (
+      <span className="text-surface-400">{t.contact || " - "}</span>
+    )},
+    { key: "type", header: "Type", render: (t: Ticket) => (
+      <span className="capitalize text-surface-400">{t.type?.replace(/_/g, ' ') || " - "}</span>
+    )},
+    { key: "category", header: "Category", render: (t: Ticket) => (
+      <span className="capitalize text-surface-400">{t.category || " - "}</span>
     )},
     { key: "status", header: "Status", render: (t: Ticket) => {
       const custom = customStatuses?.find(s => s.slug === t.status);
@@ -146,6 +212,11 @@ export default function TicketsClient({ tickets: initial, queues, agents, compan
       </button>
     )},
   ];
+
+  // Reference, Subject and the edit button always stay.
+  const columns = allColumns.filter(
+    (c) => ['id', 'title', 'actions'].includes(c.key) || visibleColumns.includes(c.key)
+  );
 
   return (
     <div className="space-y-6">
@@ -178,6 +249,57 @@ export default function TicketsClient({ tickets: initial, queues, agents, compan
               {opt.label}
             </button>
           ))}
+        </div>
+
+        {/* Column chooser */}
+        <div className="relative">
+          <button
+            onClick={() => setShowColumns(v => !v)}
+            aria-expanded={showColumns}
+            className="flex items-center gap-2 rounded-lg border border-surface-700 px-2.5 py-1.5 text-sm text-surface-300 transition-colors hover:border-surface-600 hover:text-white"
+          >
+            <Columns3 className="h-4 w-4" />
+            Columns
+          </button>
+
+          {showColumns && (
+            <>
+              {/* A click anywhere else closes it, which is what a menu should
+                  do and what Escape alone does not cover. */}
+              <div className="fixed inset-0 z-10" onClick={() => setShowColumns(false)} />
+              <div className="absolute right-0 z-20 mt-2 w-56 rounded-lg border border-surface-700 bg-surface-800 p-2 shadow-xl">
+                <p className="px-2 pb-1 text-xs uppercase tracking-wide text-surface-500">
+                  Show these columns
+                </p>
+                {OPTIONAL_COLUMNS.map(col => (
+                  <label
+                    key={col.key}
+                    className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-surface-200 hover:bg-white/5"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={visibleColumns.includes(col.key)}
+                      onChange={() => toggleColumn(col.key)}
+                    />
+                    {col.label}
+                  </label>
+                ))}
+                <button
+                  onClick={() => {
+                    setVisibleColumns(DEFAULT_COLUMNS);
+                    try {
+                      localStorage.setItem('xantypsa.ticketColumns', JSON.stringify(DEFAULT_COLUMNS));
+                    } catch {
+                      // Nothing to do: the defaults are already applied.
+                    }
+                  }}
+                  className="mt-1 w-full rounded-md px-2 py-1.5 text-left text-xs text-brand-400 hover:bg-white/5"
+                >
+                  Reset to default
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Queue filter */}

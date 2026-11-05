@@ -204,6 +204,17 @@ Detail pages read the same way throughout: the record's own name as the
 heading, its reference underneath. A ticket shows its subject with
 `SON-00042` below it, exactly as a quote shows its title with `QTE-00002`.
 
+## The ticket list
+
+**View** switches between a flat list, grouped **By queue** and grouped **By
+engineer**, so a morning can start with whichever question is being asked.
+
+**Columns** chooses what the table shows: customer, contact, status, priority,
+type, category, assigned, queue, time and created. The reference, the subject
+and the edit button always stay. The choice is remembered in your browser, and
+Reset to default puts it back. With the Customer column on, the company is no
+longer repeated as a subtitle under the subject.
+
 ## Queues, membership and transfers
 
 ### Who sees what
