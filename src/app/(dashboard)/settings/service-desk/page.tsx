@@ -64,6 +64,7 @@ export default function ServiceDeskSettingsPage() {
     timerOnlyOnTimeEntry: false,
     timerOnlyOnPublicNotes: false,
   });
+  const [replyStatus, setReplyStatus] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -79,6 +80,7 @@ export default function ServiceDeskSettingsPage() {
         timerOnlyOnTimeEntry: sdSettings.timerOnlyOnTimeEntry ?? false,
         timerOnlyOnPublicNotes: sdSettings.timerOnlyOnPublicNotes ?? false,
       });
+      setReplyStatus(sdSettings.statusOnCustomerReply || '');
       setStatuses(statusData.items || []);
       setQueues(queueData.items || []);
       setLoading(false);
@@ -119,6 +121,16 @@ export default function ServiceDeskSettingsPage() {
       body: JSON.stringify(patch),
     });
     toast.success('Timer settings saved');
+  };
+
+  const saveReplyStatus = async (slug: string) => {
+    setReplyStatus(slug);
+    await fetch('/api/settings/service-desk', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ statusOnCustomerReply: slug }),
+    });
+    toast.success(slug ? 'Saved' : 'Status will be left alone on a reply');
   };
 
   // === Statuses ===
@@ -302,6 +314,37 @@ export default function ServiceDeskSettingsPage() {
       </div>
 
       {/* === TIMER === */}
+      <div className="glass-panel p-6">
+        <div className="mb-4">
+          <h2 className="font-semibold text-white">When a customer replies</h2>
+          <p className="text-sm text-surface-400">
+            An emailed reply files a note on the ticket. It can move the ticket to a status at
+            the same time, so an answer on a resolved ticket comes back onto a queue instead of
+            being recorded and forgotten.
+          </p>
+        </div>
+
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-surface-400">
+            Status when a customer replies
+          </span>
+          <select
+            value={replyStatus}
+            onChange={e => saveReplyStatus(e.target.value)}
+            className="w-full max-w-sm"
+          >
+            <option value="">Leave the status alone</option>
+            {statuses.map((st: any) => (
+              <option key={st.slug} value={st.slug}>{st.name}</option>
+            ))}
+          </select>
+        </label>
+        <p className="mt-2 text-xs text-surface-500">
+          The change is recorded on the ticket as an internal note, so it is clear why the
+          status moved.
+        </p>
+      </div>
+
       <div className="glass-panel p-6">
         <div className="mb-4">
           <h2 className="text-white font-semibold">Timer</h2>

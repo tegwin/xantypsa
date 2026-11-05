@@ -93,3 +93,64 @@ export function cleanupOptionsFrom(settings: any): CleanupOptions {
     stripQuotedHistory: email.stripQuotedHistory !== false,
   };
 }
+
+// Tags that end a line when a mail client renders them. The old converter
+// handled only <br> and </p>, so a signature written in <div>s arrived as one
+// run-on line and no marker ever sat on a line of its own.
+const BLOCK_END = /<\/(p|div|h[1-6]|li|tr|blockquote|table|section|article)\s*>/gi;
+
+/** HTML as a mail client lays it out: block elements end the line. */
+export function htmlToText(html: string): string {
+  if (!html) return '';
+  return html
+    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(BLOCK_END, '\n')
+    .replace(/<li[^>]*>/gi, '- ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/**
+ * The same trim, applied to the HTML rather than to a flattened copy.
+ *
+ * The HTML is split at the boundaries a mail client would break a line on,
+ * each piece is read as text, and everything from the first piece that starts
+ * a signature or a quoted thread is dropped. Working on the pieces keeps the
+ * formatting of what is left intact, which a text-only trim cannot do.
+ */
+export function cleanEmailHtml(html: string, options: CleanupOptions = {}): string {
+  if (!html) return '';
+  if (!options.stripSignature && !options.stripQuotedHistory) return html;
+
+  // Keep the separators, so rebuilding the kept part changes nothing about it.
+  const pieces = html.split(/(<br\s*\/?>|<\/(?:p|div|h[1-6]|li|tr|blockquote)\s*>)/gi);
+
+  const patterns = [
+    ...(options.stripQuotedHistory ? HISTORY_MARKERS : []),
+    ...(options.stripSignature ? SIGNATURE_MARKERS : []),
+  ];
+
+  for (let i = 0; i < pieces.length; i++) {
+    const text = htmlToText(pieces[i] ?? '').trim();
+    if (!text) continue;
+    // Each marker is anchored to a whole line, so the piece is tested on its
+    // own rather than against the document.
+    if (patterns.some((p) => new RegExp(p.source, p.flags.replace('g', '')).test(text))) {
+      const kept = pieces.slice(0, i).join('');
+      // Never return nothing: a reply that is only a sign-off is kept whole.
+      if (htmlToText(kept).trim()) return kept;
+      return html;
+    }
+  }
+
+  return html;
+}

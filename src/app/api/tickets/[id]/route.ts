@@ -16,6 +16,7 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
       contact: { select: { id: true, firstName: true, lastName: true, email: true } },
       assignedTo: { select: { id: true, name: true, email: true } },
       createdBy: { select: { id: true, name: true } },
+      queue: { select: { id: true, name: true } },
       contract: { select: {
         id: true, name: true, contractNumber: true, type: true,
         totalHours: true, hoursUsed: true, monthlyFee: true, fixedPrice: true, value: true,
@@ -56,6 +57,9 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
   if (body.contactId !== undefined) data.contactId = body.contactId || null;
   if (body.assignedToId !== undefined) data.assignedToId = body.assignedToId || null;
   if (body.contractId !== undefined) data.contractId = body.contractId || null;
+  // Moving a queue is the same change the Transfer dialog makes; it just no
+  // longer requires opening it.
+  if (body.queueId !== undefined) data.queueId = body.queueId || null;
   if (body.opportunityId !== undefined) data.opportunityId = body.opportunityId || null;
   if (body.dueDate !== undefined) data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
 

@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { routeIncomingEmail } from '@/lib/emailRouting';
 import { renewSubscription, minutesRemaining, RENEW_WHEN_UNDER_MINUTES } from '@/lib/graphSubscription';
 import { findTicketForEmail } from '@/lib/ticketRef';
-import { cleanEmailBody, cleanupOptionsFrom } from '@/lib/emailCleanup';
+import { cleanEmailBody, cleanEmailHtml, cleanupOptionsFrom, htmlToText } from '@/lib/emailCleanup';
 import { saveEmailAttachments } from '@/lib/emailAttachments';
 
 /**
@@ -45,9 +45,20 @@ function isAutomatic(msg: any): boolean {
     if (name === 'precedence' && ['bulk', 'auto_reply', 'junk', 'list'].includes(value)) return true;
     if (name === 'x-autoreply' || name === 'x-autorespond') return true;
   }
-  // Some systems mark nothing at all, so fall back to the one subject prefix
-  // that is standard across mail clients.
-  return /^\s*(automatic reply|out of office|undeliverable)\b/i.test(msg.subject || '');
+  // Plenty of systems mark nothing at all, so fall back to who sent it and
+  // what it is called. "Secure message delivery failed: Unknown user" got
+  // through an earlier, narrower version of this and became a ticket.
+  const sender = (msg.from?.emailAddress?.address || '').toLowerCase();
+  const localPart = sender.split('@')[0];
+  if (['postmaster', 'mailer-daemon', 'mailerdaemon', 'noreply', 'no-reply', 'donotreply', 'do-not-reply'].includes(localPart)) {
+    return true;
+  }
+
+  const subject = msg.subject || '';
+  return (
+    /^\s*(automatic reply|out of office|auto(matic)?[- ]?response)\b/i.test(subject) ||
+    /\b(undeliverable|delivery (has )?failed|delivery status notification|delivery failure|returned mail|mail delivery (failed|subsystem)|could not be delivered|message blocked|unknown user)\b/i.test(subject)
+  );
 }
 
 /** Constant-time compare, so a wrong secret cannot be found by timing. */
@@ -261,20 +272,15 @@ export async function POST(req: NextRequest) {
       // else the catch-all, so nothing is ever dropped.
       const route = await routeIncomingEmail(tenantId, senderEmail);
 
-      // Strip HTML from body, then trim the signature and the quoted thread so
-      // the note holds the new message rather than the whole conversation.
-      const bodyContent = cleanEmailBody(
-        (msg.body?.content || msg.bodyPreview || '')
-          .replace(/<br\s*\/?>/gi, '\n')
-          .replace(/<\/p>/gi, '\n')
-          .replace(/<[^>]+>/g, '')
-          .replace(/&nbsp;/g, ' ')
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .trim(),
-        cleanupOptionsFrom(settings)
-      );
+      // Keep the message twice over: the HTML a person should read, and the
+      // plain text that search, notifications and reference-matching work on.
+      // Both are trimmed of the signature and the quoted thread.
+      const cleanup = cleanupOptionsFrom(settings);
+      const rawHtml = msg.body?.contentType === 'html' ? msg.body?.content || '' : '';
+      const bodyHtml = rawHtml ? cleanEmailHtml(rawHtml, cleanup) : '';
+      const bodyContent = bodyHtml
+        ? cleanEmailBody(htmlToText(bodyHtml), cleanup)
+        : cleanEmailBody(msg.body?.content || msg.bodyPreview || '', cleanup);
 
       // Which ticket is this a reply to? The subject tag first, then the body,
       // so stripping the tag out of the subject does not lose the thread. A
@@ -298,12 +304,34 @@ export async function POST(req: NextRequest) {
             // The body alone. Who sent it and which message it was are fields,
             // so the note reads as the customer wrote it.
             content: bodyContent,
+            contentHtml: bodyHtml || null,
             isInternal: false,
             isEmail: true,
             externalFrom: senderEmail || null,
             sourceMessageId: msg.id,
           },
         });
+
+        // A reply reopens the ticket, if the tenant has said which status
+        // that means. Without this a customer answering a closed ticket is
+        // recorded and then forgotten, because nothing brings it back onto a
+        // queue.
+        const replyStatus = (settings as any)?.serviceDeskStatusOnCustomerReply;
+        if (replyStatus && replyStatus !== existingTicket.status) {
+          await prisma.ticket.update({
+            where: { id: existingTicket.id },
+            data: { status: replyStatus },
+          });
+          await prisma.ticketNote.create({
+            data: {
+              ticketId: existingTicket.id,
+              userId: owner?.userId || '',
+              content: `Status set to ${replyStatus} because the customer replied.`,
+              isSystem: true,
+              isInternal: true,
+            },
+          });
+        }
 
         // Acknowledge the reply, the same way a new ticket is acknowledged.
         // Without this a customer who answers a question hears nothing back

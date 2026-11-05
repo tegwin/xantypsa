@@ -66,7 +66,7 @@ export async function findTicketForEmail(
   tenantId: string,
   subject: string,
   body: string,
-): Promise<{ id: string; ticketNumber: number } | null> {
+): Promise<{ id: string; ticketNumber: number; status: string } | null> {
   const candidates = [...refsInSubject(subject), ...refsInBody(body)];
   const seen = new Set<number>();
   for (const ticketNumber of candidates) {
@@ -74,7 +74,7 @@ export async function findTicketForEmail(
     seen.add(ticketNumber);
     const ticket = await prisma.ticket.findFirst({
       where: { tenantId, ticketNumber },
-      select: { id: true, ticketNumber: true },
+      select: { id: true, ticketNumber: true, status: true },
     });
     if (ticket) return ticket;
   }

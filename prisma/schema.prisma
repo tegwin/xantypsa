@@ -589,6 +589,10 @@ model TicketNote {
   isInternal      Boolean  @default(false) // Internal notes vs customer-visible
   isSystem        Boolean  @default(false) // System-generated notes (status changes, time entries)
   isEmail         Boolean  @default(false)
+  /// The message as it was written, when it came in as HTML. Kept alongside
+  /// the plain text rather than instead of it: the text is what search and
+  /// notifications read, the HTML is what a person should see.
+  contentHtml     String?
   /// Who sent it, when the note came in on an email rather than from an agent.
   /// A field rather than a line of prose in the content, so the timeline can
   /// mark it as external without parsing the text back apart.

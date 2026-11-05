@@ -53,3 +53,31 @@ assert.equal(
 );
 
 console.log('email cleanup: separators ok');
+
+import { htmlToText, cleanEmailHtml } from '../src/lib/emailCleanup';
+
+// Divs end a line, which is what made every signature survive.
+assert.equal(
+  htmlToText('<div>Thank you</div><div>---</div><div>Chris Timm</div>'),
+  'Thank you\n---\nChris Timm'
+);
+
+// The real shape of the message that kept its signature.
+const realHtml =
+  '<div>Thank you what is the status</div><div><br></div><div>---</div>' +
+  '<div>Click here to purchase my book.</div><div>Chris Timm | Sondela Consulting</div>';
+assert.equal(
+  cleanEmailBody(htmlToText(realHtml), both),
+  'Thank you what is the status'
+);
+
+// Trimming the HTML keeps the markup of what is left.
+const trimmed = cleanEmailHtml(realHtml, both);
+assert.ok(trimmed.includes('Thank you what is the status'), 'the message survives');
+assert.ok(!trimmed.includes('Click here to purchase'), 'the signature goes');
+assert.ok(!trimmed.includes('Sondela Consulting'), 'the contact block goes');
+
+// A reply that is only a sign-off is still kept.
+assert.ok(cleanEmailHtml('<div>Thanks</div>', both).includes('Thanks'));
+
+console.log('email cleanup: html ok');

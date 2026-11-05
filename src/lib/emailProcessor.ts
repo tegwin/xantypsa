@@ -1,6 +1,6 @@
 import { sendTicketNotification } from './ticketEmail';
 import { findTicketForEmail } from './ticketRef';
-import { cleanEmailBody, cleanupOptionsFrom } from './emailCleanup';
+import { cleanEmailBody, cleanupOptionsFrom, htmlToText } from './emailCleanup';
 
 export interface MicrosoftConfig {
   clientId: string;
@@ -33,35 +33,6 @@ export async function getAccessToken(config: MicrosoftConfig): Promise<string> {
   return data.access_token;
 }
 
-/**
- * Strip HTML tags from a string to get plain text.
- * Handles common HTML email patterns: <br>, <p>, block elements become newlines.
- */
-function stripHtml(html: string): string {
-  if (!html) return '';
-
-  let text = html;
-  // Replace <br> and <br/> with newlines
-  text = text.replace(/<br\s*\/?>/gi, '\n');
-  // Replace closing block-level tags with newlines
-  text = text.replace(/<\/(p|div|h[1-6]|li|tr|blockquote)>/gi, '\n');
-  // Replace <li> with bullet points
-  text = text.replace(/<li[^>]*>/gi, '- ');
-  // Remove all remaining HTML tags
-  text = text.replace(/<[^>]+>/g, '');
-  // Decode common HTML entities
-  text = text.replace(/&nbsp;/gi, ' ');
-  text = text.replace(/&amp;/gi, '&');
-  text = text.replace(/&lt;/gi, '<');
-  text = text.replace(/&gt;/gi, '>');
-  text = text.replace(/&quot;/gi, '"');
-  text = text.replace(/&#39;/gi, "'");
-  text = text.replace(/&apos;/gi, "'");
-  // Collapse multiple blank lines into two
-  text = text.replace(/\n{3,}/g, '\n\n');
-  // Trim leading/trailing whitespace
-  return text.trim();
-}
 
 export async function processIncomingEmails(appTenantId: string): Promise<EmailProcessingResult> {
   const result: EmailProcessingResult = {
@@ -123,7 +94,7 @@ export async function processIncomingEmails(appTenantId: string): Promise<EmailP
       // Same trimming as the webhook path, so a ticket reads identically
       // whichever route brought the email in.
       const plainTextBody = cleanEmailBody(
-        bodyIsHtml ? stripHtml(rawBody) : rawBody,
+        bodyIsHtml ? htmlToText(rawBody) : rawBody,
         cleanupOptionsFrom(settings)
       );
 

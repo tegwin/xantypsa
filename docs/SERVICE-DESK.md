@@ -64,10 +64,26 @@ A reply to an existing ticket is acknowledged with the Ticket Updated
 template, the same way a new ticket is acknowledged, so somebody answering a
 question can tell that it landed.
 
+Settings, Service Desk also carries **Status when a customer replies**. Set it
+and an emailed reply moves the ticket to that status, recorded as an internal
+note saying why, so an answer on a resolved ticket comes back onto a queue
+rather than being filed and forgotten. Leave it alone and nothing moves.
+
+An emailed note is shown as the customer's mail client rendered it, HTML and
+all, inside a sandboxed frame that cannot run scripts or reach the rest of the
+page. The plain text is kept alongside it for search and for matching
+references.
+
+The mailbox never answers itself. Anything sent from the monitored mailbox is
+ignored, and so is anything that looks automatic: out of office replies,
+bounces and delivery failures, by header where one is set and by sender and
+subject where it is not.
+
 ## Changing a ticket
 
 Every field in the Details panel is changed where it stands: status, priority,
-type, company, contact, assignee, category and contract. Each saves on its own
+type, company, contact, queue, assignee, category and contract. The queue is
+shown there as well, since it decides who can see the ticket. Each saves on its own
 as soon as it is changed. Changing the company clears the contact, because a
 contact belongs to a company.
 

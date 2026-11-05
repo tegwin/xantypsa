@@ -53,8 +53,16 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
       existingRoleId = fallbackRole.id;
     }
 
+    // Same rule on this path: the cost is of this membership, so somebody
+    // joining a second tenant does not carry the first one's rate across.
+    const existingCostRate =
+      body.costRate === undefined || body.costRate === '' || body.costRate === null
+        ? null
+        : parseFloat(body.costRate);
+
     await prisma.tenantUser.create({
       data: {
+        costRate: Number.isFinite(existingCostRate as number) ? existingCostRate : null,
         tenant: { connect: { id: tenantId } },
         user: { connect: { id: existing.id } },
         role: { connect: { id: existingRoleId } },
@@ -77,18 +85,23 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
     roleId = fallbackRole.id;
   }
 
+  // The cost rate belongs to the membership, not the person: the same engineer
+  // can work for more than one MSP at a different cost to each. Sending it on
+  // the user made every create fail with an unknown-argument error.
+  const parsedCostRate =
+    body.costRate === undefined || body.costRate === '' || body.costRate === null
+      ? null
+      : parseFloat(body.costRate);
+
   const user = await prisma.user.create({
     data: {
       name: body.name,
-      // Internal hourly cost of this engineer, used for profitability.
-      ...(body.costRate !== undefined && {
-        costRate: body.costRate === '' || body.costRate === null ? null : parseFloat(body.costRate),
-      }),
       email: body.email.toLowerCase(),
       passwordHash,
       phone: body.phone || null,
       tenants: {
         create: {
+          costRate: Number.isFinite(parsedCostRate as number) ? parsedCostRate : null,
           tenant: { connect: { id: tenantId } },
           role: { connect: { id: roleId } },
         },

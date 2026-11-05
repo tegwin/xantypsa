@@ -16,6 +16,8 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
     timerEnabled: settings.serviceDeskTimerEnabled ?? true,
     timerOnlyOnTimeEntry: settings.serviceDeskTimerOnlyOnTimeEntry ?? false,
     timerOnlyOnPublicNotes: settings.serviceDeskTimerOnlyOnPublicNotes ?? false,
+    // Empty means leave the status alone when a customer replies.
+    statusOnCustomerReply: settings.serviceDeskStatusOnCustomerReply ?? '',
   });
 }, 'settings', 'read');
 
@@ -39,6 +41,9 @@ export const PATCH = withTenant(async (req: NextRequest, session: any) => {
   }
   if (body.timerOnlyOnPublicNotes !== undefined) {
     settings.serviceDeskTimerOnlyOnPublicNotes = !!body.timerOnlyOnPublicNotes;
+  }
+  if (body.statusOnCustomerReply !== undefined) {
+    settings.serviceDeskStatusOnCustomerReply = body.statusOnCustomerReply || '';
   }
 
   await prisma.tenant.update({

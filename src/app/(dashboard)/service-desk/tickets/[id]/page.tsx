@@ -12,6 +12,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { Clock, DollarSign, ChevronDown, ChevronUp, Moon, Mail, EyeOff, Play, Pause, RotateCcw, Pencil, ArrowRightLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import TicketAttachments from '@/components/TicketAttachments';
+import EmailBody from '@/components/EmailBody';
 
 interface BillingRate {
   id: string; name: string; code: string; rate: number;
@@ -761,7 +762,7 @@ export default function TicketDetailPage() {
                       <span className="text-xs text-surface-500">{formatRelativeTime(note.createdAt)}</span>
                     </div>
                   </div>
-                  <p className="text-surface-300 text-sm whitespace-pre-wrap">{note.content}</p>
+                  <EmailBody html={note.contentHtml} text={note.content} />
                 </div>
               ))}
               {!visibleNotes.length && (
@@ -827,6 +828,18 @@ export default function TicketDetailPage() {
                   className={inlineSelect}>
                   <option value="">No contact</option>
                   {contacts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </InlineField>
+
+              {/* Which queue a ticket sits in decides who can see it, so it
+                  belongs on the panel next to the assignee rather than only
+                  inside the Transfer dialog. */}
+              <InlineField label="Queue">
+                <select value={ticket.queueId || ''}
+                  onChange={e => patchTicket({ queueId: e.target.value || null })}
+                  className={inlineSelect}>
+                  <option value="">No queue</option>
+                  {queues.map(q => <option key={q.id} value={q.id}>{q.name}</option>)}
                 </select>
               </InlineField>
 
