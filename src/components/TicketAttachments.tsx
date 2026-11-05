@@ -17,6 +17,7 @@ interface Attachment {
   contentType: string;
   size: number;
   sourceEmail: string | null;
+  isInline: boolean;
   createdAt: string;
 }
 
@@ -105,7 +106,8 @@ export default function TicketAttachments({ ticketId }: { ticketId: string }) {
         <p className="text-sm text-surface-400">Loading...</p>
       ) : !items.length ? (
         <p className="text-sm text-surface-400">
-          Nothing attached. Files sent in with an email appear here automatically.
+          Nothing attached. Files sent in with an email appear here automatically, including
+          an image pasted into the message itself.
         </p>
       ) : (
         <ul className="space-y-2">
@@ -126,6 +128,7 @@ export default function TicketAttachments({ ticketId }: { ticketId: string }) {
                 <p className="mt-0.5 text-xs text-surface-500">
                   {readableSize(a.size)}
                   {a.sourceEmail ? ` - emailed by ${a.sourceEmail}` : ' - uploaded'}
+                  {a.isInline ? ' - embedded in the message' : ''}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-1">

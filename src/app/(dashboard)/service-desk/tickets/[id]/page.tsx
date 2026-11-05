@@ -18,6 +18,19 @@ interface BillingRate {
   minimumMinutes: number; roundingMinutes: number; oohMultiplier: number;
 }
 
+const inlineSelect =
+  'max-w-[160px] cursor-pointer rounded-lg border border-surface-700 bg-surface-800 px-2 py-1.5 text-xs capitalize text-white transition-colors hover:border-blue-500/50';
+
+/** A label on the left, the control that changes it on the right. */
+function InlineField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-surface-400">{label}</span>
+      {children}
+    </div>
+  );
+}
+
 export default function TicketDetailPage() {
   const router = useRouter();
   const { id } = useParams();
@@ -44,6 +57,17 @@ export default function TicketDetailPage() {
   // Ticket edit modal
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
+  const [hideSystemNotes, setHideSystemNotes] = useState(false);
+
+  // Read once on mount: localStorage is not available while rendering on the
+  // server, and reading it during render would mismatch the first paint.
+  useEffect(() => {
+    try {
+      setHideSystemNotes(localStorage.getItem('xantypsa.hideSystemNotes') === 'true');
+    } catch {
+      // Nothing stored, nothing lost.
+    }
+  }, []);
   const [savingEdit, setSavingEdit] = useState(false);
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
   const [contacts, setContacts] = useState<{ id: string; name: string }[]>([]);
@@ -226,6 +250,19 @@ export default function TicketDetailPage() {
   if (!ticket) return <div className="text-surface-400 p-8">Ticket not found</div>;
 
   // Dynamic status transitions - allow moving to any non-current status
+  // One save path for every inline field, so each one reports its own failure
+  // instead of silently doing nothing.
+  const visibleNotes = (ticket.notes || []).filter((n: any) => !hideSystemNotes || !n.isSystem);
+
+  const patchTicket = async (patch: Record<string, any>) => {
+    try {
+      await apiPatch(`/api/tickets/${id}`, patch);
+      refetch();
+    } catch (err: any) {
+      toast.error(err?.message || 'Could not save that change');
+    }
+  };
+
   const availableStatuses = customStatuses.length > 0
     ? customStatuses.filter(s => s.slug !== ticket.status).map(s => s.slug)
     : (() => {
@@ -284,6 +321,7 @@ export default function TicketDetailPage() {
     setEditForm({
       title: ticket.title || '',
       description: ticket.description || '',
+      status: ticket.status || 'new',
       priority: ticket.priority || 'medium',
       type: ticket.type || '',
       category: ticket.category || '',
@@ -653,9 +691,30 @@ export default function TicketDetailPage() {
 
           {/* Notes & Activity */}
           <div className="glass-panel p-6">
-            <h3 className="text-white font-semibold mb-4">Activity Timeline</h3>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h3 className="font-semibold text-white">Activity Timeline</h3>
+              {/* A ticket's own history is useful and also repetitive. Hiding
+                  it leaves the conversation, which is what is usually being
+                  read. The choice is remembered per person, per browser. */}
+              <label className="flex cursor-pointer items-center gap-2 text-xs text-surface-400">
+                <input
+                  type="checkbox"
+                  checked={hideSystemNotes}
+                  onChange={e => {
+                    setHideSystemNotes(e.target.checked);
+                    try {
+                      localStorage.setItem('xantypsa.hideSystemNotes', String(e.target.checked));
+                    } catch {
+                      // Private window or blocked storage: the choice simply
+                      // does not outlive the page, which is fine.
+                    }
+                  }}
+                />
+                Hide system updates
+              </label>
+            </div>
             <div className="space-y-3">
-              {ticket.notes?.map((note: any) => (
+              {visibleNotes.map((note: any) => (
                 <div key={note.id}
                   className={`rounded-lg p-4 ${
                     note.isSystem ? 'bg-surface-800/30 border border-surface-700/30'
@@ -705,8 +764,10 @@ export default function TicketDetailPage() {
                   <p className="text-surface-300 text-sm whitespace-pre-wrap">{note.content}</p>
                 </div>
               ))}
-              {(!ticket.notes || ticket.notes.length === 0) && (
-                <div className="text-center text-surface-500 py-4">No activity yet</div>
+              {!visibleNotes.length && (
+                <div className="py-4 text-center text-surface-500">
+                  {ticket.notes?.length ? 'Only system updates, and those are hidden' : 'No activity yet'}
+                </div>
               )}
             </div>
           </div>
@@ -717,26 +778,76 @@ export default function TicketDetailPage() {
           <div className="glass-panel p-6 space-y-4">
             <h3 className="text-white font-semibold">Details</h3>
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between"><span className="text-surface-400">Status</span>
-                {(() => {
-                  const cs = customStatuses.find(s => s.slug === ticket.status);
-                  if (cs) return <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: cs.color + '20', color: cs.color }}>{cs.name}</span>;
-                  return <StatusBadge status={ticket.status} />;
-                })()}
-              </div>
-              <div className="flex justify-between"><span className="text-surface-400">Priority</span><StatusBadge status={ticket.priority} /></div>
-              <div className="flex justify-between"><span className="text-surface-400">Type</span><span className="text-white capitalize">{ticket.type?.replace('_', ' ') || ' - '}</span></div>
-              <div className="flex justify-between"><span className="text-surface-400">Company</span><span className="text-white">{ticket.company?.name || ' - '}</span></div>
-              <div className="flex justify-between"><span className="text-surface-400">Contact</span><span className="text-white">{ticket.contact ? `${ticket.contact.firstName} ${ticket.contact.lastName}` : ' - '}</span></div>
-              <div className="flex justify-between items-center">
-                <span className="text-surface-400">Assignee</span>
-                <select value={ticket.assignedToId || ''} onChange={async (e) => { await apiPatch(`/api/tickets/${id}`, { assignedToId: e.target.value || null }); refetch(); }}
-                  className="text-xs bg-surface-800 border border-surface-700 rounded-lg px-2 py-1.5 text-white max-w-[160px] cursor-pointer hover:border-blue-500/50 transition-colors">
+              {/* Every field here is changed in place. Opening a modal to set a
+                  priority is three clicks for one value, and the modal did not
+                  even carry the status. */}
+              <InlineField label="Status">
+                <select value={ticket.status} onChange={e => patchTicket({ status: e.target.value })}
+                  className={inlineSelect}>
+                  {(customStatuses.length
+                    ? customStatuses.map(cs => ({ value: cs.slug, label: cs.name }))
+                    : ['new', 'open', 'pending', 'resolved', 'closed'].map(v => ({ value: v, label: v }))
+                  ).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </InlineField>
+
+              <InlineField label="Priority">
+                <select value={ticket.priority || ''} onChange={e => patchTicket({ priority: e.target.value })}
+                  className={inlineSelect}>
+                  {['low', 'medium', 'high', 'critical'].map(v => (
+                    <option key={v} value={v}>{v[0].toUpperCase() + v.slice(1)}</option>
+                  ))}
+                </select>
+              </InlineField>
+
+              <InlineField label="Type">
+                <select value={ticket.type || ''} onChange={e => patchTicket({ type: e.target.value })}
+                  className={inlineSelect}>
+                  {['incident', 'service_request', 'problem', 'change'].map(v => (
+                    <option key={v} value={v}>{v.replace('_', ' ')}</option>
+                  ))}
+                </select>
+              </InlineField>
+
+              <InlineField label="Company">
+                {/* Changing the company clears the contact: a contact belongs
+                    to a company, and keeping the old one leaves the ticket
+                    pointing at somebody who does not work there. */}
+                <select value={ticket.companyId || ''}
+                  onChange={e => patchTicket({ companyId: e.target.value || null, contactId: null })}
+                  className={inlineSelect}>
+                  <option value="">No company</option>
+                  {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </InlineField>
+
+              <InlineField label="Contact">
+                <select value={ticket.contactId || ''}
+                  onChange={e => patchTicket({ contactId: e.target.value || null })}
+                  className={inlineSelect}>
+                  <option value="">No contact</option>
+                  {contacts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </InlineField>
+
+              <InlineField label="Assignee">
+                <select value={ticket.assignedToId || ''}
+                  onChange={e => patchTicket({ assignedToId: e.target.value || null })}
+                  className={inlineSelect}>
                   <option value="">Unassigned</option>
                   {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                 </select>
-              </div>
-              <div className="flex justify-between"><span className="text-surface-400">Category</span><span className="text-white capitalize">{ticket.category || ' - '}</span></div>
+              </InlineField>
+
+              <InlineField label="Category">
+                {/* Saved when the field is left, not on every keystroke. */}
+                <input defaultValue={ticket.category || ''} placeholder="None"
+                  onBlur={e => {
+                    const next = e.target.value.trim();
+                    if (next !== (ticket.category || '')) patchTicket({ category: next || null });
+                  }}
+                  className="max-w-[160px] rounded-lg border border-surface-700 bg-surface-800 px-2 py-1.5 text-xs text-white transition-colors hover:border-blue-500/50" />
+              </InlineField>
               <div className="flex justify-between items-center">
                 <span className="text-surface-400">Contract</span>
                 <ContractSelector ticketId={ticket.id} companyId={ticket.companyId} currentContractId={ticket.contractId} contractName={ticket.contract?.name} onUpdate={refetch} />
@@ -968,6 +1079,22 @@ export default function TicketDetailPage() {
               <Select label="Contact" value={editForm.contactId}
                 onChange={(e: any) => setEditForm({ ...editForm, contactId: e.target.value })}
                 options={[{ value: '', label: 'No contact' }, ...contacts.map(c => ({ value: c.id, label: c.name }))]} />
+
+              {/* Status was missing here entirely, so the one field an agent
+                  most often changes could not be changed from this form. */}
+              <Select label="Status" value={editForm.status}
+                onChange={(e: any) => setEditForm({ ...editForm, status: e.target.value })}
+                options={
+                  customStatuses.length
+                    ? customStatuses.map(cs => ({ value: cs.slug, label: cs.name }))
+                    : [
+                        { value: 'new', label: 'New' },
+                        { value: 'open', label: 'Open' },
+                        { value: 'pending', label: 'Pending' },
+                        { value: 'resolved', label: 'Resolved' },
+                        { value: 'closed', label: 'Closed' },
+                      ]
+                } />
 
               <Select label="Priority" value={editForm.priority}
                 onChange={(e: any) => setEditForm({ ...editForm, priority: e.target.value })}

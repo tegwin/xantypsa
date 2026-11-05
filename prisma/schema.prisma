@@ -619,6 +619,9 @@ model TicketAttachment {
   storagePath String
   /// Set when the attachment arrived on an email rather than being uploaded.
   sourceEmail String?
+  /// True when it was embedded in the message body rather than attached to it,
+  /// which is what a pasted screenshot is.
+  isInline    Boolean  @default(false)
   createdAt   DateTime @default(now())
 
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)

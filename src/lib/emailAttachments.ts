@@ -17,10 +17,23 @@ import { putAttachment } from './attachmentStore';
 const MAX_BYTES = 15 * 1024 * 1024;
 
 /**
+ * Below this, an inline image is assumed to be furniture.
+ *
+ * A pasted screenshot is the thing the customer is showing you and must be
+ * kept; a signature logo or a tracking pixel repeats on every reply and must
+ * not be. Size is the only honest signal Graph gives us for the difference.
+ *
+ * ponytail: a size floor, not real classification. If logos start getting
+ * through, read the image dimensions instead.
+ */
+const INLINE_FLOOR_BYTES = 20 * 1024;
+
+/**
  * Copy an email's attachments onto a ticket.
  *
- * Inline images are skipped: a signature logo on every reply is noise, not an
- * attachment, and they are already part of the HTML body.
+ * Embedded images count: somebody pasting a screenshot into the body has
+ * attached it as far as they are concerned, so it is stored like any other
+ * file and marked as inline.
  *
  * Never throws. An attachment that cannot be stored must not cost the ticket
  * or the note it belongs to, so each failure is logged and the rest continue.
@@ -52,9 +65,10 @@ export async function saveEmailAttachments(
         skipped.push(att.name || 'unnamed');
         continue;
       }
-      if (att.isInline) continue;
-
       const size = att.size ?? 0;
+
+      // Embedded, and small enough to be a logo or a tracking pixel.
+      if (att.isInline && size < INLINE_FLOOR_BYTES) continue;
       if (size > MAX_BYTES) {
         skipped.push(`${att.name} (too large)`);
         continue;
@@ -79,6 +93,7 @@ export async function saveEmailAttachments(
             size: content.length,
             storagePath,
             sourceEmail: fromEmail ?? null,
+            isInline: !!att.isInline,
           },
         });
         saved++;

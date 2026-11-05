@@ -64,12 +64,29 @@ A reply to an existing ticket is acknowledged with the Ticket Updated
 template, the same way a new ticket is acknowledged, so somebody answering a
 question can tell that it landed.
 
+## Changing a ticket
+
+Every field in the Details panel is changed where it stands: status, priority,
+type, company, contact, assignee, category and contract. Each saves on its own
+as soon as it is changed. Changing the company clears the contact, because a
+contact belongs to a company.
+
+Edit Ticket is still there for the title, the description and the due date, and
+it now carries the status as well, which it never did.
+
+The Activity Timeline has a **Hide system updates** tick box, so a ticket's own
+history can be set aside and the conversation read on its own. The choice is
+remembered in your browser.
+
 ## Attachments
 
 Files sent in on an email are copied onto the ticket automatically, and agents
 can attach more from the ticket itself. Up to 15 MB each; anything larger stays
-in the mailbox and is named in the log rather than stored. Inline images, such
-as a logo in a signature, are skipped.
+in the mailbox and is named in the log rather than stored.
+
+An image pasted into the message body is kept too, and marked as embedded.
+Embedded images under 20 KB are skipped, which is where signature logos and
+tracking pixels live.
 
 Files live in private storage and are served only through the app, so a link
 cannot be forwarded to somebody outside your tenant. Opening one needs a
