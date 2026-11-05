@@ -7,7 +7,7 @@
 
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
-import { getSmtpConfig, sendEmail } from '@/lib/email';
+import { deliverEmail } from '@/lib/email';
 
 /** Short - a sign-in link sitting in an inbox for a week is a liability. */
 const TTL_MINUTES = 20;
@@ -86,9 +86,6 @@ export async function sendLoginEmail(
   companyName: string,
   link: string
 ) {
-  const config = await getSmtpConfig(tenantId);
-  if (!config) throw new Error('No outbound email is configured, so sign-in links cannot be sent.');
-
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto;">
       <p>Hello ${contactName},</p>
@@ -106,7 +103,8 @@ export async function sendLoginEmail(
     </div>
   `;
 
-  await sendEmail(config, toEmail, `Sign in to the ${companyName} portal`, html);
+  const signIn = await deliverEmail(tenantId, toEmail, `Sign in to the ${companyName} portal`, html);
+  if (!signIn.sent) throw new Error(signIn.reason);
 }
 
 export { TTL_MINUTES as LOGIN_LINK_TTL_MINUTES };
@@ -125,8 +123,6 @@ export async function sendWelcomeEmail(
   link: string,
   portalUrl: string,
 ) {
-  const config = await getSmtpConfig(tenantId);
-  if (!config) throw new Error('No outbound email is configured, so a welcome email cannot be sent.');
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto;">
@@ -149,5 +145,6 @@ export async function sendWelcomeEmail(
     </div>
   `;
 
-  await sendEmail(config, toEmail, `Your ${companyName} support portal`, html);
+  const welcome = await deliverEmail(tenantId, toEmail, `Your ${companyName} support portal`, html);
+  if (!welcome.sent) throw new Error(welcome.reason);
 }

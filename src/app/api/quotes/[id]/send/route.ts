@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withTenant, jsonResponse, errorResponse } from '@/lib/api';
-import { getSmtpConfig, getEmailTemplate, replaceTemplateVars, sendEmail, logEmail } from '@/lib/email';
+import { getEmailTemplate, replaceTemplateVars, deliverEmail, logEmail } from '@/lib/email';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -40,12 +40,6 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
       where: { id: quote.id },
       data: { accessToken },
     });
-  }
-
-  // Get SMTP config
-  const smtpConfig = await getSmtpConfig(tenantId);
-  if (!smtpConfig) {
-    return errorResponse('SMTP not configured. Go to Settings → Email to configure.', 400);
   }
 
   // Get tenant for company info
@@ -126,9 +120,10 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
   const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
 
   try {
-    await sendEmail(smtpConfig, recipientEmail, subject, html, [
+    const result = await deliverEmail(tenantId, recipientEmail, subject, html, [
       { filename: `${quote.quoteNumber}.pdf`, content: pdfBuffer },
     ]);
+    if (!result.sent) return errorResponse(result.reason, 400);
 
     // Update quote status
     await prisma.quote.update({

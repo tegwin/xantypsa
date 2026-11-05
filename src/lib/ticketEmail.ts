@@ -1,5 +1,5 @@
 import { prisma } from './prisma';
-import { getSmtpConfig, getEmailTemplate, replaceTemplateVars, sendEmail, logEmail } from './email';
+import { getEmailTemplate, replaceTemplateVars, deliverEmail, logEmail } from './email';
 import { withTicketTag, ticketRefFooter, ticketTag } from './ticketRef';
 
 export async function sendTicketNotification(tenantId: string, ticketId: string, templateSlug: string) {
@@ -15,9 +15,6 @@ export async function sendTicketNotification(tenantId: string, ticketId: string,
 
     const recipientEmail = ticket.contact?.email || ticket.company?.email;
     if (!recipientEmail) return;
-
-    const config = await getSmtpConfig(tenantId);
-    if (!config) return;
 
     const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
     const template = await getEmailTemplate(tenantId, templateSlug);
@@ -40,8 +37,9 @@ export async function sendTicketNotification(tenantId: string, ticketId: string,
     const html = `${replaceTemplateVars(template.body, vars)}
       <p style="color:#666;font-size:12px;margin-top:16px">${ticketRefFooter(ticket.ticketNumber)}</p>`;
 
-    await sendEmail(config, recipientEmail, subject, html);
-    await logEmail(tenantId, null, recipientEmail, subject, 'sent');
+    const result = await deliverEmail(tenantId, recipientEmail, subject, html);
+    await logEmail(tenantId, null, recipientEmail, subject, result.sent ? 'sent' : 'failed');
+    if (!result.sent) console.error('sendTicketNotification not sent:', result.reason);
   } catch (err) {
     console.error('sendTicketNotification error:', err);
   }
@@ -76,9 +74,6 @@ export async function sendPublicNoteEmail(
       return { sent: false, reason: 'No contact or company email on this ticket' };
     }
 
-    const config = await getSmtpConfig(tenantId);
-    if (!config) return { sent: false, reason: 'Email is not configured' };
-
     const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
     const subject = withTicketTag(ticket.title, ticket.ticketNumber);
 
@@ -98,8 +93,9 @@ export async function sendPublicNoteEmail(
         </p>
       </div>`;
 
-    await sendEmail(config, recipientEmail, subject, html);
-    await logEmail(tenantId, null, recipientEmail, subject, 'sent');
+    const result = await deliverEmail(tenantId, recipientEmail, subject, html);
+    await logEmail(tenantId, null, recipientEmail, subject, result.sent ? 'sent' : 'failed');
+    if (!result.sent) return { sent: false, reason: result.reason };
     return { sent: true };
   } catch (err) {
     console.error('sendPublicNoteEmail error:', err);

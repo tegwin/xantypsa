@@ -91,12 +91,19 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const notifications = body.value || [];
+    // Every branch below ends in `continue`, which is right for a webhook but
+    // leaves nothing to look at when tickets fail to appear. One line per
+    // notification, and a reason on every skip, makes the logs answer it.
+    console.log(`[ms-email] ${notifications.length} notification(s) received`);
 
     for (const notification of notifications) {
       // Each notification carries: subscriptionId, resource, changeType, clientState
       const { resource, changeType, clientState, subscriptionId, lifecycleEvent } = notification;
 
-      if (!clientState || !subscriptionId) continue;
+      if (!clientState || !subscriptionId) {
+        console.warn('[ms-email] skipped: no clientState or subscriptionId');
+        continue;
+      }
 
       // ---- Lifecycle events -------------------------------------------
       // Graph sends these instead of a resource change when a subscription
@@ -119,7 +126,10 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      if (changeType !== 'created') continue; // Only process new emails
+      if (changeType !== 'created') {
+        console.log(`[ms-email] skipped: changeType ${changeType}`);
+        continue; // Only process new emails
+      }
 
       // This endpoint is public - Graph cannot authenticate to it. The only
       // proof a notification is genuine is clientState, the random secret we
@@ -127,12 +137,18 @@ export async function POST(req: NextRequest) {
       // subscriptionId*, then verify the secret; never trust an id supplied in
       // the request body to say which tenant this is.
       const tenant = await findTenantBySubscription(subscriptionId);
-      if (!tenant) continue;
+      if (!tenant) {
+        console.warn(`[ms-email] skipped: no tenant holds subscription ${subscriptionId}`);
+        continue;
+      }
 
       const settings =
         typeof tenant.settings === 'string' ? JSON.parse(tenant.settings) : tenant.settings;
       const msConfig = (settings as any)?.microsoft;
-      if (!msConfig?.clientId || !msConfig?.subscriptionSecret) continue;
+      if (!msConfig?.clientId || !msConfig?.subscriptionSecret) {
+        console.warn('[ms-email] skipped: tenant has no stored subscription secret');
+        continue;
+      }
 
       if (!safeEqual(clientState, msConfig.subscriptionSecret)) {
         console.warn('[ms-email] rejected notification with bad clientState');
@@ -165,7 +181,10 @@ export async function POST(req: NextRequest) {
         }),
       });
       const tokenData = await tokenRes.json();
-      if (!tokenData.access_token) continue;
+      if (!tokenData.access_token) {
+        console.error('[ms-email] skipped: Microsoft refused a token -', tokenData.error_description);
+        continue;
+      }
 
       // Fetch the actual email message
       const msgUrl = `https://graph.microsoft.com/v1.0/${resource}`;
@@ -174,13 +193,22 @@ export async function POST(req: NextRequest) {
       });
       const msg = await msgRes.json();
 
-      if (!msg.id) continue;
+      if (!msg.id) {
+        console.error(
+          `[ms-email] skipped: could not fetch the message (${msgRes.status}) -`,
+          msg.error?.message
+        );
+        continue;
+      }
 
       // Check if email is already processed (by message ID in customData)
       const existingNote = await prisma.ticketNote.findFirst({
         where: { content: { contains: msg.id } },
       });
-      if (existingNote) continue;
+      if (existingNote) {
+        console.log(`[ms-email] skipped: message ${msg.id} is already on a ticket`);
+        continue;
+      }
 
       const senderEmail = msg.from?.emailAddress?.address;
       // Known contact → their company; else the sender's domain → that client;

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createResetToken, RESET_TTL_MINUTES } from '@/lib/auth/local';
-import { getSmtpConfig, sendEmail } from '@/lib/email';
+import { deliverEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,16 +35,8 @@ export async function POST(req: NextRequest) {
     const base = process.env.NEXT_PUBLIC_APP_URL ?? req.nextUrl.origin;
     const link = `${base.replace(/\/$/, '')}/reset-password?token=${token}`;
 
-    const config = await getSmtpConfig(user.tenants[0].tenantId);
-    if (!config) {
-      // Without outbound email nobody can reset. Surface it in the log so the
-      // administrator can see why, but never to the caller.
-      console.error('[auth] password reset requested but no SMTP is configured');
-      return NextResponse.json(GENERIC);
-    }
-
-    await sendEmail(
-      config,
+    const reset = await deliverEmail(
+      user.tenants[0].tenantId,
       user.email,
       'Reset your XantyPSA password',
       `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">

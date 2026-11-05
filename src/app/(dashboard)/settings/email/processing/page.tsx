@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { useApi } from '@/hooks/useApi';
 import { PageHeader, Button, LoadingSpinner, StatusBadge } from '@/components/ui';
 import { formatDate } from '@/lib/utils';
-import { Mail, Ticket, RefreshCw, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Mail, Ticket, RefreshCw, CheckCircle2, AlertTriangle, Stethoscope } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
@@ -19,6 +19,24 @@ export default function EmailProcessingPage() {
   const { data: status, loading, refetch } = useApi<any>('/api/settings/email/microsoft/status');
   const { data: tickets } = useApi<any>('/api/email/tickets');
   const [reconnecting, setReconnecting] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<any>(null);
+
+  // Asks Microsoft the questions the webhook cannot answer for itself, so
+  // "nothing is arriving" turns into a named cause rather than a guess.
+  const runChecks = async () => {
+    setChecking(true);
+    try {
+      const res = await fetch('/api/email/diagnostics');
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || 'Could not run the checks');
+      setDiagnostics(body);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const reconnect = async () => {
     setReconnecting(true);
@@ -123,6 +141,49 @@ export default function EmailProcessingPage() {
             or press Reconnect to do it now. If it keeps lapsing, check that{' '}
             <code className="font-mono text-xs">CRON_SECRET</code> is set and the cron job is
             enabled in Vercel.
+          </div>
+        )}
+      </div>
+
+      <div className="glass rounded-xl p-6">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Stethoscope className="h-4 w-4 text-brand-400" />
+            <h2 className="font-semibold text-white">Check the connection</h2>
+          </div>
+          <Button
+            variant="secondary"
+            loading={checking}
+            icon={<Stethoscope className="h-4 w-4" />}
+            onClick={runChecks}
+          >
+            Run checks
+          </Button>
+        </div>
+
+        {!diagnostics ? (
+          <p className="text-sm text-surface-400">
+            Asks Microsoft whether the mailbox can be read and whether it still holds the
+            subscription, and where it is sending notifications. Nothing is changed.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {diagnostics.checks.map((c: any) => (
+              <div
+                key={c.name}
+                className="flex items-start gap-3 rounded-lg border border-surface-700 bg-surface-900/40 p-3"
+              >
+                {c.ok ? (
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                ) : (
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+                )}
+                <div className="min-w-0">
+                  <p className="text-sm text-surface-100">{c.name}</p>
+                  <p className="mt-0.5 break-words text-xs text-surface-400">{c.detail}</p>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

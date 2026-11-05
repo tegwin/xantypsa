@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 import { prisma } from './prisma';
 import { decryptStoredSecret } from './crypto';
 import { isDemoMode } from './demo';
+import { getGraphSender, sendViaGraph } from './graphMail';
 
 export interface SmtpConfig {
   host: string;
@@ -67,6 +68,64 @@ export async function sendEmail(
   });
 
   return result;
+}
+
+/**
+ * Send as the tenant, by whichever route they have.
+ *
+ * Microsoft Graph first: the same app registration that receives their mail
+ * sends it, so there is one set of credentials and no SMTP password held. SMTP
+ * is the fallback for tenants with no Microsoft app, or whose app has not been
+ * granted Mail.Send - and it also catches a Graph outage rather than dropping
+ * the message.
+ *
+ * Returns how it went instead of throwing, so a failed send never loses the
+ * note or quote that was just saved.
+ */
+export async function deliverEmail(
+  tenantId: string,
+  to: string,
+  subject: string,
+  html: string,
+  attachments?: Array<{ filename: string; content: Buffer; contentType?: string }>
+): Promise<{ sent: boolean; via?: 'graph' | 'smtp'; reason?: string }> {
+  if (isDemoMode()) {
+    console.log(`[demo] suppressed email to ${to}: ${subject}`);
+    return { sent: true, via: 'graph' };
+  }
+
+  const sender = await getGraphSender(tenantId);
+  let graphError: string | null = null;
+
+  if (sender) {
+    try {
+      await sendViaGraph(sender, to, subject, html, attachments);
+      return { sent: true, via: 'graph' };
+    } catch (err: any) {
+      // Not fatal on its own - SMTP may still be configured - but it must be
+      // visible, because a missing Mail.Send permission looks like nothing at
+      // all from the outside.
+      graphError = err.message;
+      console.error('[email] Graph send failed, trying SMTP:', err.message);
+    }
+  }
+
+  const smtp = await getSmtpConfig(tenantId);
+  if (!smtp) {
+    return {
+      sent: false,
+      reason:
+        graphError ??
+        'No way to send email. Connect a Microsoft 365 mailbox, or fill in the SMTP settings.',
+    };
+  }
+
+  try {
+    await sendEmail(smtp, to, subject, html, attachments);
+    return { sent: true, via: 'smtp' };
+  } catch (err: any) {
+    return { sent: false, reason: err.message };
+  }
 }
 
 const DEFAULT_TEMPLATES: Record<string, { subject: string; body: string }> = {
