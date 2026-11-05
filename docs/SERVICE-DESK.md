@@ -90,6 +90,14 @@ contact belongs to a company.
 Edit Ticket is still there for the title, the description and the due date, and
 it now carries the status as well, which it never did.
 
+The panel opens on the five fields read at a glance - status, priority, type,
+company and contact - with the rest behind **Show all details**. The choice is
+remembered, so it stays open if that is how you work.
+
+Status and priority are coloured by their value, taking a custom status's own
+colour where one is set. The word is always there as well; colour never carries
+the meaning on its own.
+
 The Activity Timeline has a **Hide system updates** tick box, so a ticket's own
 history can be set aside and the conversation read on its own. The choice is
 remembered in your browser.

@@ -19,6 +19,37 @@ interface BillingRate {
   minimumMinutes: number; roundingMinutes: number; oohMultiplier: number;
 }
 
+/**
+ * Status and priority carry meaning, so they carry colour.
+ *
+ * A word and a colour together, never colour on its own: the text still says
+ * which it is for anyone who cannot tell these apart.
+ */
+const PRIORITY_COLOURS: Record<string, string> = {
+  low: '#64748b',
+  medium: '#f59e0b',
+  high: '#f97316',
+  critical: '#ef4444',
+  urgent: '#ef4444',
+};
+
+const STATUS_COLOURS: Record<string, string> = {
+  new: '#22c55e',
+  open: '#3b82f6',
+  in_progress: '#3b82f6',
+  pending: '#f59e0b',
+  on_hold: '#f59e0b',
+  resolved: '#10b981',
+  closed: '#64748b',
+  cancelled: '#64748b',
+};
+
+/** A tinted background and matching text, from one colour. */
+function tint(colour?: string): React.CSSProperties {
+  if (!colour) return {};
+  return { backgroundColor: `${colour}20`, color: colour, borderColor: `${colour}59` };
+}
+
 const inlineSelect =
   'max-w-[160px] cursor-pointer rounded-lg border border-surface-700 bg-surface-800 px-2 py-1.5 text-xs capitalize text-white transition-colors hover:border-blue-500/50';
 
@@ -59,12 +90,25 @@ export default function TicketDetailPage() {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
   const [hideSystemNotes, setHideSystemNotes] = useState(false);
+  const [showAllDetails, setShowAllDetails] = useState(false);
+
+  // Kept with the other remembered view choices, so the panel opens the way it
+  // was left rather than folding itself up on every ticket.
+  const toggleAllDetails = (open: boolean) => {
+    setShowAllDetails(open);
+    try {
+      localStorage.setItem('xantypsa.showAllDetails', String(open));
+    } catch {
+      // Blocked storage: the choice just does not outlive the page.
+    }
+  };
 
   // Read once on mount: localStorage is not available while rendering on the
   // server, and reading it during render would mismatch the first paint.
   useEffect(() => {
     try {
       setHideSystemNotes(localStorage.getItem('xantypsa.hideSystemNotes') === 'true');
+      setShowAllDetails(localStorage.getItem('xantypsa.showAllDetails') === 'true');
     } catch {
       // Nothing stored, nothing lost.
     }
@@ -784,6 +828,10 @@ export default function TicketDetailPage() {
                   even carry the status. */}
               <InlineField label="Status">
                 <select value={ticket.status} onChange={e => patchTicket({ status: e.target.value })}
+                  style={tint(
+                    customStatuses.find(cs => cs.slug === ticket.status)?.color
+                    ?? STATUS_COLOURS[ticket.status]
+                  )}
                   className={inlineSelect}>
                   {(customStatuses.length
                     ? customStatuses.map(cs => ({ value: cs.slug, label: cs.name }))
@@ -794,6 +842,7 @@ export default function TicketDetailPage() {
 
               <InlineField label="Priority">
                 <select value={ticket.priority || ''} onChange={e => patchTicket({ priority: e.target.value })}
+                  style={tint(PRIORITY_COLOURS[ticket.priority])}
                   className={inlineSelect}>
                   {['low', 'medium', 'high', 'critical'].map(v => (
                     <option key={v} value={v}>{v[0].toUpperCase() + v.slice(1)}</option>
@@ -831,9 +880,22 @@ export default function TicketDetailPage() {
                 </select>
               </InlineField>
 
+              {/* The five above are what an agent reads at a glance. The rest
+                  matter, but not on every look, so they are folded away and
+                  the choice is remembered. */}
+              {!showAllDetails && (
+                <button
+                  onClick={() => toggleAllDetails(true)}
+                  className="w-full pt-1 text-left text-xs text-brand-400 hover:text-brand-300"
+                >
+                  Show all details
+                </button>
+              )}
+
               {/* Which queue a ticket sits in decides who can see it, so it
                   belongs on the panel next to the assignee rather than only
                   inside the Transfer dialog. */}
+              <div className={showAllDetails ? 'space-y-3' : 'hidden'}>
               <InlineField label="Queue">
                 <select value={ticket.queueId || ''}
                   onChange={e => patchTicket({ queueId: e.target.value || null })}
@@ -869,6 +931,14 @@ export default function TicketDetailPage() {
               <div className="flex justify-between"><span className="text-surface-400">Created By</span><span className="text-white">{ticket.createdBy?.name || ' - '}</span></div>
               {ticket.resolvedAt && <div className="flex justify-between"><span className="text-surface-400">Resolved</span><span className="text-green-400">{formatDate(ticket.resolvedAt)}</span></div>}
               {ticket.closedAt && <div className="flex justify-between"><span className="text-surface-400">Closed</span><span className="text-green-400">{formatDate(ticket.closedAt)}</span></div>}
+
+              <button
+                onClick={() => toggleAllDetails(false)}
+                className="w-full pt-1 text-left text-xs text-brand-400 hover:text-brand-300"
+              >
+                Show less
+              </button>
+              </div>
             </div>
           </div>
 
