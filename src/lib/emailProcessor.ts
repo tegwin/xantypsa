@@ -130,9 +130,11 @@ export async function processIncomingEmails(appTenantId: string): Promise<EmailP
           data: {
             ticketId: ticket.id,
             userId: ownerUserId,
-            content: `Email from ${senderName} (${senderEmail}):\n\n${plainTextBody}`,
+            content: plainTextBody,
             isInternal: false,
             isEmail: true,
+            externalFrom: senderEmail || senderName || null,
+            sourceMessageId: msg.id,
           },
         });
         result.notesAdded++;

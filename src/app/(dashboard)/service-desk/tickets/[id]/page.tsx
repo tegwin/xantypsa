@@ -659,13 +659,23 @@ export default function TicketDetailPage() {
                 <div key={note.id}
                   className={`rounded-lg p-4 ${
                     note.isSystem ? 'bg-surface-800/30 border border-surface-700/30'
+                    : note.externalFrom ? 'bg-sky-500/5 border border-sky-500/20'
                     : note.isInternal ? 'bg-amber-500/5 border border-amber-500/10'
                     : 'bg-surface-700/20 border border-surface-700/30'
                   }`}>
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
-                      <Avatar name={note.user?.name || 'System'} size="sm" />
-                      <span className="text-white text-sm font-medium">{note.user?.name || 'System'}</span>
+                      <Avatar name={note.externalFrom || note.user?.name || 'System'} size="sm" />
+                      <span className="text-white text-sm font-medium">
+                        {/* An emailed note is authored by the person outside,
+                            not by the account that happened to file it. */}
+                        {note.externalFrom || note.user?.name || 'System'}
+                      </span>
+                      {note.externalFrom && (
+                        <span className="rounded bg-sky-500/20 px-1.5 py-0.5 text-xs text-sky-300">
+                          External - by email
+                        </span>
+                      )}
                       {!note.isSystem && (
                         <span className={`text-xs px-1.5 py-0.5 rounded ${
                           note.isInternal

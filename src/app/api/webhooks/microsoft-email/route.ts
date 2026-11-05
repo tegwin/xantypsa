@@ -203,9 +203,11 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      // Check if email is already processed (by message ID in customData)
+      // Already filed? Matched on the stored message id rather than a
+      // substring of the note text, which is why the id no longer has to be
+      // written into the content for the reader to see.
       const existingNote = await prisma.ticketNote.findFirst({
-        where: { content: { contains: msg.id } },
+        where: { sourceMessageId: msg.id },
       });
       if (existingNote) {
         console.log(`[ms-email] skipped: message ${msg.id} is already on a ticket`);
@@ -251,11 +253,25 @@ export async function POST(req: NextRequest) {
           data: {
             ticketId: existingTicket.id,
             userId: owner?.userId || '',
-            content: `Email from ${senderEmail}:\n\n${bodyContent}\n\n[Email ID: ${msg.id}]`,
+            // The body alone. Who sent it and which message it was are fields,
+            // so the note reads as the customer wrote it.
+            content: bodyContent,
             isInternal: false,
             isEmail: true,
+            externalFrom: senderEmail || null,
+            sourceMessageId: msg.id,
           },
         });
+
+        // Acknowledge the reply, the same way a new ticket is acknowledged.
+        // Without this a customer who answers a question hears nothing back
+        // and cannot tell whether it landed.
+        try {
+          const { sendTicketNotification } = await import('@/lib/ticketEmail');
+          await sendTicketNotification(tenantId, existingTicket.id, 'ticket_updated');
+        } catch (err: any) {
+          console.error('[ms-email] update acknowledgement failed:', err.message);
+        }
       } else {
         // Create new ticket
         const lastTicket = await prisma.ticket.findFirst({
@@ -270,7 +286,7 @@ export async function POST(req: NextRequest) {
             tenantId,
             ticketNumber: nextNumber,
             title: msg.subject || 'Email inquiry',
-            description: `${bodyContent}\n\n---\nFrom: ${senderEmail}\n[Email ID: ${msg.id}]`,
+            description: bodyContent,
             status: 'new',
             priority: 'medium',
             type: 'incident',

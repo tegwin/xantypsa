@@ -27,7 +27,14 @@ const HISTORY_MARKERS: RegExp[] = [
 // A line that begins a signature. "-- " on its own line is the standard
 // (RFC 3676); the rest are what mail clients actually append.
 const SIGNATURE_MARKERS: RegExp[] = [
-  /^--\s*$/m,
+  // Two dashes is the standard, but mail clients and people write three or
+  // more, and an em dash rule renders as a run of them. Anything from two up.
+  /^[-_=]{2,}\s*$/m,
+  // Outlook's "sent from" and promotional footer lines sit above the contact
+  // block, so the cut has to start at them, not at the name.
+  /^Click here to purchase/im,
+  /^This e?-?mail (and any attachments )?(is|are) confidential/im,
+  /^Please consider the environment/im,
   /^Sent from my \w+/im,
   /^Get Outlook for \w+/im,
   /^Kind regards[,.]?\s*$/im,

@@ -54,6 +54,16 @@ kept, because "Yes, thanks" is exactly the shape that looks like a sign-off.
 Turn the second one off if you need the full exchange on every note as a
 record.
 
+An emailed note is shown as what it is: the sender's address as the author,
+an **External - by email** badge, and its own tint in the timeline, so a
+customer's words are never mistaken for an agent's. The sender and the
+provider's message id are stored as fields rather than written into the note,
+so the text reads exactly as the customer wrote it.
+
+A reply to an existing ticket is acknowledged with the Ticket Updated
+template, the same way a new ticket is acknowledged, so somebody answering a
+question can tell that it landed.
+
 ## Attachments
 
 Files sent in on an email are copied onto the ticket automatically, and agents

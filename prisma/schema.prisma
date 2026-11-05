@@ -582,19 +582,28 @@ model Ticket {
 }
 
 model TicketNote {
-  id         String   @id @default(cuid())
-  ticketId   String
-  userId     String
-  content    String
-  isInternal Boolean  @default(false) // Internal notes vs customer-visible
-  isSystem   Boolean  @default(false) // System-generated notes (status changes, time entries)
-  isEmail    Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id              String   @id @default(cuid())
+  ticketId        String
+  userId          String
+  content         String
+  isInternal      Boolean  @default(false) // Internal notes vs customer-visible
+  isSystem        Boolean  @default(false) // System-generated notes (status changes, time entries)
+  isEmail         Boolean  @default(false)
+  /// Who sent it, when the note came in on an email rather than from an agent.
+  /// A field rather than a line of prose in the content, so the timeline can
+  /// mark it as external without parsing the text back apart.
+  externalFrom    String?
+  /// The mail provider's message id, used to recognise an email we have
+  /// already filed. Previously this was appended to the content and matched
+  /// with a substring search, which put plumbing in front of the reader.
+  sourceMessageId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id])
 
+  @@index([sourceMessageId])
   @@map("ticket_notes")
 }
 

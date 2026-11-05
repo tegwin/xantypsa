@@ -36,3 +36,20 @@ assert.deepEqual(
 );
 
 console.log('email cleanup: ok');
+
+// Three dashes, which is what people and mail clients actually write.
+assert.equal(
+  cleanEmailBody(
+    'Thanks for letting me know this should be updated\n\n---\nClick here to purchase my book.\n\nChris Timm | Sondela Consulting\nM: 07887998167',
+    both
+  ),
+  'Thanks for letting me know this should be updated'
+);
+
+// A promotional footer above the contact block starts the cut.
+assert.equal(
+  cleanEmailBody('Please update it.\n\nClick here to purchase my book, PSA Profitability.\nChris', both),
+  'Please update it.'
+);
+
+console.log('email cleanup: separators ok');
