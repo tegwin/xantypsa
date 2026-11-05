@@ -5,6 +5,7 @@ import { useApi, apiPost } from '@/hooks/useApi';
 import { PageHeader, DataTable, StatusBadge, Modal, Pagination, EmptyState, LoadingSpinner } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import Link from 'next/link';
+import Can from '@/components/Can';
 
 interface LineItem {
   description: string;
@@ -125,7 +126,7 @@ export default function InvoicesPage() {
   return (
     <div className="animate-fadeIn">
       <PageHeader title="Invoices" subtitle="Manage billing and payments">
-        <button onClick={() => setShowCreate(true)} className="btn-primary">+ New Invoice</button>
+        <Can module="invoices" action="create"><button onClick={() => setShowCreate(true)} className="btn-primary">+ New Invoice</button></Can>
       </PageHeader>
 
       {/* Where the money stands, and the filter at the same time. Outstanding

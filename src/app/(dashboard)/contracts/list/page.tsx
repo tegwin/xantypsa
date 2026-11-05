@@ -6,6 +6,7 @@ import { PageHeader, DataTable, StatusBadge, Modal, Pagination, EmptyState, Load
 import { formatCurrency, formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Can from '@/components/Can';
 
 const CONTRACT_TYPES = [
   { value: 'time_and_materials', label: 'T&M', color: 'text-slate-400' },
@@ -201,7 +202,7 @@ export default function ContractsPage() {
   return (
     <div className="animate-fadeIn">
       <PageHeader title="Contracts" subtitle="Manage service contracts and billing agreements">
-        <button onClick={() => { setEditId(null); setForm(defaultForm); setShowCreate(true); }} className="btn-primary">+ New Contract</button>
+        <Can module="contracts" action="create"><button onClick={() => { setEditId(null); setForm(defaultForm); setShowCreate(true); }} className="btn-primary">+ New Contract</button></Can>
       </PageHeader>
 
       <div className="glass rounded-xl p-6">

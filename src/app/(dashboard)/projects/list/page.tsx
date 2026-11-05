@@ -5,6 +5,7 @@ import { useApi, apiPost } from '@/hooks/useApi';
 import { PageHeader, DataTable, StatusBadge, Modal, Pagination, EmptyState, LoadingSpinner } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import Link from 'next/link';
+import Can from '@/components/Can';
 
 export default function ProjectsPage() {
   const [page, setPage] = useState(1);
@@ -39,7 +40,7 @@ export default function ProjectsPage() {
   return (
     <div className="animate-fadeIn">
       <PageHeader title="Projects" subtitle="Manage project delivery and timelines">
-        <button onClick={() => setShowCreate(true)} className="btn-primary">+ New Project</button>
+        <Can module="projects" action="create"><button onClick={() => setShowCreate(true)} className="btn-primary">+ New Project</button></Can>
       </PageHeader>
 
       <div className="glass rounded-xl p-6">

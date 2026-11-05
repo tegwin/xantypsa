@@ -5,6 +5,7 @@ import { PageHeader, Button, DataTable, Badge, SearchInput, Modal, Input, Select
 import { Plus, Mail, Phone, Building2, Pencil } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import toast from "react-hot-toast";
+import Can from '@/components/Can';
 
 interface Contact {
   id: string; firstName: string; lastName: string; email: string; phone: string;
@@ -106,7 +107,7 @@ export default function ContactsClient({ contacts: initial, companies = [] }: { 
   return (
     <div className="space-y-6">
       <PageHeader title="Contacts" description={`${initial.length} total contacts`}
-        actions={<Button icon={<Plus className="h-4 w-4" />} onClick={() => setShowModal(true)}>Add Contact</Button>} />
+        actions={<Can module="crm" action="create"><Button icon={<Plus className="h-4 w-4" />} onClick={() => setShowModal(true)}>Add Contact</Button></Can>} />
       <SearchInput value={search} onChange={setSearch} placeholder="Search contacts..." className="max-w-md" />
       <DataTable columns={columns} data={filtered} emptyMessage="No contacts found" onRowClick={(c: Contact) => router.push(`/crm/contacts/${c.id}`)} />
       <Modal open={showModal} onClose={() => setShowModal(false)} title="New Contact"

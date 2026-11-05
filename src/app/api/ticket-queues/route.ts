@@ -19,7 +19,7 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
       isOpenToEveryone: q.members.length === 0,
     })),
   });
-}, 'settings', 'read');
+}, 'settings,service_desk', 'read');
 
 export const POST = withTenant(async (req: NextRequest, session: any) => {
   const body = await req.json();

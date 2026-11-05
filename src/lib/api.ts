@@ -21,6 +21,22 @@ export function errorResponse(message: string, status = 400) {
 
 type ApiHandler = (req: NextRequest, session: any) => Promise<NextResponse>;
 
+/** The permission a request needs, from its method and the route's own word. */
+function requiredAction(method: string, declared: string): string {
+  if (declared === 'read') return 'view';
+  if (declared !== 'write') return declared;
+  switch (method) {
+    case 'POST':
+      return 'create';
+    case 'DELETE':
+      return 'delete';
+    case 'GET':
+      return 'view';
+    default:
+      return 'edit';
+  }
+}
+
 export function withTenant(
   handler: ApiHandler,
   _module?: string,
@@ -57,12 +73,28 @@ export function withTenant(
       if (!session.user.tenantId) {
         return errorResponse('No tenant context', 403);
       }
-      // Permission check (basic)
+      // What this request actually does, taken from the method rather than
+      // from the word a route happened to be registered with. Routes declare
+      // "write" for creating, changing and deleting alike, and treating those
+      // as one let somebody with create delete, and somebody with edit create.
       if (_module && _permission && !session.user.isSuperAdmin) {
-        const permKey = `${_module}:${_permission === 'read' ? 'view' : _permission === 'write' ? 'edit' : _permission}`;
-        const createKey = `${_module}:create`;
-        const perms = session.user.permissions || [];
-        if (!perms.includes(permKey) && !perms.includes(createKey) && !perms.includes(`${_module}:manage`)) {
+        const required = requiredAction(req.method, _permission);
+        const perms: string[] = session.user.permissions || [];
+        // A route may name more than one module, comma separated, and any of
+        // them is enough. Shared lookups - queues, statuses, billing rates -
+        // are needed both by an administrator configuring them and by an agent
+        // filling in a ticket, and those are different modules.
+        const allowed = _module.split(',').some((mod) => {
+          const m = mod.trim();
+          return (
+            perms.includes(`${m}:${required}`) ||
+            perms.includes(`${m}:manage`) ||
+            // Changing something you may create is not a wider power, and
+            // every role template that grants create grants edit with it.
+            (required === 'edit' && perms.includes(`${m}:create`))
+          );
+        });
+        if (!allowed) {
           return errorResponse('Forbidden', 403);
         }
       }

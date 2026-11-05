@@ -6,6 +6,7 @@ import { Plus, Building2, Globe, MapPin, Eye, Pencil } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { COUNTRIES } from "@/lib/countries";
 import toast from "react-hot-toast";
+import Can from '@/components/Can';
 
 interface Company {
   id: string; name: string; type: string; industry: string; phone: string; email: string;
@@ -79,7 +80,7 @@ export default function CompaniesClient({ companies: initial }: { companies: Com
   return (
     <div className="space-y-6">
       <PageHeader title="Companies" description={`${initial.length} total companies`}
-        actions={<Button icon={<Plus className="h-4 w-4" />} onClick={() => setShowModal(true)}>Add Company</Button>} />
+        actions={<Can module="crm" action="create"><Button icon={<Plus className="h-4 w-4" />} onClick={() => setShowModal(true)}>Add Company</Button></Can>} />
       <SearchInput value={search} onChange={setSearch} placeholder="Search companies..." className="max-w-md" />
       <DataTable columns={columns} data={filtered} emptyMessage="No companies found" onRowClick={(c: Company) => router.push(`/crm/companies/${c.id}`)} />
       <Modal open={showModal} onClose={() => setShowModal(false)} title="New Company"

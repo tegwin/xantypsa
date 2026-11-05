@@ -8,7 +8,7 @@ export const GET = withTenant(async (req: NextRequest, session: any) => {
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
   });
   return jsonResponse({ items: statuses });
-}, 'settings', 'read');
+}, 'settings,service_desk', 'read');
 
 export const POST = withTenant(async (req: NextRequest, session: any) => {
   const body = await req.json();

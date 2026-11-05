@@ -47,7 +47,15 @@ interface NavItem {
   label: string;
   href?: string;
   icon: React.ReactNode;
-  module?: Module;
+  /**
+   * Required, not optional.
+   *
+   * It was optional, and the filter let anything without one through, so
+   * Integrations - webhooks, API keys, data import - was on every technician's
+   * sidebar. Making it required means a new entry cannot be forgotten into
+   * being public.
+   */
+  module: Module;
   children?: NavChild[];
 }
 
@@ -146,6 +154,7 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Integrations',
     href: '/integrations',
     icon: <Plug className="h-4.5 w-4.5" />,
+    module: 'integrations',
     children: [
       { label: 'Webhooks', href: '/webhooks' },
       { label: 'API Keys', href: '/api-keys' },
@@ -202,8 +211,10 @@ export default function Sidebar() {
   const isActive = (href?: string) =>
     !!href && (pathname === href || pathname.startsWith(href + '/'));
 
+  // Deny when there is no module, rather than allow. An entry nobody thought
+  // about should be invisible, not universal.
   const filteredNav = NAV_ITEMS.filter(
-    (item) => isSuperAdmin || !item.module || canAccessModule(permissions, item.module)
+    (item) => isSuperAdmin || (!!item.module && canAccessModule(permissions, item.module))
   );
 
   const SidebarContent = () => (
