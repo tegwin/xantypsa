@@ -1,5 +1,6 @@
 import { sendTicketNotification } from './ticketEmail';
 import { findTicketForEmail } from './ticketRef';
+import { cleanEmailBody, cleanupOptionsFrom } from './emailCleanup';
 
 export interface MicrosoftConfig {
   clientId: string;
@@ -113,7 +114,12 @@ export async function processIncomingEmails(appTenantId: string): Promise<EmailP
       // Get plain text content from the email body
       const rawBody = msg.body?.content || msg.bodyPreview || '';
       const bodyIsHtml = msg.body?.contentType === 'html';
-      const plainTextBody = bodyIsHtml ? stripHtml(rawBody) : rawBody;
+      // Same trimming as the webhook path, so a ticket reads identically
+      // whichever route brought the email in.
+      const plainTextBody = cleanEmailBody(
+        bodyIsHtml ? stripHtml(rawBody) : rawBody,
+        cleanupOptionsFrom(settings)
+      );
 
       // Which ticket is this a reply to? The subject tag first, then the body,
       // so stripping the tag out of the subject does not lose the thread.

@@ -38,54 +38,54 @@ model Tenant {
   updatedAt    DateTime      @updatedAt
 
   // Relations
-  users              TenantUser[]
-  roles              Role[]
-  contacts           Contact[]
-  companies          Company[]
-  sites              Site[]
-  opportunities      Opportunity[]
-  tickets            Ticket[]
-  ticketQueues       TicketQueue[]
-  ticketStatuses     TicketStatus[]
-  contracts          Contract[]
-  quotes             Quote[]
-  invoices           Invoice[]
-  payments           Payment[]
-  projects           Project[]
-  tasks              Task[]
-  timeEntries        TimeEntry[]
-  billingRates       BillingRate[]
-  products           Product[]
-  reports            Report[]
-  dashboards         Dashboard[]
-  webhooks           Webhook[]
-  webhookLogs        WebhookLog[]
-  auditLogs          AuditLog[]
-  emailTemplates     EmailTemplate[]
-  tags               Tag[]
-  customFields       CustomField[]
-  slaProfiles        SLAProfile[]
-  integrations       Integration[]
-  fieldLabels        FieldLabel[]
-  apiKeys            ApiKey[]
-  crmNotes           CrmNote[]
-  documents          Document[]
-  quoteTemplates     QuoteTemplate[]
-  emailLogs          EmailLog[]
-  accountingInvoices AccountingInvoice[]
-  assets             Asset[]
-  aiProviders        AiProvider[]
-  aiConversations    AiConversation[]
-  pipelineStages     PipelineStage[]
-  winLossReasons     WinLossReason[]
-  opportunityNotes   OpportunityNote[]
-  contractHourBlocks ContractHourBlock[]
-  portalRoles        PortalRole[]
+  users                TenantUser[]
+  roles                Role[]
+  contacts             Contact[]
+  companies            Company[]
+  sites                Site[]
+  opportunities        Opportunity[]
+  tickets              Ticket[]
+  ticketQueues         TicketQueue[]
+  ticketStatuses       TicketStatus[]
+  contracts            Contract[]
+  quotes               Quote[]
+  invoices             Invoice[]
+  payments             Payment[]
+  projects             Project[]
+  tasks                Task[]
+  timeEntries          TimeEntry[]
+  billingRates         BillingRate[]
+  products             Product[]
+  reports              Report[]
+  dashboards           Dashboard[]
+  webhooks             Webhook[]
+  webhookLogs          WebhookLog[]
+  auditLogs            AuditLog[]
+  emailTemplates       EmailTemplate[]
+  tags                 Tag[]
+  customFields         CustomField[]
+  slaProfiles          SLAProfile[]
+  integrations         Integration[]
+  fieldLabels          FieldLabel[]
+  apiKeys              ApiKey[]
+  crmNotes             CrmNote[]
+  documents            Document[]
+  quoteTemplates       QuoteTemplate[]
+  emailLogs            EmailLog[]
+  accountingInvoices   AccountingInvoice[]
+  assets               Asset[]
+  aiProviders          AiProvider[]
+  aiConversations      AiConversation[]
+  pipelineStages       PipelineStage[]
+  winLossReasons       WinLossReason[]
+  opportunityNotes     OpportunityNote[]
+  contractHourBlocks   ContractHourBlock[]
+  portalRoles          PortalRole[]
+  paymentWebhooks      PaymentWebhook[]
+  paymentWebhookEvents PaymentWebhookEvent[]
+  queueMembers         TicketQueueMember[]
 
   @@map("tenants")
-  paymentWebhooks     PaymentWebhook[]
-  paymentWebhookEvents PaymentWebhookEvent[]
-  queueMembers        TicketQueueMember[]
 }
 
 // ============================================================
@@ -171,16 +171,16 @@ model User {
 
   // Relations
   tenants          TenantUser[]
-  assignedTickets  Ticket[]          @relation("AssignedAgent")
-  createdTickets   Ticket[]          @relation("TicketCreator")
-  assignedTasks    Task[]            @relation("TaskAssignee")
-  createdTasks     Task[]            @relation("TaskCreator")
+  assignedTickets  Ticket[]            @relation("AssignedAgent")
+  createdTickets   Ticket[]            @relation("TicketCreator")
+  assignedTasks    Task[]              @relation("TaskAssignee")
+  createdTasks     Task[]              @relation("TaskCreator")
   timeEntries      TimeEntry[]
   ticketNotes      TicketNote[]
-  opportunities    Opportunity[]     @relation("OpportunityOwner")
+  opportunities    Opportunity[]       @relation("OpportunityOwner")
   quoteCreator     Quote[]
   invoiceCreator   Invoice[]
-  projectManager   Project[]         @relation("ProjectManager")
+  projectManager   Project[]           @relation("ProjectManager")
   projectMembers   ProjectMember[]
   auditLogs        AuditLog[]
   notifications    Notification[]
@@ -188,10 +188,10 @@ model User {
   accounts         Account[]
   crmNotes         CrmNote[]
   documents        Document[]
-  opportunityNotes OpportunityNote[] @relation("OpportunityNoteAuthor")
+  opportunityNotes OpportunityNote[]   @relation("OpportunityNoteAuthor")
+  queueMembers     TicketQueueMember[]
 
   @@map("users")
-  queueMembers  TicketQueueMember[]
 }
 
 model TenantUser {
@@ -563,15 +563,16 @@ model Ticket {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  company     Company?     @relation(fields: [companyId], references: [id])
-  contact     Contact?     @relation(fields: [contactId], references: [id])
-  assignedTo  User?        @relation("AssignedAgent", fields: [assignedToId], references: [id])
-  createdBy   User         @relation("TicketCreator", fields: [createdById], references: [id])
-  queue       TicketQueue? @relation(fields: [queueId], references: [id])
-  contract    Contract?    @relation(fields: [contractId], references: [id])
-  opportunity Opportunity? @relation(fields: [opportunityId], references: [id])
+  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  company     Company?           @relation(fields: [companyId], references: [id])
+  contact     Contact?           @relation(fields: [contactId], references: [id])
+  assignedTo  User?              @relation("AssignedAgent", fields: [assignedToId], references: [id])
+  createdBy   User               @relation("TicketCreator", fields: [createdById], references: [id])
+  queue       TicketQueue?       @relation(fields: [queueId], references: [id])
+  contract    Contract?          @relation(fields: [contractId], references: [id])
+  opportunity Opportunity?       @relation(fields: [opportunityId], references: [id])
   notes       TicketNote[]
+  attachments TicketAttachment[]
   timeEntries TimeEntry[]
 
   @@unique([tenantId, ticketNumber])
@@ -595,6 +596,27 @@ model TicketNote {
   user   User   @relation(fields: [userId], references: [id])
 
   @@map("ticket_notes")
+}
+
+model TicketAttachment {
+  id          String   @id @default(cuid())
+  tenantId    String
+  ticketId    String
+  filename    String
+  contentType String
+  /// Bytes, so a list can show a size without fetching the file.
+  size        Int
+  /// Path inside the storage bucket. The file itself never lives in Postgres.
+  storagePath String
+  /// Set when the attachment arrived on an email rather than being uploaded.
+  sourceEmail String?
+  createdAt   DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([tenantId])
+  @@map("ticket_attachments")
 }
 
 model SLAProfile {
@@ -951,10 +973,10 @@ model Project {
   members     ProjectMember[]
   milestones  Milestone[]
   timeEntries TimeEntry[]
+  invoices    Invoice[]
 
   @@index([tenantId])
   @@map("projects")
-  invoices      Invoice[]
 }
 
 model ProjectMember {

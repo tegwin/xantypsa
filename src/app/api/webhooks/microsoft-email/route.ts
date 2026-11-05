@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { routeIncomingEmail } from '@/lib/emailRouting';
 import { renewSubscription, minutesRemaining, RENEW_WHEN_UNDER_MINUTES } from '@/lib/graphSubscription';
 import { findTicketForEmail } from '@/lib/ticketRef';
+import { cleanEmailBody, cleanupOptionsFrom } from '@/lib/emailCleanup';
+import { saveEmailAttachments } from '@/lib/emailAttachments';
 
 /**
  * Keep the subscription alive without a scheduled job.
@@ -215,16 +217,20 @@ export async function POST(req: NextRequest) {
       // else the catch-all, so nothing is ever dropped.
       const route = await routeIncomingEmail(tenantId, senderEmail);
 
-      // Strip HTML from body
-      const bodyContent = (msg.body?.content || msg.bodyPreview || '')
-        .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/<\/p>/gi, '\n')
-        .replace(/<[^>]+>/g, '')
-        .replace(/&nbsp;/g, ' ')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .trim();
+      // Strip HTML from body, then trim the signature and the quoted thread so
+      // the note holds the new message rather than the whole conversation.
+      const bodyContent = cleanEmailBody(
+        (msg.body?.content || msg.bodyPreview || '')
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<\/p>/gi, '\n')
+          .replace(/<[^>]+>/g, '')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .trim(),
+        cleanupOptionsFrom(settings)
+      );
 
       // Which ticket is this a reply to? The subject tag first, then the body,
       // so stripping the tag out of the subject does not lose the thread. A
@@ -233,6 +239,13 @@ export async function POST(req: NextRequest) {
       const existingTicket = await findTicketForEmail(tenantId, msg.subject || '', bodyContent);
 
       if (existingTicket) {
+        await saveEmailAttachments(
+          tenantId,
+          existingTicket.id,
+          resource,
+          tokenData.access_token,
+          senderEmail
+        );
         const owner = await prisma.tenantUser.findFirst({ where: { tenantId, isOwner: true } });
         await prisma.ticketNote.create({
           data: {
@@ -268,16 +281,30 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        // Send auto-reply
+        const created = await prisma.ticket.findFirst({
+          where: { tenantId, ticketNumber: nextNumber },
+          select: { id: true },
+        });
+        if (created) {
+          await saveEmailAttachments(tenantId, created.id, resource, tokenData.access_token, senderEmail);
+        }
+
+        // Send the auto-reply, and *wait* for it.
+        //
+        // This used to be fire-and-forget. On a serverless host the function is
+        // frozen the moment the response is returned, so the promise was killed
+        // mid-flight and the acknowledgement never left the building.
         try {
           const { sendTicketNotification } = await import('@/lib/ticketEmail');
           const newTicket = await prisma.ticket.findFirst({
             where: { tenantId, ticketNumber: nextNumber },
           });
           if (newTicket) {
-            sendTicketNotification(tenantId, newTicket.id, 'ticket_created');
+            await sendTicketNotification(tenantId, newTicket.id, 'ticket_created');
           }
-        } catch {}
+        } catch (err: any) {
+          console.error('[ms-email] auto-reply failed:', err.message);
+        }
       }
 
       // Mark email as read

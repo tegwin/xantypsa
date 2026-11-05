@@ -219,11 +219,12 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
 
     results.statusChanged = true;
 
-    // Fire and forget email notification for status changes
+    // Awaited for the same reason as every other notification: the host
+    // freezes the function the moment it responds.
     if (body.newStatus === 'resolved' || body.newStatus === 'closed') {
-      sendTicketNotification(session.user.tenantId, ticketId, 'ticket_closed');
+      await sendTicketNotification(session.user.tenantId, ticketId, 'ticket_closed');
     } else {
-      sendTicketNotification(session.user.tenantId, ticketId, 'ticket_updated');
+      await sendTicketNotification(session.user.tenantId, ticketId, 'ticket_updated');
     }
   }
 

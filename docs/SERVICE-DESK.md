@@ -41,6 +41,49 @@ email becomes a new ticket rather than being dropped.
 The subject tag is added by the system, not by the template, so editing an
 email template cannot break threading.
 
+## What is kept from an incoming email
+
+Settings, Email, Email Processing has two switches, both on by default:
+
+- **Remove the sender's signature** cuts the sign-off and the contact block
+  under it.
+- **Remove the quoted conversation** drops the thread repeated below a reply.
+
+Neither can empty a note: if a trim would take everything, the original is
+kept, because "Yes, thanks" is exactly the shape that looks like a sign-off.
+Turn the second one off if you need the full exchange on every note as a
+record.
+
+## Attachments
+
+Files sent in on an email are copied onto the ticket automatically, and agents
+can attach more from the ticket itself. Up to 15 MB each; anything larger stays
+in the mailbox and is named in the log rather than stored. Inline images, such
+as a logo in a signature, are skipped.
+
+Files live in private storage and are served only through the app, so a link
+cannot be forwarded to somebody outside your tenant. Opening one needs a
+signed-in session with service desk access.
+
+| Method | Route | Does |
+|---|---|---|
+| GET | `/api/tickets/{id}/attachments` | What is attached, metadata only |
+| POST | `/api/tickets/{id}/attachments` | Upload one, multipart field `file` |
+| DELETE | `/api/tickets/{id}/attachments?attachmentId=` | Remove one |
+| GET | `/api/tickets/{id}/attachments/{attachmentId}` | The file itself |
+
+## Email templates
+
+Settings, Email Templates groups templates by what they are about, and offers
+only the variables that family actually receives, so a ticket email can no
+longer be written with quote variables in it.
+
+Each template has a **Preview** tab: the subject and body rendered with sample
+values, as a mail client would show them, with the exact HTML underneath. The
+sample names are obviously fictional on sight. The ticket reference is added to
+the subject by the system when it sends, so it does not need to be in the
+template.
+
 ## The timer
 
 A work timer runs on each ticket, in the action bar and again in the time entry

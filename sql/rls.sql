@@ -312,6 +312,11 @@ DROP POLICY IF EXISTS ai_tenant_isolation ON "tenants";
 CREATE POLICY ai_tenant_isolation ON "tenants"
   FOR SELECT USING ("id" = current_setting('app.tenant_id', true));
 
+ALTER TABLE "ticket_attachments" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS ai_tenant_isolation ON "ticket_attachments";
+CREATE POLICY ai_tenant_isolation ON "ticket_attachments"
+  FOR SELECT USING ("tenantId" = current_setting('app.tenant_id', true));
+
 ALTER TABLE "ticket_notes" ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS ai_tenant_isolation ON "ticket_notes";
 -- TicketNote is scoped through Ticket.

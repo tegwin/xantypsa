@@ -108,8 +108,10 @@ export const POST = withTenant(async (req: NextRequest, session: any) => {
     },
   });
 
-  // Fire and forget email notification
-  sendTicketNotification(tenantId, ticket.id, 'ticket_created');
+  // Awaited, not fired and forgotten: a serverless function is frozen as soon
+  // as it responds, which killed the send mid-flight. sendTicketNotification
+  // swallows its own errors, so this cannot fail the ticket.
+  await sendTicketNotification(tenantId, ticket.id, 'ticket_created');
 
   return jsonResponse(ticket, 201);
 }, 'service_desk', 'write');

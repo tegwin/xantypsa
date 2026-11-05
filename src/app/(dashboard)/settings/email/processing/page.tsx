@@ -20,6 +20,19 @@ export default function EmailProcessingPage() {
   const { data: tickets } = useApi<any>('/api/email/tickets');
   const [reconnecting, setReconnecting] = useState(false);
   const [checking, setChecking] = useState(false);
+  const { data: cleanup, refetch: refetchCleanup } = useApi<any>('/api/settings/email/cleanup');
+
+  // Saved on toggle rather than behind a Save button: there are two switches,
+  // and a button to confirm two switches is a button nobody presses.
+  const setCleanup = async (patch: Record<string, boolean>) => {
+    await fetch('/api/settings/email/cleanup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...cleanup, ...patch }),
+    });
+    toast.success('Saved');
+    refetchCleanup();
+  };
   const [diagnostics, setDiagnostics] = useState<any>(null);
 
   // Asks Microsoft the questions the webhook cannot answer for itself, so
@@ -143,6 +156,47 @@ export default function EmailProcessingPage() {
             enabled in Vercel.
           </div>
         )}
+      </div>
+
+      <div className="glass rounded-xl p-6">
+        <div className="mb-4 flex items-center gap-2">
+          <Mail className="h-4 w-4 text-brand-400" />
+          <h2 className="font-semibold text-white">What is kept from an email</h2>
+        </div>
+
+        <div className="space-y-3">
+          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-surface-700 bg-surface-900/40 p-3">
+            <input
+              type="checkbox"
+              className="mt-0.5"
+              checked={cleanup?.stripSignature !== false}
+              onChange={(e) => setCleanup({ stripSignature: e.target.checked })}
+            />
+            <span>
+              <span className="block text-sm text-surface-100">Remove the sender's signature</span>
+              <span className="block text-xs text-surface-500">
+                Cuts the sign-off and the contact block beneath it, so a note holds the message
+                rather than a business card. A reply that is only a sign-off is kept whole.
+              </span>
+            </span>
+          </label>
+
+          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-surface-700 bg-surface-900/40 p-3">
+            <input
+              type="checkbox"
+              className="mt-0.5"
+              checked={cleanup?.stripQuotedHistory !== false}
+              onChange={(e) => setCleanup({ stripQuotedHistory: e.target.checked })}
+            />
+            <span>
+              <span className="block text-sm text-surface-100">Remove the quoted conversation</span>
+              <span className="block text-xs text-surface-500">
+                Drops the thread repeated below a reply. Turn this off if you need the full
+                exchange on every note as a record.
+              </span>
+            </span>
+          </label>
+        </div>
       </div>
 
       <div className="glass rounded-xl p-6">

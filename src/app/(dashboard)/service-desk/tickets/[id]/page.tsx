@@ -11,6 +11,7 @@ import { formatDate, formatRelativeTime, formatCurrency } from '@/lib/utils';
 import { useRouter, useParams } from 'next/navigation';
 import { Clock, DollarSign, ChevronDown, ChevronUp, Moon, Mail, EyeOff, Play, Pause, RotateCcw, Pencil, ArrowRightLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
+import TicketAttachments from '@/components/TicketAttachments';
 
 interface BillingRate {
   id: string; name: string; code: string; rate: number;
@@ -647,6 +648,8 @@ export default function TicketDetailPage() {
               {saveButton}
             </div>
           </div>
+
+          <TicketAttachments ticketId={ticket.id} />
 
           {/* Notes & Activity */}
           <div className="glass-panel p-6">
